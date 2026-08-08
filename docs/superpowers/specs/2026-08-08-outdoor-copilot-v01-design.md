@@ -93,7 +93,7 @@ Outdoor Copilot V0.1 让用户上传 GPX（或选择内置示例），先看到�
 
 ### Personal Difficulty engine (hybrid)
 
-1. **自适应分段**：总距 &lt;6km → ~100m；6–20km → ~250m；&gt;20km → ~500m。
+1. **自适应分段**：总距小于 6km → ~100m；6–20km → ~250m；大于 20km → ~500m。
 2. **分段负荷** → 基础分项：`endurance` / `climbing` / `weather` / `risk` → `baseOverall`（0–100）。
 3. **时长引擎**先估 `moving/total` 与区间；取总时长中位 `t`。
 4. **生理负荷层**（参考刘泓舟等《户外运动强度测定与定级》，2022）：用 `r,d,h,m,M,H,t` 估总心跳/储备总心跳；缺省用人群默认；负重默认 5kg 可改；映射进 base 耐力/爬升贡献，并产出次要「估算生理强度等级」。
