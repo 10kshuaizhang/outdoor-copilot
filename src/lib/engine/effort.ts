@@ -1,3 +1,4 @@
+import { clampGradePct } from "./grade";
 import type { EffortLabel, Segment } from "./types";
 
 /**
@@ -16,7 +17,9 @@ export function estimateSegmentEffort(input: {
 }): number {
   const distanceKm = Math.max(0, input.distanceM) / 1000;
   const climbLoad = Math.max(0, input.avgGradePct) / 10;
-  const steepSpike = Math.max(0, input.maxGradePct - 12) * 0.04;
+  const cappedMax = clampGradePct(input.maxGradePct);
+  // Cap steep contribution so one GPS spike cannot dominate the profile.
+  const steepSpike = Math.min(1.2, Math.max(0, cappedMax - 12) * 0.04);
   const ascent = Math.max(0, input.gainM) / 100;
   const raw = distanceKm * (1 + climbLoad + steepSpike) + ascent;
   return Math.round(raw * 100) / 100;
@@ -39,9 +42,11 @@ export function labelSegmentEffort(input: {
     return "descent";
   }
 
+  const cappedMax = clampGradePct(input.maxGradePct);
+
   if (
     input.avgGradePct >= 10 ||
-    input.maxGradePct >= 22 ||
+    cappedMax >= 22 ||
     (input.gainM >= input.lossM && effortDensity >= 2.4)
   ) {
     return "hard_climb";
@@ -49,7 +54,7 @@ export function labelSegmentEffort(input: {
 
   if (
     input.avgGradePct <= 4 &&
-    input.maxGradePct < 14 &&
+    cappedMax < 14 &&
     effortDensity < 1.55
   ) {
     return "easy";
@@ -79,15 +84,18 @@ type SegmentGeometry = {
   effortLabel?: Segment["effortLabel"];
 };
 
-/** Backfill effort fields for older saved analyses (Week 1 predictions). */
+/** Backfill / sanitize effort fields (also reclamps absurd GPS max grades). */
 export function ensureSegmentEffort(segments: SegmentGeometry[]): Segment[] {
   return segments.map((seg, idx) => {
-    if (
-      typeof seg.estimatedEffort === "number" &&
-      seg.effortLabel != null &&
-      Number.isFinite(seg.estimatedEffort)
-    ) {
-      return seg as Segment;
+    const maxGradePct = clampGradePct(seg.maxGradePct ?? 0);
+    const needsRefresh =
+      typeof seg.estimatedEffort !== "number" ||
+      seg.effortLabel == null ||
+      !Number.isFinite(seg.estimatedEffort) ||
+      (seg.maxGradePct ?? 0) > maxGradePct + 0.01;
+
+    if (!needsRefresh) {
+      return { ...(seg as Segment), maxGradePct };
     }
     return enrichSegmentEffort({
       idx: seg.idx ?? idx,
@@ -97,7 +105,7 @@ export function ensureSegmentEffort(segments: SegmentGeometry[]): Segment[] {
       gainM: seg.gainM ?? 0,
       lossM: seg.lossM ?? 0,
       avgGradePct: seg.avgGradePct ?? 0,
-      maxGradePct: seg.maxGradePct ?? 0,
+      maxGradePct,
     });
   });
 }
@@ -131,39 +139,65 @@ export type HardestStretch = {
   peakSegment: Segment;
 };
 
+function isClimbish(seg: Segment): boolean {
+  return (
+    seg.effortLabel === "hard_climb" ||
+    seg.avgGradePct > 2 ||
+    seg.gainM >= Math.max(20, seg.lossM * 0.85)
+  );
+}
+
+/** Climb-first hardness — pure descents with GPS spikes must not win. */
+export function segmentHardScore(seg: Segment): number {
+  const cappedMax = clampGradePct(seg.maxGradePct);
+  if (!isClimbish(seg)) {
+    return Math.min(seg.estimatedEffort, 1.2) * 0.25 + seg.lossM / 500;
+  }
+  return seg.estimatedEffort + seg.gainM / 60 + Math.max(0, seg.avgGradePct) / 25 + cappedMax / 80;
+}
+
 /**
  * Find the hardest contiguous stretch by merging adjacent high-effort
- * climbing segments around the peak-effort segment.
+ * climbing segments around the peak hard-score segment.
  */
 export function findHardestStretch(segments: Segment[]): HardestStretch | null {
   if (segments.length === 0) return null;
 
-  let peak = segments[0];
-  for (const seg of segments) {
-    if (seg.estimatedEffort > peak.estimatedEffort) peak = seg;
+  const ranked = ensureSegmentEffort(segments);
+  const climbPool = ranked.filter(isClimbish);
+  const pool = climbPool.length > 0 ? climbPool : ranked;
+
+  let peak = pool[0];
+  let peakScore = segmentHardScore(peak);
+  for (const seg of pool) {
+    const score = segmentHardScore(seg);
+    if (score > peakScore) {
+      peak = seg;
+      peakScore = score;
+    }
   }
 
   // Expand around peak while neighbors stay "hard" relative to median.
-  const efforts = segments.map((s) => s.estimatedEffort).sort((a, b) => a - b);
-  const median = efforts[Math.floor(efforts.length / 2)] ?? peak.estimatedEffort;
-  const hardFloor = Math.max(median * 1.15, peak.estimatedEffort * 0.55);
+  const scores = ranked.map(segmentHardScore).sort((a, b) => a - b);
+  const median = scores[Math.floor(scores.length / 2)] ?? peakScore;
+  const hardFloor = Math.max(median * 1.15, peakScore * 0.55);
 
   let from = peak.idx;
   let to = peak.idx;
   while (from > 0) {
-    const prev = segments[from - 1];
+    const prev = ranked[from - 1];
     if (
-      prev.estimatedEffort >= hardFloor &&
+      segmentHardScore(prev) >= hardFloor &&
       prev.effortLabel !== "descent" &&
       prev.avgGradePct > 2
     ) {
       from -= 1;
     } else break;
   }
-  while (to < segments.length - 1) {
-    const next = segments[to + 1];
+  while (to < ranked.length - 1) {
+    const next = ranked[to + 1];
     if (
-      next.estimatedEffort >= hardFloor &&
+      segmentHardScore(next) >= hardFloor &&
       next.effortLabel !== "descent" &&
       next.avgGradePct > 2
     ) {
@@ -171,12 +205,17 @@ export function findHardestStretch(segments: Segment[]): HardestStretch | null {
     } else break;
   }
 
-  const slice = segments.slice(from, to + 1);
+  const slice = ranked.slice(from, to + 1);
   const estimatedEffort = slice.reduce((s, x) => s + x.estimatedEffort, 0);
   const gainM = slice.reduce((s, x) => s + x.gainM, 0);
+  const lossM = slice.reduce((s, x) => s + x.lossM, 0);
   const distanceM = slice.reduce((s, x) => s + x.distanceM, 0);
   const avgGradePct =
-    distanceM > 0 ? ((gainM - slice.reduce((s, x) => s + x.lossM, 0)) / distanceM) * 100 : 0;
+    distanceM > 0 ? ((gainM - lossM) / distanceM) * 100 : 0;
+  const peakSegment: Segment = {
+    ...peak,
+    maxGradePct: clampGradePct(peak.maxGradePct),
+  };
 
   return {
     startKm: Number(slice[0].startKm.toFixed(2)),
@@ -188,12 +227,13 @@ export function findHardestStretch(segments: Segment[]): HardestStretch | null {
     label: peak.effortLabel,
     fromIdx: from,
     toIdx: to,
-    peakSegment: peak,
+    peakSegment,
   };
 }
 
 export function hardestStretchTemplate(stretch: HardestStretch): string {
   const span = `${stretch.startKm.toFixed(1)}–${stretch.endKm.toFixed(1)} km`;
   const label = effortLabelZh(stretch.label);
-  return `真正难的是 ${span}（${label}）。该段累计爬升约 ${stretch.gainM} m，平均坡度约 ${stretch.avgGradePct}%，相对负荷 ${stretch.estimatedEffort}。把体力留给这一段，前后可匀速通过。`;
+  const maxGrade = clampGradePct(stretch.peakSegment.maxGradePct);
+  return `真正难的是 ${span}（${label}）。该段累计爬升约 ${stretch.gainM} m，平均坡度约 ${stretch.avgGradePct}%，峰值坡度约 ${maxGrade.toFixed(0)}%，相对负荷 ${stretch.estimatedEffort}。把体力留给这一段，前后可匀速通过。`;
 }

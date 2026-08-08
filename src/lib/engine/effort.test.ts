@@ -98,6 +98,41 @@ describe("findHardestStretch", () => {
     expect(hardest!.gainM).toBeGreaterThan(50);
     expect(hardest!.endKm).toBeGreaterThan(hardest!.startKm);
   });
+
+  it("ignores GPS elevation spikes that invent 2000% grades", () => {
+    const points: TrackPoint[] = [];
+    for (let i = 0; i < 30; i++) {
+      points.push({ lat: 40, lon: 116 + i * 0.00025, ele: 200 + i * 2 });
+    }
+    // Real sustained climb
+    for (let i = 0; i < 40; i++) {
+      points.push({
+        lat: 40.001 + i * 0.0002,
+        lon: 116.008,
+        ele: 260 + i * 8,
+      });
+    }
+    // Descent with one absurd GPS spike (same lat/lon drift tiny, +80m jump)
+    for (let i = 0; i < 25; i++) {
+      const spike = i === 5;
+      points.push({
+        lat: 40.01 + i * 0.00015,
+        lon: 116.008,
+        ele: spike ? 700 : 500 - i * 6,
+      });
+    }
+
+    const segments = buildSegments(points);
+    expect(Math.max(...segments.map((s) => s.maxGradePct))).toBeLessThanOrEqual(
+      45,
+    );
+
+    const hardest = findHardestStretch(segments);
+    expect(hardest).not.toBeNull();
+    expect(hardest!.label).not.toBe("descent");
+    expect(hardest!.peakSegment.maxGradePct).toBeLessThanOrEqual(45);
+    expect(hardest!.gainM).toBeGreaterThan(80);
+  });
 });
 
 describe("enrichSegmentEffort", () => {

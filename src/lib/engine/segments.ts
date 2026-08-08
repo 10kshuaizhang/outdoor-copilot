@@ -1,5 +1,6 @@
 import { enrichSegmentEffort } from "./effort";
 import { accumulateDistances, haversineMeters } from "./geo";
+import { clampGradePct, isElevationSpike, stepGradePct } from "./grade";
 import type { Segment, TrackPoint } from "./types";
 
 export function targetSegmentLengthM(distanceKm: number): number {
@@ -32,11 +33,14 @@ export function buildSegments(points: TrackPoint[]): Segment[] {
       const eleA = points[j - 1].ele ?? 0;
       const eleB = points[j].ele ?? 0;
       const delta = eleB - eleA;
-      if (delta > 0) gainM += delta;
-      else lossM += -delta;
-      if (dist > 0.5) {
-        const grade = (delta / dist) * 100;
-        maxGradePct = Math.max(maxGradePct, Math.abs(grade));
+      // Skip gain/loss on spike steps so one bad point cannot invent "hardest".
+      if (!isElevationSpike(delta, dist)) {
+        if (delta > 0) gainM += delta;
+        else lossM += -delta;
+      }
+      const grade = stepGradePct(delta, dist);
+      if (grade != null) {
+        maxGradePct = Math.max(maxGradePct, clampGradePct(grade));
       }
     }
 

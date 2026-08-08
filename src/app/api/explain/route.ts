@@ -113,7 +113,10 @@ function hardestTemplate(hardest: HardestPayload): string {
   const grade = hardest.avgGradePct ?? "?";
   const effort = hardest.estimatedEffort ?? "?";
   const peak = hardest.peakSegment;
-  const peakGrade = peak?.maxGradePct ?? grade;
+  const rawPeak = Number(peak?.maxGradePct ?? grade);
+  const peakGrade = Number.isFinite(rawPeak)
+    ? Math.min(45, Math.abs(rawPeak)).toFixed(0)
+    : "?";
   return `真正难的是 ${start}–${end} km。该段累计爬升约 ${gain} m，平均坡度约 ${grade}%，峰值坡度约 ${peakGrade}%，相对负荷 ${effort}。把体力留给主要爬升段，前后可匀速通过。`;
 }
 
