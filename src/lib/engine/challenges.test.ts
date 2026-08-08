@@ -7,7 +7,7 @@ import path from "node:path";
 describe("challenges", () => {
   it("keeps challenge kilometer ranges inside the route length", () => {
     const xml = readFileSync(
-      path.resolve(import.meta.dirname, "../../../public/samples/beijing-steep.gpx"),
+      path.resolve(import.meta.dirname, "../../../public/samples/daheifeng.gpx"),
       "utf8",
     );
     const result = analyzeRoute({

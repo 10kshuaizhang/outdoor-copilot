@@ -10,7 +10,24 @@ Know the trail. Know yourself. Go smarter.
 npm install
 npm run dev
 npm test
+npm run build
 ```
 
-Spec: `docs/superpowers/specs/2026-08-08-outdoor-copilot-v01-design.md`  
-Tickets: `.scratch/outdoor-copilot-v01/issues/`
+## Demo samples
+
+Real GPX under `public/samples/`:
+
+- 海坨山（北京·延庆）
+- 大黑峰（张家口）
+- 阳台山—妙峰山环线（北京）
+
+## Deploy (Vercel)
+
+```bash
+npx vercel login   # or set VERCEL_TOKEN
+npx vercel --prod --yes
+```
+
+Optional env vars: see `.env.example`.
+
+Recommended: set `NEXT_PUBLIC_SITE_URL` to your production URL after first deploy.

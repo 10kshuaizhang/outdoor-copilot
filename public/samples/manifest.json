@@ -1,23 +1,26 @@
 [
   {
-    "id": "daheifeng",
-    "name": "大黑峰",
-    "region": "张家口",
-    "blurb": "京西远郊经典爬升线，主峰前后坡度变化明显。",
-    "file": "/samples/daheifeng.gpx"
-  },
-  {
     "id": "haituoshan",
     "name": "海坨山",
     "region": "北京·延庆",
-    "blurb": "华北高峰线，距离与海拔兼具，耐力与攀爬并重。",
+    "blurb": "华北高峰周末线：距离不夸张，但海拔与持续攀爬会明显拉开个人难度。",
+    "stats": "约 8.8 km · +740 m",
     "file": "/samples/haituoshan.gpx"
   },
   {
+    "id": "daheifeng",
+    "name": "大黑峰",
+    "region": "张家口",
+    "blurb": "京西远郊爬升线，主峰前后坡度变化清楚，适合看「攀爬维」为什么变高。",
+    "stats": "约 12.3 km · +1090 m",
+    "file": "/samples/daheifeng.gpx"
+  },
+  {
     "id": "yangtaishan-miaofengshan",
-    "name": "北京阳台山—妙峰山环线",
+    "name": "阳台山—妙峰山环线",
     "region": "北京",
-    "blurb": "阳台山至妙峰山环线，途经茶棚与涧沟，节奏分段清晰。",
+    "blurb": "途经茶棚与涧沟的环线节奏，长距离 + 累计爬升，对耐力要求更高。",
+    "stats": "约 21.2 km · 高累计爬升",
     "file": "/samples/yangtaishan-miaofengshan.gpx"
   }
 ]

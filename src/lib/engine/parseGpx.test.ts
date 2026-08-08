@@ -5,9 +5,9 @@ import { analyzeRoute } from "./analyzeRoute";
 import { parseGpx } from "./parseGpx";
 
 describe("parseGpx", () => {
-  it("parses the beijing sample into a ready base analysis", () => {
+  it("parses the haituoshan sample into a ready base analysis", () => {
     const xml = readFileSync(
-      path.resolve(import.meta.dirname, "../../../public/samples/beijing-steep.gpx"),
+      path.resolve(import.meta.dirname, "../../../public/samples/haituoshan.gpx"),
       "utf8",
     );
     const points = parseGpx(xml);

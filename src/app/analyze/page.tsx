@@ -23,6 +23,7 @@ type SampleMeta = {
   name: string;
   region: string;
   blurb: string;
+  stats?: string;
   file: string;
 };
 
@@ -298,6 +299,11 @@ export default function AnalyzePage() {
                     <p className="mt-1 text-sm text-[var(--ink-soft)]">
                       {sample.blurb}
                     </p>
+                    {sample.stats ? (
+                      <p className="mt-2 text-xs tabular-nums text-[var(--rock)]">
+                        {sample.stats}
+                      </p>
+                    ) : null}
                     <p className="mt-3 text-sm font-semibold text-[var(--pine-deep)]">
                       {loadingId === sample.id ? "分析中…" : "一键分析 →"}
                     </p>

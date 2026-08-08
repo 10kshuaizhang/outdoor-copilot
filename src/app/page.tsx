@@ -52,12 +52,14 @@ export default function Home() {
             >
               分析我的路线
             </Link>
-            <Link
-              href="/history"
-              className="text-sm text-[var(--mist)] underline-offset-4 hover:underline"
-            >
-              本机历史
-            </Link>
+            <div className="flex gap-4 text-sm text-[var(--mist)]">
+              <Link href="/about" className="underline-offset-4 hover:underline">
+                如何使用
+              </Link>
+              <Link href="/history" className="underline-offset-4 hover:underline">
+                本机历史
+              </Link>
+            </div>
           </div>
         </section>
       </div>
