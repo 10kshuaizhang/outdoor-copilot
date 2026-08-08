@@ -95,8 +95,10 @@ export function personalizeDifficulty(
   const contributions: Array<{ code: string; label: string; delta: number }> =
     [];
 
-  const distDelta = route.distanceKm - (profile.comfortableDistanceKm ?? 10);
-  const elevDelta = route.elevationGainM - (profile.comfortableElevationM ?? 500);
+  const comfortDist = profile.comfortableDistanceKm ?? 10;
+  const comfortElev = profile.comfortableElevationM ?? 500;
+  const distDelta = route.distanceKm - comfortDist;
+  const elevDelta = route.elevationGainM - comfortElev;
 
   let enduranceAdj = Math.round((0.5 - cap.flatEndurance) * 28);
   if (distDelta > 0) {
@@ -108,7 +110,7 @@ export function personalizeDifficulty(
       delta: d,
     });
   } else if (distDelta < -2) {
-    const d = Math.round(Math.max(-12, distDelta * 1.2));
+    const d = Math.round(Math.max(-14, distDelta * 1.35));
     enduranceAdj += d;
     contributions.push({
       code: "distance_comfort",
@@ -128,13 +130,28 @@ export function personalizeDifficulty(
       delta: d,
     });
   } else if (elevDelta < -80) {
-    const d = Math.round(Math.max(-14, elevDelta / 60));
+    const d = Math.round(Math.max(-16, elevDelta / 50));
     climbingAdj += d;
     contributions.push({
       code: "elevation_comfort",
       label: "爬升在你的舒适区内",
       delta: d,
     });
+  }
+
+  // Route clearly inside comfort → stronger "this should feel easy" signal.
+  const withinComfort =
+    route.distanceKm <= comfortDist * 1.08 &&
+    route.elevationGainM <= comfortElev * 1.15;
+  if (withinComfort) {
+    const ease = Math.round(-5 - EXPERIENCE_SCORE[profile.experience] * 10);
+    contributions.push({
+      code: "within_comfort",
+      label: "整体落在你的舒适区内",
+      delta: ease,
+    });
+    enduranceAdj += Math.round(ease * 0.45);
+    climbingAdj += Math.round(ease * 0.55);
   }
 
   const expDelta = Math.round((0.5 - EXPERIENCE_SCORE[profile.experience]) * 16);

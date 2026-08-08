@@ -21,40 +21,89 @@ type HardestPayload = {
   };
 };
 
+/** Accepts both legacy RouteAnalysis-shaped bodies and slim explain payloads. */
 type ExplainBody = {
   mode?: "overview" | "hardest_segment";
   hardest?: HardestPayload;
-  analysis?: {
-    route?: { distanceKm?: number; elevationGainM?: number };
-    baseDifficulty?: { overall?: number };
-    personalDifficulty?: { overall?: number };
-    band?: string;
-    contributions?: Array<{ label: string; delta: number }>;
-    challenges?: Array<{ title: string }>;
-    recommendation?: {
-      suggestedStart?: string;
-      finishWindow?: string;
-      mainRisk?: string;
-      waterLiters?: number;
-    };
-    explanation?: { text: string };
-  };
+  analysis?: Record<string, unknown>;
 };
 
-function templateText(analysis: NonNullable<ExplainBody["analysis"]>): string {
-  const dist = analysis.route?.distanceKm?.toFixed(1) ?? "?";
-  const gain = analysis.route?.elevationGainM ?? "?";
-  const personal = analysis.personalDifficulty?.overall ?? "?";
-  const base = analysis.baseDifficulty?.overall ?? "?";
-  const why =
-    analysis.contributions
-      ?.slice(0, 4)
-      .map((c) => `${c.label}（${c.delta > 0 ? "+" : ""}${c.delta}）`)
-      .join("；") || "负荷主要来自距离与爬升结构";
-  const challenge =
-    analysis.challenges?.map((c) => c.title).join("；") ||
-    "关注连续爬升与后程疲劳";
-  return `这条约 ${dist} km、爬升约 ${gain} m 的路线，对你大约是 ${personal}/100（基础 ${base}）。原因包括：${why}。需要留意：${challenge}。建议完成窗口 ${analysis.recommendation?.finishWindow ?? "见报告"}，主风险：${analysis.recommendation?.mainRisk ?? "后程疲劳"}。`;
+const OVERVIEW_SYSTEM = `你是 Outdoor Copilot 的解释器，面向中国大陆徒步用户。
+
+硬规则：
+1. 只能使用用户 JSON 里已有的数字与字段，禁止改写分数、档位、公里、爬升、时长、出发/完成时刻。
+2. 时间只准使用 recommendation.suggestedStartLocal 与 finishWindowLocal（已是北京时间 HH:mm）。禁止把任何 ISO/UTC 字符串自行换算成另一套时间；没有这两个字段就写「见报告」，不要编造时刻。
+3. duration 是「行进向」估计。可以提醒：含长时间观景/用餐会更久，但不要改 JSON 里的分钟数。
+4. 难度档位必须与 scores.band 一致（例如 band 是「轻松」就不要写成「适中」）。
+5. 主风险只用 recommendation.mainRisk；不要额外发明「天黑/雷暴」等风险。
+6. 用简洁中文；可用换行和「1. 2. 3.」列表。不要 Markdown（不要 **、#、\`\`\`、HTML）。
+
+结构建议：路线概况 → 主要挑战/最难段 → 分段要点（若有 hardestStretch）→ 天气与行动建议。`;
+
+function asRecord(v: unknown): Record<string, unknown> | null {
+  return v && typeof v === "object" ? (v as Record<string, unknown>) : null;
+}
+
+function num(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+function str(v: unknown): string | undefined {
+  return typeof v === "string" && v.trim() ? v : undefined;
+}
+
+function templateText(analysis: Record<string, unknown>): string {
+  const route = asRecord(analysis.route);
+  const scores = asRecord(analysis.scores);
+  const legacyPersonal = asRecord(analysis.personalDifficulty);
+  const legacyBase = asRecord(analysis.baseDifficulty);
+  const rec = asRecord(analysis.recommendation);
+  const duration = asRecord(analysis.duration);
+
+  const dist =
+    num(route?.distanceKm)?.toFixed(1) ??
+    "?";
+  const gain = num(route?.elevationGainM) ?? "?";
+  const personal =
+    num(scores?.personalOverall) ??
+    num(legacyPersonal?.overall) ??
+    "?";
+  const base =
+    num(scores?.baseOverall) ?? num(legacyBase?.overall) ?? "?";
+  const band = str(scores?.band) ?? str(analysis.band) ?? "";
+  const start =
+    str(rec?.suggestedStartLocal) ??
+    "见报告";
+  const finish =
+    str(rec?.finishWindowLocal) ??
+    str(rec?.finishWindow) ??
+    "见报告";
+  const risk = str(rec?.mainRisk) ?? "后程疲劳";
+  const water = num(rec?.waterLiters);
+  const low = num(duration?.lowMin);
+  const high = num(duration?.highMin);
+
+  const contributions = Array.isArray(analysis.contributions)
+    ? (analysis.contributions as Array<{ label?: string; delta?: number }>)
+        .slice(0, 4)
+        .map((c) => `${c.label ?? ""}（${(c.delta ?? 0) > 0 ? "+" : ""}${c.delta ?? 0}）`)
+        .filter((s) => s.length > 2)
+        .join("；")
+    : "";
+
+  const challenges = Array.isArray(analysis.challenges)
+    ? (analysis.challenges as Array<{ title?: string }>)
+        .map((c) => c.title)
+        .filter(Boolean)
+        .join("；")
+    : "";
+
+  const timeRange =
+    low != null && high != null
+      ? `行进向预估约 ${low}–${high} 分钟（含长时间观景/用餐会更久）`
+      : "行进向预估见报告";
+
+  return `这条约 ${dist} km、爬升约 ${gain} m 的路线，对你大约是 ${personal}/100${band ? `（${band}）` : ""}（基础 ${base}）。${contributions ? `原因包括：${contributions}。` : ""}${challenges ? `需要留意：${challenges}。` : ""}${timeRange}。建议 ${start} 出发，完成窗口 ${finish}${water != null ? `，饮水约 ${water} L` : ""}。主风险：${risk}。`;
 }
 
 function hardestTemplate(hardest: HardestPayload): string {
@@ -65,7 +114,7 @@ function hardestTemplate(hardest: HardestPayload): string {
   const effort = hardest.estimatedEffort ?? "?";
   const peak = hardest.peakSegment;
   const peakGrade = peak?.maxGradePct ?? grade;
-  return `真正难的是 ${start}–${end} km。该段累计爬升约 ${gain} m，平均坡度约 ${grade}%，峰值坡度约 ${peakGrade}%，相对负荷 ${effort}。把体力留给这一段，前后可匀速通过。`;
+  return `真正难的是 ${start}–${end} km。该段累计爬升约 ${gain} m，平均坡度约 ${grade}%，峰值坡度约 ${peakGrade}%，相对负荷 ${effort}。把体力留给主要爬升段，前后可匀速通过。`;
 }
 
 export async function POST(req: NextRequest) {
@@ -108,17 +157,10 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model,
-        temperature: 0.4,
+        temperature: 0.35,
         messages: [
-          {
-            role: "system",
-            content:
-              "你是 Outdoor Copilot 的解释器。只能用用户提供的 JSON 中的数字与路段解释结果，禁止改写分数、时长或发明公里段。用简洁中文短段落；可用换行和「1. 2. 3.」列表。不要使用 Markdown（不要 **、#、```、HTML）。",
-          },
-          {
-            role: "user",
-            content: JSON.stringify(analysis),
-          },
+          { role: "system", content: OVERVIEW_SYSTEM },
+          { role: "user", content: JSON.stringify(analysis) },
         ],
       }),
       signal: controller.signal,

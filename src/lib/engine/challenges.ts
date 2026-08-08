@@ -1,4 +1,26 @@
+import {
+  formatShanghaiClock,
+  shanghaiToday,
+  shanghaiWallIso,
+} from "@/lib/time/china";
 import type { RouteAnalysis, Segment, WeatherSnapshot } from "./types";
+
+/** Parse Open-Meteo / ISO sunrise-sunset into an absolute instant. */
+function parseChinaDayTime(raw?: string): Date | null {
+  if (!raw) return null;
+  // Already offset or Z
+  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(raw)) {
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  // "2026-08-08T19:05" from Open-Meteo with timezone=Asia/Shanghai
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) {
+    const d = new Date(`${raw.slice(0, 16)}:00+08:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 export function detectChallenges(
   segments: Segment[],
@@ -89,29 +111,29 @@ export function buildRecommendation(input: {
   personalOverall: number;
   plannedStart?: string;
 }): RouteAnalysis["recommendation"] {
-  const sunset = input.weather.sunset
-    ? new Date(input.weather.sunset)
-    : null;
+  const sunset = parseChinaDayTime(input.weather.sunset);
+  const day = input.weather.date ?? shanghaiToday();
 
   let suggested = input.plannedStart;
   if (!suggested) {
-    const d = input.weather.date ? new Date(`${input.weather.date}T07:30:00`) : new Date();
-    if (!input.weather.date) {
-      d.setHours(7, 30, 0, 0);
+    // Default morning start in China local time (not browser/UTC local).
+    let hour = 7;
+    let minute = 30;
+    if (
+      input.personalOverall >= 65 ||
+      (input.weather.temperatureC ?? 18) >= 28
+    ) {
+      hour = 6;
+      minute = 30;
     }
-    // Prefer earlier start when hard or hot.
-    if (input.personalOverall >= 65 || (input.weather.temperatureC ?? 18) >= 28) {
-      d.setHours(6, 30, 0, 0);
-    }
-    suggested = d.toISOString();
+    suggested = shanghaiWallIso(day, hour, minute);
   }
 
   const start = new Date(suggested);
   const finishLow = new Date(start.getTime() + input.durationMin * 0.9 * 60000);
-  const finishHigh = new Date(start.getTime() + input.durationMin * 1.15 * 60000);
-
-  const fmt = (d: Date) =>
-    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const finishHigh = new Date(
+    start.getTime() + input.durationMin * 1.15 * 60000,
+  );
 
   const temp = input.weather.temperatureC ?? 18;
   const waterLiters = Number(
@@ -121,16 +143,18 @@ export function buildRecommendation(input: {
   let mainRisk = "后程疲劳";
   if (input.weather.thunderstormRisk === "high") mainRisk = "雷暴风险";
   else if (temp >= 30) mainRisk = "热应激与脱水";
-  else if (sunset && finishHigh > sunset) mainRisk = "可能天黑前无法结束";
+  else if (sunset && finishHigh.getTime() > sunset.getTime()) {
+    mainRisk = "可能天黑前无法结束";
+  }
 
   return {
     suggestedStart: suggested,
-    finishWindow: `${fmt(finishLow)}–${fmt(finishHigh)}`,
+    finishWindow: `${formatShanghaiClock(finishLow.toISOString())}–${formatShanghaiClock(finishHigh.toISOString())}`,
     waterLiters,
     mainRisk,
     paceNote:
       input.personalOverall >= 65
-        ? "建议前半段保守配速，把余力留给连续爬升。"
-        : "保持均匀配速，爬升段主动减速。",
+        ? "建议前半段保守配速，把余力留给连续爬升。预估为行进向时长；含长时间观景/用餐会明显更久。"
+        : "保持均匀配速，爬升段主动减速。预估为行进向时长；含长时间观景/用餐会明显更久。",
   };
 }

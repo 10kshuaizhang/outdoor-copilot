@@ -43,4 +43,26 @@ describe("analyzeRoute personalization", () => {
     });
     expect(a.baseDifficulty.overall).toBe(b.baseDifficulty.overall);
   });
+
+  it("labels a comfort-zone day hike as 轻松 for an advanced profile", () => {
+    // ~ fox-valley scale: ~10km / 550m inside a strong comfort zone
+    const points = Array.from({ length: 60 }, (_, i) => ({
+      lat: 40 + i * 0.0012,
+      lon: 116,
+      ele: 120 + Math.sin(i / 8) * 40 + (i < 25 ? i * 8 : 200 - (i - 25) * 5),
+    }));
+    const result = analyzeRoute({
+      points,
+      profile: {
+        experience: "advanced",
+        comfortableDistanceKm: 15,
+        comfortableElevationM: 900,
+        riskPreference: "balanced",
+      },
+      weather: { source: "fallback", temperatureC: 18 },
+    });
+    expect(result.route.distanceKm).toBeGreaterThan(5);
+    expect(result.personalDifficulty.overall).toBeLessThan(36);
+    expect(result.band).toBe("轻松");
+  });
 });

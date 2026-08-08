@@ -7,10 +7,10 @@ function clamp(n: number, min = 0, max = 100): number {
 export function scoreBand(
   overall: number,
 ): "轻松" | "适中" | "吃力" | "很难" | "不建议" {
-  // Calibrated for weekend Beijing day-hikes: common 8–12km / 500–800m
-  // routes should land around 适中–偏吃力 for an intermediate profile,
-  // not saturate near 很难.
-  if (overall < 28) return "轻松";
+  // Calibrated for weekend Beijing day-hikes.
+  // ~10km / 550m that sits inside a capable hiker's comfort should read
+  // 轻松–适中, not cluster mid-适中; hard peaks still reach 吃力+.
+  if (overall < 36) return "轻松";
   if (overall < 52) return "适中";
   if (overall < 72) return "吃力";
   if (overall < 88) return "很难";

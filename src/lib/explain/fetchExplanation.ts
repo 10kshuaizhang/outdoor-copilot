@@ -1,5 +1,6 @@
 import type { HardestStretch } from "@/lib/engine/effort";
 import type { RouteAnalysis } from "@/lib/engine";
+import { buildOverviewExplainPayload } from "./buildExplainPayload";
 
 export type ExplanationResult = {
   text: string;
@@ -15,7 +16,10 @@ export async function fetchExplanation(
     const res = await fetch("/api/explain", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ analysis, mode: "overview" }),
+      body: JSON.stringify({
+        mode: "overview",
+        analysis: buildOverviewExplainPayload(analysis),
+      }),
     });
     const data = (await res.json()) as {
       text?: string;

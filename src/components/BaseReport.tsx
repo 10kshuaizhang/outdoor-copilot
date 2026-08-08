@@ -7,6 +7,7 @@ import { ExplanationBody } from "@/components/ExplanationBody";
 import { HardestSegmentNote } from "@/components/HardestSegmentNote";
 import { trackEvent } from "@/lib/analytics/events";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
+import { formatShanghaiClock, shanghaiWallIso } from "@/lib/time/china";
 import {
   downloadShareCard,
   generateShareCard,
@@ -22,9 +23,7 @@ function formatDuration(min: number): string {
 }
 
 function formatClock(iso?: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return formatShanghaiClock(iso);
 }
 
 type Props = {
@@ -215,9 +214,12 @@ export function BaseReport({
           <dd className="mt-1 text-lg font-semibold">+{route.elevationGainM} m</dd>
         </div>
         <div>
-          <dt className="text-[var(--rock)]">预估时长</dt>
+          <dt className="text-[var(--rock)]">预估时长（行进向）</dt>
           <dd className="mt-1 text-lg font-semibold">
             {formatDuration(duration.lowMin)} – {formatDuration(duration.highMin)}
+          </dd>
+          <dd className="mt-1 text-xs text-[var(--rock)]">
+            不含长时间观景 / 用餐；休闲走会更久
           </dd>
         </div>
         <div>
@@ -325,11 +327,12 @@ export function BaseReport({
                 }
                 onChange={(e) => {
                   const [hh, mm] = e.target.value.split(":").map(Number);
-                  const base = analysis.weather.date
-                    ? new Date(`${analysis.weather.date}T00:00:00`)
-                    : new Date();
-                  base.setHours(hh || 0, mm || 0, 0, 0);
-                  onStartChange(base.toISOString());
+                  const day =
+                    analysis.weather.date ??
+                    new Date().toLocaleDateString("en-CA", {
+                      timeZone: "Asia/Shanghai",
+                    });
+                  onStartChange(shanghaiWallIso(day, hh || 0, mm || 0));
                 }}
               />
             </label>
