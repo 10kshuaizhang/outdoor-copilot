@@ -22,11 +22,7 @@ export default function AnalyzePage() {
           准备分析你的路线
         </h1>
         <p className="mt-4 text-base leading-relaxed text-[var(--ink-soft)]">
-          示例路线与 GPX 上传将在下一张工单接入。当前已接通统一分析入口{" "}
-          <code className="rounded bg-black/5 px-1.5 py-0.5 text-sm">
-            analyzeRoute
-          </code>
-          。
+          示例路线与 GPX 上传即将接入。你将先看到路线基础负荷，再可选完善个人档案，得到对你的难度判断。
         </p>
 
         <div className="mt-10 border-t border-black/10 pt-6 text-sm leading-relaxed text-[var(--rock)]">
