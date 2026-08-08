@@ -14,7 +14,7 @@
 | OutdoorProfile | `outdoor_copilot_profile_v2` | Declared fields |
 | PersonalModel | type only | No learning yet |
 | Route | embedded in Prediction bundle | Geometry summary + points ref |
-| RouteSegment | embedded from engine segments | Week 2 adds effort labels |
+| RouteSegment | embedded from engine segments | includes `estimatedEffort` + `effortLabel` (geometry only) |
 | Analysis | embedded snapshot at predict time | Engine `RouteAnalysis` JSON |
 | **Prediction** | `outdoor_copilot_predictions_v1` | Append-only list |
 | Activity | type + empty store | Week 3 |
@@ -34,6 +34,16 @@
 - `status`: `saved` | `hiking` (reserved) | `completed` (reserved)
 - `outcomeId`: null until Week 3+
 
+## Segment effort (Week 2)
+
+Each engine segment carries:
+
+- `estimatedEffort` — relative load from GPX geometry (not overall score input)
+- `effortLabel` — `easy` | `hard_climb` | `moderate` | `descent`
+
+Older Week 1 predictions without these fields are backfilled at display time via `ensureSegmentEffort`.
+
 ## Schema evolution
 
 New algorithm → new `modelVersion` on **new** rows only.
+Overall difficulty formula remains frozen at `v0.1-analyze` unless intentionally retagged.

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { DifficultyProfile } from "@/components/DifficultyProfile";
 import { ElevationProfile } from "@/components/ElevationProfile";
 import { ExplanationBody } from "@/components/ExplanationBody";
+import { HardestSegmentNote } from "@/components/HardestSegmentNote";
 import { trackEvent } from "@/lib/analytics/events";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
 import {
@@ -228,6 +230,21 @@ export function BaseReport({
         <p className="mb-2 text-sm text-[var(--rock)]">海拔剖面</p>
         <ElevationProfile samples={analysis.elevationProfile} />
       </div>
+
+      <div>
+        <p className="mb-1 font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+          难度剖面
+        </p>
+        <p className="mb-2 text-sm text-[var(--rock)]">
+          公里轴上的相对负荷——不是总分，而是哪里真正吃力
+        </p>
+        <DifficultyProfile segments={analysis.segments} />
+      </div>
+
+      <HardestSegmentNote
+        segments={analysis.segments}
+        enableLlm={showPersonal}
+      />
 
       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         {(

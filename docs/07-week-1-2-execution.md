@@ -110,13 +110,19 @@ AI Chat · Strava · Watch · 社区 · Trail Expert · 推荐 · Route Discover
 自适应分段；每段至少：distance · elevation_gain/loss · average_grade · max_grade · **estimated_effort**  
 展示形态：Easy / Hard Climb / Moderate / Descent 等 **标签可从 grade/effort 规则映射**，不做外部 DEM/地形识别。
 
+- [x] `estimatedEffort` + `effortLabel` on engine `Segment`（几何规则，不改 overall 公式）
+
 ### 2. Route Difficulty Profile UI
 
 在 Overall 分之外，公里轴上的 effort 剖面，让用户一眼看到「真正难的是 3–6 km」。
 
+- [x] `DifficultyProfile` + 最难段 callout（base / personal 报告均展示）
+
 ### 3. AI 最多一层
 
 结构化 Segment（含最难段）→ LLM **只解释**为什么该段最难。不发明数字。
+
+- [x] `/api/explain` `mode=hardest_segment`（个人报告可选 LLM；失败回落模板）
 
 ### 4. 产品假设验证
 

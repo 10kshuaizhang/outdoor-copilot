@@ -82,6 +82,14 @@ describe("analyzeRoute", () => {
     expect(result.route.minElevM).toBe(80);
     expect(result.route.maxElevM).toBe(200);
     expect(result.segments.length).toBeGreaterThan(0);
+    expect(
+      result.segments.every(
+        (s) =>
+          typeof s.estimatedEffort === "number" &&
+          s.effortLabel != null &&
+          s.estimatedEffort >= 0,
+      ),
+    ).toBe(true);
     expect(result.elevationProfile.length).toBeGreaterThan(1);
     expect(result.baseDifficulty.overall).toBeGreaterThan(0);
     expect(result.baseDifficulty.climbing).toBeGreaterThan(

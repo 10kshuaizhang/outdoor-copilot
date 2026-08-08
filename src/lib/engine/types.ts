@@ -56,6 +56,9 @@ export type RouteSummary = {
   center: { lat: number; lon: number };
 };
 
+/** Geometry-derived effort class (Week 2). Not terrain recognition. */
+export type EffortLabel = "easy" | "hard_climb" | "moderate" | "descent";
+
 export type Segment = {
   idx: number;
   startKm: number;
@@ -65,6 +68,9 @@ export type Segment = {
   lossM: number;
   avgGradePct: number;
   maxGradePct: number;
+  /** Relative effort points from GPX geometry only; not used in overall score. */
+  estimatedEffort: number;
+  effortLabel: EffortLabel;
 };
 
 export type ElevationSample = {

@@ -1,3 +1,4 @@
+import { enrichSegmentEffort } from "./effort";
 import { accumulateDistances, haversineMeters } from "./geo";
 import type { Segment, TrackPoint } from "./types";
 
@@ -42,16 +43,18 @@ export function buildSegments(points: TrackPoint[]): Segment[] {
     const distanceM = cum[i] - cum[startIdx];
     const avgGradePct = distanceM > 0 ? (gainM - lossM) / distanceM * 100 : 0;
 
-    segments.push({
-      idx: segIdx,
-      startKm: cum[startIdx] / 1000,
-      endKm: cum[i] / 1000,
-      distanceM,
-      gainM,
-      lossM,
-      avgGradePct,
-      maxGradePct,
-    });
+    segments.push(
+      enrichSegmentEffort({
+        idx: segIdx,
+        startKm: cum[startIdx] / 1000,
+        endKm: cum[i] / 1000,
+        distanceM,
+        gainM,
+        lossM,
+        avgGradePct,
+        maxGradePct,
+      }),
+    );
 
     segIdx += 1;
     startIdx = i;
