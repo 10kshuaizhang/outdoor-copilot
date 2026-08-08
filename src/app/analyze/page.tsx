@@ -114,6 +114,7 @@ export default function AnalyzePage() {
           const explanation = {
             text: explained.text,
             source: explained.source,
+            model: explained.model,
           };
           setAnalysis((prev) =>
             prev ? { ...prev, explanation } : prev,

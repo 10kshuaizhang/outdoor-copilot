@@ -212,7 +212,7 @@ export async function renderShareCardPng(
 
   ctx.fillStyle = "#6b6560";
   ctx.font = `500 24px ${sans}`;
-  ctx.fillText("保存图片 → 发小红书时配下文案", 96, panelY + 860);
+  ctx.fillText("Know the trail. Know yourself. Go smarter.", 96, panelY + 860);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

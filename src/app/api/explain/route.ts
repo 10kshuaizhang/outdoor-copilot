@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
           {
             role: "system",
             content:
-              "你是 Outdoor Copilot 的解释器。只能用用户提供的 JSON 中的数字与路段解释结果，禁止改写分数、时长或发明公里段。用简洁中文。",
+              "你是 Outdoor Copilot 的解释器。只能用用户提供的 JSON 中的数字与路段解释结果，禁止改写分数、时长或发明公里段。用简洁中文短段落；可用换行和「1. 2. 3.」列表。不要使用 Markdown（不要 **、#、```、HTML）。",
           },
           {
             role: "user",

@@ -103,7 +103,12 @@ export type RouteAnalysis = {
     paceNote?: string;
   };
   band: "轻松" | "适中" | "吃力" | "很难" | "不建议";
-  explanation: { text: string; source: "template" | "llm" };
+  explanation: {
+    text: string;
+    source: "template" | "llm";
+    /** Present when source is llm (e.g. deepseek-chat). */
+    model?: string;
+  };
   weather: WeatherSnapshot;
   physiological?: {
     gradeLabel: string;

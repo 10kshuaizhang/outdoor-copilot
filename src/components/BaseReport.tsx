@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ElevationProfile } from "@/components/ElevationProfile";
+import { ExplanationBody } from "@/components/ExplanationBody";
 import { trackEvent } from "@/lib/analytics/events";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
 import {
@@ -326,17 +327,19 @@ export function BaseReport({
         </div>
       ) : null}
 
-      <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
-        {analysis.explanation.text}
-      </p>
-      {showPersonal ? (
-        <p className="text-xs text-[var(--rock)]">
-          解释来源：
-          {analysis.explanation.source === "llm"
-            ? "AI 润色（已配置 LLM）"
-            : "模板（未配置或 LLM 不可用）"}
+      <div>
+        <p className="mb-2 font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+          路线概况
         </p>
-      ) : null}
+        <ExplanationBody text={analysis.explanation.text} />
+        {showPersonal ? (
+          <p className="mt-2 text-xs text-[var(--rock)]">
+            {analysis.explanation.source === "llm"
+              ? analysis.explanation.model ?? "LLM"
+              : "模板"}
+          </p>
+        ) : null}
+      </div>
 
       {!showPersonal && onPersonalize ? (
         <button

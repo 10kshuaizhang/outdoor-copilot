@@ -3,6 +3,7 @@ import type { RouteAnalysis } from "@/lib/engine";
 export type ExplanationResult = {
   text: string;
   source: "template" | "llm";
+  model?: string;
 };
 
 /** Call /api/explain; never throws — returns null on total failure. */
@@ -18,11 +19,14 @@ export async function fetchExplanation(
     const data = (await res.json()) as {
       text?: string;
       source?: "template" | "llm";
+      model?: string;
     };
     if (!data.text) return null;
+    const source = data.source === "llm" ? "llm" : "template";
     return {
       text: data.text,
-      source: data.source === "llm" ? "llm" : "template",
+      source,
+      model: source === "llm" ? data.model : undefined,
     };
   } catch {
     return null;

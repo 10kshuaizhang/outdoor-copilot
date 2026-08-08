@@ -33,6 +33,7 @@ export default function HistoryPage() {
       const explanation = {
         text: explained.text,
         source: explained.source,
+        model: explained.model,
       };
       patchSavedAnalysis(active.id, { explanation });
       setActive((prev) =>
@@ -167,6 +168,7 @@ export default function HistoryPage() {
                           explanation: {
                             text: explained.text,
                             source: explained.source,
+                            model: explained.model,
                           },
                         };
                       }
