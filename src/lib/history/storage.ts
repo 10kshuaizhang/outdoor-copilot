@@ -1,4 +1,5 @@
 import type { RouteAnalysis, TrackPoint, UserProfile } from "@/lib/engine";
+import { createId } from "@/lib/id";
 
 export type ActivityFeedback = {
   analysisId: string;
@@ -44,7 +45,7 @@ export function saveAnalysis(input: {
   }
   try {
     const list = listAnalyses();
-    const id = input.replaceId ?? crypto.randomUUID();
+    const id = input.replaceId ?? createId();
     const entry: SavedAnalysis = {
       id,
       title: input.title,

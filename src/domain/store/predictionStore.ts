@@ -6,6 +6,7 @@ import {
   type RouteEntity,
 } from "@/domain/types";
 import type { RouteAnalysis, TrackPoint } from "@/lib/engine";
+import { createId } from "@/lib/id";
 import { STORAGE_KEYS } from "./keys";
 import { readJson, writeJson } from "./jsonStore";
 import { getOrCreateUser } from "./userStore";
@@ -59,9 +60,9 @@ export function savePrediction(input: SavePredictionInput): SavePredictionResult
   try {
     const user = getOrCreateUser();
     const now = new Date().toISOString();
-    const routeId = crypto.randomUUID();
-    const analysisId = crypto.randomUUID();
-    const predictionId = crypto.randomUUID();
+    const routeId = createId();
+    const analysisId = createId();
+    const predictionId = createId();
 
     const route: RouteEntity = {
       id: routeId,
