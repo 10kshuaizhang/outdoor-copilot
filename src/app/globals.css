@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  --bg-deep: #1a241c;
+  --bg-moss: #2c3a2e;
+  --rock: #6b6560;
+  --mist: #d9e0d6;
+  --dawn: #e8d9c0;
+  --pine: #3f6b4a;
+  --pine-deep: #2a4a33;
+  --cream: #f3efe6;
+  --ink: #1c1a17;
+  --ink-soft: rgba(28, 26, 23, 0.72);
+  --cta: #c4a574;
+  --cta-ink: #1c1a17;
+  --background: var(--cream);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-pine: var(--pine);
+  --color-pine-deep: var(--pine-deep);
+  --color-dawn: var(--dawn);
+  --color-mist: var(--mist);
+  --color-rock: var(--rock);
+  --color-cream: var(--cream);
+  --color-ink: var(--ink);
+  --color-cta: var(--cta);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), "Noto Serif SC", serif;
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-drift {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.08) translate3d(-1.2%, 0.8%, 0);
+  }
+}
+
+@keyframes cta-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(196, 165, 116, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(196, 165, 116, 0);
+  }
+}
+
+.hero-copy {
+  animation: hero-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-copy-delay {
+  animation: hero-rise 1000ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+
+.hero-cta {
+  animation:
+    hero-rise 1100ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both,
+    cta-glow 2.8s ease-in-out 1.4s infinite;
+}
+
+.hero-media {
+  animation: soft-drift 18s ease-in-out alternate infinite;
+}
