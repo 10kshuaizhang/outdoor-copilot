@@ -13,6 +13,6 @@
 - [x] 可录入实际总时长与主观难度（1–5），持久化且不改变既有引擎权重（无反训）
 - [x] 本地事件覆盖 upload / analyze_base / analyze_personal / copy_share / feedback 等关键行为，可导出
 - [x] 「清除全部本地数据」后档案、历史、事件不可再读到
-- [x] IndexedDB 不可用时有降级提示（内存会话），不静默假装已保存
+- [x] 本地存储写入失败时有明确提示，不静默假装已保存（实现为 localStorage）
 
 **Status note:** completed 2026-08-08 — localStorage (not IndexedDB) with explicit save-failure messaging; history stores points for re-analyze; ActivityFeedback persisted locally

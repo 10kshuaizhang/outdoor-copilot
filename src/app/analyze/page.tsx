@@ -195,12 +195,8 @@ export default function AnalyzePage() {
           setAnalysis(null);
           return;
         }
-        trackEvent("upload", { bytes: file.size, name: file.name });
-        await runFromXml(
-          validated.xml,
-          file.name.replace(/\.gpx$/i, ""),
-          "upload",
-        );
+        trackEvent("upload", { bytes: file.size, name: file.name || "unknown" });
+        await runFromXml(validated.xml, validated.displayName, "upload");
       } catch {
         setError("读取文件失败，请重试或改用示例路线。");
         setAnalysis(null);
@@ -263,7 +259,9 @@ export default function AnalyzePage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".gpx,application/gpx+xml,text/xml"
+                // Intentionally broad: iOS Files grays out .gpx when accept is narrow.
+                // Content validation happens in readAndValidateGpxFile.
+                accept="*/*"
                 className="sr-only"
                 id="gpx-upload"
                 onChange={(e) => onUpload(e.target.files?.[0] ?? null)}
@@ -274,6 +272,9 @@ export default function AnalyzePage() {
               >
                 {loadingId === "upload" ? "正在分析…" : "上传 GPX 文件"}
               </label>
+              <p className="mt-3 text-xs leading-relaxed text-[var(--rock)]">
+                iPhone：若文件发灰，请选「浏览」→「文件」，不要限制只看 GPX；我们会按内容识别轨迹。
+              </p>
             </div>
 
             <p className="mt-10 font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--pine)]">
