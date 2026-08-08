@@ -10,6 +10,8 @@
 
 **线上：** https://outdoor-copilot.vercel.app
 
+**战略文档：** [docs/](docs/)（愿景 / 12 周路线图 / 运营 / 数据 / AI / 决策 / 指标）· 工程规则见 [AGENTS.md](AGENTS.md)
+
 ---
 
 ## 用户怎么交互
