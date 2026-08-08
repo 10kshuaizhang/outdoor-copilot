@@ -48,19 +48,20 @@ export default function Home() {
           </div>
 
           <div className="hero-cta flex flex-col gap-3 motion-reduce:animate-none sm:flex-row sm:items-center">
-            <Link
+            {/* Hard navigation: more reliable on WeChat / in-app browsers than client Link. */}
+            <a
               href="/analyze"
               className="inline-flex items-center justify-center bg-[var(--cta)] px-7 py-3.5 text-center text-base font-semibold tracking-wide text-[var(--cta-ink)] transition hover:brightness-105"
             >
               分析我的路线
-            </Link>
+            </a>
             <div className="flex gap-4 text-sm text-[var(--mist)]">
-              <Link href="/about" className="underline-offset-4 hover:underline">
+              <a href="/about" className="underline-offset-4 hover:underline">
                 如何使用
-              </Link>
-              <Link href="/history" className="underline-offset-4 hover:underline">
+              </a>
+              <a href="/history" className="underline-offset-4 hover:underline">
                 已保存预测
-              </Link>
+              </a>
             </div>
           </div>
         </section>
