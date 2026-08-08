@@ -11,10 +11,19 @@ function formatDuration(min: number): string {
 type Props = {
   analysis: RouteAnalysis;
   title?: string;
+  mode?: "base" | "personal";
+  onPersonalize?: () => void;
 };
 
-export function BaseReport({ analysis, title }: Props) {
-  const { route, baseDifficulty, duration, band } = analysis;
+export function BaseReport({
+  analysis,
+  title,
+  mode = "base",
+  onPersonalize,
+}: Props) {
+  const { route, baseDifficulty, personalDifficulty, duration, band } = analysis;
+  const showPersonal = mode === "personal";
+  const focus = showPersonal ? personalDifficulty : baseDifficulty;
 
   return (
     <article className="space-y-8">
@@ -26,11 +35,11 @@ export function BaseReport({ analysis, title }: Props) {
 
       <div>
         <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--pine)]">
-          路线基础负荷
+          {showPersonal ? "对你的吃力程度" : "路线基础负荷"}
         </p>
         <div className="mt-2 flex items-end gap-3">
           <p className="font-[family-name:var(--font-display)] text-6xl leading-none tracking-[-0.04em]">
-            {baseDifficulty.overall}
+            {focus.overall}
           </p>
           <div className="pb-1">
             <p className="text-sm text-[var(--rock)]">/ 100</p>
@@ -39,7 +48,27 @@ export function BaseReport({ analysis, title }: Props) {
             </p>
           </div>
         </div>
+        <p className="mt-2 text-sm text-[var(--rock)]">
+          置信度 {Math.round(analysis.confidence * 100)}%
+        </p>
       </div>
+
+      {showPersonal ? (
+        <div className="grid grid-cols-2 gap-4 border-y border-black/10 py-4">
+          <div>
+            <p className="text-sm text-[var(--rock)]">路线基础</p>
+            <p className="mt-1 font-[family-name:var(--font-display)] text-3xl">
+              {baseDifficulty.overall}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-[var(--rock)]">对你而言</p>
+            <p className="mt-1 font-[family-name:var(--font-display)] text-3xl text-[var(--pine-deep)]">
+              {personalDifficulty.overall}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-5 text-sm sm:grid-cols-4">
         <div>
@@ -72,10 +101,10 @@ export function BaseReport({ analysis, title }: Props) {
       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         {(
           [
-            ["耐力", baseDifficulty.endurance],
-            ["攀爬", baseDifficulty.climbing],
-            ["天气", baseDifficulty.weather],
-            ["风险", baseDifficulty.risk],
+            ["耐力", focus.endurance],
+            ["攀爬", focus.climbing],
+            ["天气", focus.weather],
+            ["风险", focus.risk],
           ] as const
         ).map(([label, value]) => (
           <div key={label} className="border-t border-black/10 pt-2">
@@ -85,12 +114,46 @@ export function BaseReport({ analysis, title }: Props) {
         ))}
       </div>
 
+      {showPersonal && analysis.contributions.length > 0 ? (
+        <div>
+          <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+            为什么是这个分数
+          </p>
+          <ul className="mt-3 space-y-2 text-sm">
+            {analysis.contributions.map((c) => (
+              <li
+                key={`${c.code}-${c.label}`}
+                className="flex items-baseline justify-between gap-3 border-b border-black/5 pb-2"
+              >
+                <span>{c.label}</span>
+                <span className="font-semibold tabular-nums">
+                  {c.delta > 0 ? `+${c.delta}` : c.delta}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
         {analysis.explanation.text}
       </p>
 
+      {!showPersonal && onPersonalize ? (
+        <button
+          type="button"
+          onClick={onPersonalize}
+          className="w-full bg-[var(--cta)] px-5 py-3.5 text-sm font-semibold text-[var(--cta-ink)]"
+        >
+          告诉我你的水平，算出对你的难度
+        </button>
+      ) : null}
+
       <p className="border-t border-black/10 pt-4 text-xs leading-relaxed text-[var(--rock)]">
-        本工具仅提供辅助判断，不能替代你的经验、向导建议或现场决策。分数表示路线基础负荷，不是对你个人的最终难度。
+        本工具仅提供辅助判断，不能替代你的经验、向导建议或现场决策。
+        {showPersonal
+          ? " 分数表示对你的吃力程度，不是路线的绝对标签。"
+          : " 当前为基础负荷；完善档案后可得到个人难度。"}
       </p>
     </article>
   );

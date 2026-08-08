@@ -8,6 +8,7 @@ import {
   elevationStats,
   routeCenter,
 } from "./geo";
+import { personalizeDifficulty } from "./personalize";
 import { buildSegments } from "./segments";
 import type {
   AnalyzeRouteInput,
@@ -97,7 +98,12 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
   const segments = buildSegments(points);
   const elevationProfile = buildElevationProfile(points);
   const baseDifficulty = computeBaseDifficulty(route, segments);
-  const duration = estimateDurationMinutes(route, baseDifficulty);
+  const { personal, contributions, confidence } = personalizeDifficulty(
+    baseDifficulty,
+    route,
+    input.profile,
+  );
+  const duration = estimateDurationMinutes(route, personal);
 
   return {
     status: "ready",
@@ -105,16 +111,15 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     segments,
     elevationProfile,
     baseDifficulty,
-    // Ticket 04 will personalize; until then mirror base.
-    personalDifficulty: { ...baseDifficulty },
-    confidence: 0.55,
-    contributions: [],
+    personalDifficulty: personal,
+    confidence,
+    contributions,
     duration,
     challenges: [],
     recommendation: {},
-    band: scoreBand(baseDifficulty.overall),
+    band: scoreBand(personal.overall),
     explanation: {
-      text: `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。当前展示的是路线基础负荷，完善个人档案后可得到对你的难度。`,
+      text: `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。基础负荷 ${baseDifficulty.overall}，对你约 ${personal.overall}（${scoreBand(personal.overall)}）。`,
       source: "template",
     },
   };
