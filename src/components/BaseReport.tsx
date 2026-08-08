@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ElevationProfile } from "@/components/ElevationProfile";
 import { trackEvent } from "@/lib/analytics/events";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
+import { exportSummaryText } from "@/lib/share/exportSummary";
 
 function formatDuration(min: number): string {
   const h = Math.floor(min / 60);
@@ -44,29 +45,38 @@ export function BaseReport({
   const [actualMin, setActualMin] = useState("");
   const [perceived, setPerceived] = useState("3");
   const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const [showManualCopy, setShowManualCopy] = useState(false);
 
-  const copyShare = async () => {
-    const text = [
-      `Outdoor Copilot · ${title ?? "路线分析"}`,
-      `个人难度 ${personalDifficulty.overall}/100（${band}）· 基础 ${baseDifficulty.overall}`,
-      `距离 ${route.distanceKm.toFixed(1)} km · 爬升 +${route.elevationGainM} m`,
-      `预估 ${formatDuration(duration.lowMin)} – ${formatDuration(duration.highMin)}`,
-      analysis.recommendation.suggestedStart
-        ? `建议出发 ${formatClock(analysis.recommendation.suggestedStart)} · 完成 ${analysis.recommendation.finishWindow}`
-        : "",
-      analysis.recommendation.mainRisk
-        ? `主风险：${analysis.recommendation.mainRisk}`
-        : "",
-      "Know the trail. Know yourself. Go smarter.",
-    ]
-      .filter(Boolean)
-      .join("\n");
-    try {
-      await navigator.clipboard.writeText(text);
-      trackEvent("copy_share");
-    } catch {
-      // ignore
+  const summaryText = [
+    `Outdoor Copilot · ${title ?? "路线分析"}`,
+    `个人难度 ${personalDifficulty.overall}/100（${band}）· 基础 ${baseDifficulty.overall}`,
+    `距离 ${route.distanceKm.toFixed(1)} km · 爬升 +${route.elevationGainM} m`,
+    `预估 ${formatDuration(duration.lowMin)} – ${formatDuration(duration.highMin)}`,
+    analysis.recommendation.suggestedStart
+      ? `建议出发 ${formatClock(analysis.recommendation.suggestedStart)} · 完成 ${analysis.recommendation.finishWindow}`
+      : "",
+    analysis.recommendation.mainRisk
+      ? `主风险：${analysis.recommendation.mainRisk}`
+      : "",
+    "Know the trail. Know yourself. Go smarter.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const exportSummary = async () => {
+    setShareStatus(null);
+    setShowManualCopy(false);
+    const result = await exportSummaryText(summaryText);
+    if (result.ok) {
+      trackEvent("copy_share", { method: result.method });
+      setShareStatus(
+        result.method === "share" ? "已打开系统分享。" : "摘要已复制到剪贴板。",
+      );
+      return;
     }
+    setShareStatus(result.message);
+    setShowManualCopy(true);
   };
 
   return (
@@ -265,11 +275,24 @@ export function BaseReport({
         <>
           <button
             type="button"
-            onClick={copyShare}
+            onClick={exportSummary}
             className="w-full border border-[var(--pine-deep)] px-5 py-3 text-sm font-semibold text-[var(--pine-deep)]"
           >
-            复制分享摘要
+            导出 / 分享摘要
           </button>
+          {shareStatus ? (
+            <p className="text-sm text-[var(--pine-deep)]" role="status">
+              {shareStatus}
+            </p>
+          ) : null}
+          {showManualCopy ? (
+            <textarea
+              readOnly
+              value={summaryText}
+              className="min-h-32 w-full border border-black/15 bg-white p-3 text-sm text-[var(--ink)]"
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          ) : null}
           <div className="space-y-3 border-t border-black/10 pt-5 text-sm">
             <p className="font-[family-name:var(--font-serif-sc)] tracking-[0.12em] text-[var(--pine)]">
               走完后回填（不自动改模型）
