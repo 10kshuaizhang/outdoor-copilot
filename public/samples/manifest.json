@@ -1,16 +1,23 @@
 [
   {
-    "id": "beijing-steep",
-    "name": "北京周边短陡线",
-    "region": "北京",
-    "blurb": "爬升密集，适合检验攀爬负荷。",
-    "file": "/samples/beijing-steep.gpx"
+    "id": "daheifeng",
+    "name": "大黑峰",
+    "region": "张家口",
+    "blurb": "京西远郊经典爬升线，主峰前后坡度变化明显。",
+    "file": "/samples/daheifeng.gpx"
   },
   {
-    "id": "hangzhou-hills",
-    "name": "杭州丘陵中长线",
-    "region": "杭州",
-    "blurb": "距离更长、起伏绵延，偏耐力。",
-    "file": "/samples/hangzhou-hills.gpx"
+    "id": "haituoshan",
+    "name": "海坨山",
+    "region": "北京·延庆",
+    "blurb": "华北高峰线，距离与海拔兼具，耐力与攀爬并重。",
+    "file": "/samples/haituoshan.gpx"
+  },
+  {
+    "id": "yangtaishan-miaofengshan",
+    "name": "北京阳台山—妙峰山环线",
+    "region": "北京",
+    "blurb": "阳台山至妙峰山环线，途经茶棚与涧沟，节奏分段清晰。",
+    "file": "/samples/yangtaishan-miaofengshan.gpx"
   }
 ]
