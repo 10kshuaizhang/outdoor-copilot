@@ -48,7 +48,11 @@ export async function GET(req: NextRequest) {
       precipMm: precipMm ?? 0,
       windMs: windMs ?? 0,
       thunderstormRisk:
-        (precipMm ?? 0) >= 10 ? "medium" : ("low" as const),
+        (precipMm ?? 0) >= 25
+          ? ("high" as const)
+          : (precipMm ?? 0) >= 10
+            ? ("medium" as const)
+            : ("low" as const),
       sunrise: daily?.sunrise?.[0],
       sunset: daily?.sunset?.[0],
       source: "open-meteo",

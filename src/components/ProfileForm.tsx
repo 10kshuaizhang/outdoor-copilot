@@ -33,6 +33,9 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
   const [restingHr, setRestingHr] = useState(
     initial?.restingHr?.toString() ?? "",
   );
+  const [packWeightKg, setPackWeightKg] = useState(
+    initial?.packWeightKg?.toString() ?? "5",
+  );
 
   return (
     <form
@@ -48,6 +51,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
           heightCm: heightCm ? Number(heightCm) : undefined,
           weightKg: weightKg ? Number(weightKg) : undefined,
           restingHr: restingHr ? Number(restingHr) : undefined,
+          packWeightKg: packWeightKg ? Number(packWeightKg) : 5,
         });
       }}
     >
@@ -123,6 +127,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
               ["身高 cm", heightCm, setHeight],
               ["体重 kg", weightKg, setWeight],
               ["静息心率", restingHr, setRestingHr],
+              ["负重 kg", packWeightKg, setPackWeightKg],
             ] as const
           ).map(([label, value, setter]) => (
             <label key={label} className="text-sm text-[var(--rock)]">

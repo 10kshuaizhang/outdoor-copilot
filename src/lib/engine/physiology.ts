@@ -1,4 +1,4 @@
-import type { UserProfile } from "./types";
+import type { DifficultyScores, UserProfile } from "./types";
 
 /**
  * Simplified planning-time estimate inspired by
@@ -14,6 +14,7 @@ export function estimatePhysiologicalLoad(input: {
   reserveHeartbeats: number;
   gradeLabel: string;
   usedDefaults: boolean;
+  packWeightKg: number;
 } {
   const r = input.profile?.restingHr ?? 70;
   const M = input.profile?.weightKg ?? 65;
@@ -28,7 +29,6 @@ export function estimatePhysiologicalLoad(input: {
     input.profile?.weightKg == null ||
     input.profile?.heightCm == null;
 
-  // Compacted form of paper eq. (6) with central coefficients.
   const S =
     (13 / 50000) *
     (60 * r * t +
@@ -52,5 +52,58 @@ export function estimatePhysiologicalLoad(input: {
     reserveHeartbeats: Math.round(reserve),
     gradeLabel,
     usedDefaults,
+    packWeightKg: m,
   };
+}
+
+/** Map physiological estimate into score adjustments (hybrid layer). */
+export function applyPhysiologyToScores(
+  scores: DifficultyScores,
+  physio: ReturnType<typeof estimatePhysiologicalLoad>,
+): {
+  scores: DifficultyScores;
+  contributions: Array<{ code: string; label: string; delta: number }>;
+} {
+  const contributions: Array<{ code: string; label: string; delta: number }> =
+    [];
+
+  // Reserve heartbeat magnitude → small endurance/climbing nudges.
+  const loadBump = Math.min(18, Math.round(physio.reserveHeartbeats / 2500));
+  const packBump = Math.min(10, Math.max(0, Math.round((physio.packWeightKg - 5) * 1.6)));
+
+  const enduranceDelta = Math.round(loadBump * 0.55 + packBump * 0.5);
+  const climbingDelta = Math.round(loadBump * 0.45 + packBump * 0.7);
+
+  if (enduranceDelta !== 0) {
+    contributions.push({
+      code: "physio_endurance",
+      label: `生理负荷（${physio.gradeLabel}）影响耐力`,
+      delta: enduranceDelta,
+    });
+  }
+  if (climbingDelta !== 0) {
+    contributions.push({
+      code: "physio_climbing",
+      label:
+        packBump > 0
+          ? `负重 ${physio.packWeightKg} kg 增加攀爬负荷`
+          : `生理负荷影响攀爬`,
+      delta: climbingDelta,
+    });
+  }
+
+  const next: DifficultyScores = {
+    ...scores,
+    endurance: Math.min(100, scores.endurance + enduranceDelta),
+    climbing: Math.min(100, scores.climbing + climbingDelta),
+    overall: 0,
+  };
+  next.overall = Math.round(
+    next.endurance * 0.34 +
+      next.climbing * 0.38 +
+      next.weather * 0.12 +
+      next.risk * 0.16,
+  );
+
+  return { scores: next, contributions };
 }

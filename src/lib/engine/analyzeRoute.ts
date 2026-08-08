@@ -10,7 +10,10 @@ import {
   routeCenter,
 } from "./geo";
 import { personalizeDifficulty } from "./personalize";
-import { estimatePhysiologicalLoad } from "./physiology";
+import {
+  applyPhysiologyToScores,
+  estimatePhysiologicalLoad,
+} from "./physiology";
 import { buildSegments } from "./segments";
 import type {
   AnalyzeRouteInput,
@@ -56,9 +59,13 @@ function buildElevationProfile(
  */
 export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
   const points = input.points ?? [];
-  const weather =
-    input.weather ??
-    fallbackWeather(0, 0);
+  const weather = input.weather ?? fallbackWeather(0, 0);
+  const hasProfile = Boolean(
+    input.profile &&
+      (input.profile.experience ||
+        input.profile.comfortableDistanceKm != null ||
+        input.profile.comfortableElevationM != null),
+  );
 
   if (points.length < 2) {
     return {
@@ -113,6 +120,22 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
   const weatherApplied = applyWeatherToScores(baseDifficulty, weather);
   baseDifficulty = weatherApplied.scores;
 
+  // Duration seed for physiology uses base first, then personalization.
+  let durationSeed = estimateDurationMinutes(route, baseDifficulty);
+  durationSeed = {
+    ...durationSeed,
+    totalMin: Math.round(durationSeed.totalMin * weatherApplied.durationFactor),
+  };
+
+  const physio = estimatePhysiologicalLoad({
+    distanceM: route.distanceKm * 1000,
+    elevationGainM: route.elevationGainM,
+    durationMin: durationSeed.totalMin,
+    profile: input.profile,
+  });
+  const physioApplied = applyPhysiologyToScores(baseDifficulty, physio);
+  baseDifficulty = physioApplied.scores;
+
   const personalized = personalizeDifficulty(
     baseDifficulty,
     route,
@@ -128,24 +151,11 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     highMin: Math.round(duration.highMin * weatherApplied.durationFactor),
   };
 
-  const physio = estimatePhysiologicalLoad({
-    distanceM: route.distanceKm * 1000,
-    elevationGainM: route.elevationGainM,
-    durationMin: duration.totalMin,
-    profile: input.profile,
-  });
-
   const contributions = [
+    ...physioApplied.contributions,
     ...personalized.contributions,
     ...weatherApplied.contributions,
   ];
-  if (!physio.usedDefaults) {
-    contributions.push({
-      code: "physiology",
-      label: `生理负荷参考 ${physio.gradeLabel}`,
-      delta: 0,
-    });
-  }
 
   let confidence = personalized.confidence;
   if (weather.source === "fallback") confidence = Math.min(confidence, 0.62);
@@ -160,6 +170,10 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     plannedStart: input.plannedStart,
   });
 
+  const focusOverall = hasProfile
+    ? personalized.personal.overall
+    : baseDifficulty.overall;
+
   return {
     status: "ready",
     route,
@@ -172,9 +186,11 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     duration,
     challenges,
     recommendation,
-    band: scoreBand(personalized.personal.overall),
+    band: scoreBand(focusOverall),
     explanation: {
-      text: `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。基础负荷 ${baseDifficulty.overall}，对你约 ${personalized.personal.overall}（${scoreBand(personalized.personal.overall)}）。`,
+      text: hasProfile
+        ? `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。基础负荷 ${baseDifficulty.overall}，对你约 ${personalized.personal.overall}（${scoreBand(personalized.personal.overall)}）。`
+        : `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。当前为基础负荷 ${baseDifficulty.overall}（${scoreBand(baseDifficulty.overall)}）；完善档案后可得到对你的难度。`,
       source: "template",
     },
     weather,

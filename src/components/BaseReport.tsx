@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ElevationProfile } from "@/components/ElevationProfile";
 import { trackEvent } from "@/lib/analytics/events";
-import type { RouteAnalysis } from "@/lib/engine";
+import { scoreBand, type RouteAnalysis } from "@/lib/engine";
 
 function formatDuration(min: number): string {
   const h = Math.floor(min / 60);
@@ -24,6 +24,8 @@ type Props = {
   mode?: "base" | "personal";
   onPersonalize?: () => void;
   onStartChange?: (iso: string) => void;
+  analysisId?: string;
+  onFeedbackSaved?: () => void;
 };
 
 export function BaseReport({
@@ -32,10 +34,13 @@ export function BaseReport({
   mode = "base",
   onPersonalize,
   onStartChange,
+  analysisId,
+  onFeedbackSaved,
 }: Props) {
-  const { route, baseDifficulty, personalDifficulty, duration, band } = analysis;
+  const { route, baseDifficulty, personalDifficulty, duration } = analysis;
   const showPersonal = mode === "personal";
   const focus = showPersonal ? personalDifficulty : baseDifficulty;
+  const band = scoreBand(focus.overall);
   const [actualMin, setActualMin] = useState("");
   const [perceived, setPerceived] = useState("3");
   const [feedbackSaved, setFeedbackSaved] = useState(false);
@@ -239,6 +244,12 @@ export function BaseReport({
       <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
         {analysis.explanation.text}
       </p>
+      {showPersonal ? (
+        <p className="text-xs text-[var(--rock)]">
+          解释来源：
+          {analysis.explanation.source === "llm" ? "AI 润色" : "模板"}
+        </p>
+      ) : null}
 
       {!showPersonal && onPersonalize ? (
         <button
@@ -286,18 +297,32 @@ export function BaseReport({
             <button
               type="button"
               className="bg-[var(--pine-deep)] px-4 py-2.5 text-[var(--cream)]"
-              onClick={() => {
+              onClick={async () => {
                 trackEvent("feedback", {
                   actualMin: Number(actualMin) || 0,
                   perceived: Number(perceived) || 0,
                 });
+                if (analysisId) {
+                  const { saveFeedback } = await import("@/lib/history/storage");
+                  const result = saveFeedback({
+                    analysisId,
+                    actualTotalMin: Number(actualMin) || undefined,
+                    perceivedDifficulty: Number(perceived) || undefined,
+                    createdAt: new Date().toISOString(),
+                  });
+                  if (!result.ok) {
+                    setFeedbackSaved(false);
+                    return;
+                  }
+                }
                 setFeedbackSaved(true);
+                onFeedbackSaved?.();
               }}
             >
               保存回填
             </button>
             {feedbackSaved ? (
-              <p className="text-xs text-[var(--pine)]">已记录到本地事件。</p>
+              <p className="text-xs text-[var(--pine)]">已保存到本地回填记录。</p>
             ) : null}
           </div>
         </>

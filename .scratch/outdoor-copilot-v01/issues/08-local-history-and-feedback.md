@@ -15,4 +15,4 @@
 - [x] 「清除全部本地数据」后档案、历史、事件不可再读到
 - [x] IndexedDB 不可用时有降级提示（内存会话），不静默假装已保存
 
-**Status note:** completed 2026-08-08 — history uses localStorage (same local-only contract); re-analyze via调整档案; IndexedDB deferred as storage backend detail
+**Status note:** completed 2026-08-08 — localStorage (not IndexedDB) with explicit save-failure messaging; history stores points for re-analyze; ActivityFeedback persisted locally

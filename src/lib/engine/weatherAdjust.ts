@@ -5,14 +5,17 @@ export function fallbackWeather(
   lon = 0,
   date?: string,
 ): WeatherSnapshot {
+  const day = date ?? new Date().toISOString().slice(0, 10);
   return {
-    date,
+    date: day,
     lat,
     lon,
     temperatureC: 18,
     precipMm: 0,
     windMs: 2,
     thunderstormRisk: "unknown",
+    sunrise: `${day}T06:00:00`,
+    sunset: `${day}T18:30:00`,
     source: "fallback",
   };
 }

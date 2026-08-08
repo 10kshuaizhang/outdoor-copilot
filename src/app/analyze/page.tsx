@@ -59,6 +59,8 @@ export default function AnalyzePage() {
     () => new Date().toISOString().slice(0, 10),
   );
   const [plannedStart, setPlannedStart] = useState<string | undefined>();
+  const [savedId, setSavedId] = useState<string | undefined>();
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -111,7 +113,19 @@ export default function AnalyzePage() {
         distanceKm: result.route.distanceKm,
       });
       if (nextStage === "personal") {
-        saveAnalysis(title, result);
+        const saved = saveAnalysis({
+          title,
+          analysis: result,
+          points: nextPoints,
+          profileSnapshot: nextProfile,
+          replaceId: savedId,
+        });
+        if (saved.ok) {
+          setSavedId(saved.id);
+          setSaveWarning(null);
+        } else {
+          setSaveWarning(saved.message);
+        }
         void fetch("/api/explain", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -140,7 +154,7 @@ export default function AnalyzePage() {
           });
       }
     },
-    [hikeDate],
+    [hikeDate, savedId],
   );
 
   const runFromXml = useCallback(
@@ -200,16 +214,20 @@ export default function AnalyzePage() {
 
   const applyProfile = useCallback(
     async (next: Partial<UserProfile> | undefined, skipped: boolean) => {
+      const effective = skipped
+        ? { experience: "intermediate" as const }
+        : next;
       if (!skipped && next) {
         saveProfile(next);
         setProfile(next);
       }
       setLoadingId("personal");
+      setSavedId(undefined);
       await runFromPoints(
         points,
         activeTitle ?? "路线分析",
         "sample",
-        skipped ? undefined : next,
+        effective,
         "personal",
         plannedStart,
         hikeDate,
@@ -373,17 +391,23 @@ export default function AnalyzePage() {
             >
               ← 调整档案
             </button>
+            {saveWarning ? (
+              <p className="mb-4 text-sm text-amber-800" role="status">
+                {saveWarning}
+              </p>
+            ) : null}
             <BaseReport
               analysis={analysis}
               title={activeTitle}
               mode="personal"
+              analysisId={savedId}
               onStartChange={async (iso) => {
                 setPlannedStart(iso);
                 await runFromPoints(
                   points,
                   activeTitle ?? "路线分析",
                   "sample",
-                  profile ?? undefined,
+                  profile ?? { experience: "intermediate" },
                   "personal",
                   iso,
                   hikeDate,
