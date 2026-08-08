@@ -92,10 +92,10 @@ AI Chat · Strava · Watch · 社区 · Trail Expert · 推荐 · Route Discover
 
 ### 本周完成定义
 
-- [ ] baseline 已 tag + 截图/功能清单  
-- [ ] 九类实体类型与 Prediction 独立持久化  
-- [ ] 用户能走完「分析 → 保存预测」并在历史中看到预测快照  
-- [ ] 漏斗事件可导出核对  
+- [x] baseline 已 tag（`v0.1-analyze`）+ 清单 `docs/baseline/v0.1-analyze.md`  
+- [x] 九类实体类型与 Prediction 独立持久化（`src/domain`）  
+- [x] 用户能走完「分析 → 保存预测」并在 `/history` 看到预测快照  
+- [x] 漏斗事件可导出核对（含 `landing_view` / `prediction_saved` 等）  
 
 ---
 

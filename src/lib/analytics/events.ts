@@ -1,7 +1,13 @@
 export type AnalyticsEventName =
+  | "landing_view"
+  | "upload_gpx"
   | "upload"
+  | "analysis_started"
+  | "analysis_completed"
   | "analyze_base"
   | "analyze_personal"
+  | "prediction_created"
+  | "prediction_saved"
   | "copy_share"
   | "share_image"
   | "feedback";
@@ -21,7 +27,9 @@ export function trackEvent(
   if (typeof window === "undefined") return;
   try {
     const raw = window.localStorage.getItem(KEY);
-    const list: AnalyticsEvent[] = raw ? (JSON.parse(raw) as AnalyticsEvent[]) : [];
+    const list: AnalyticsEvent[] = raw
+      ? (JSON.parse(raw) as AnalyticsEvent[])
+      : [];
     list.push({ name, at: new Date().toISOString(), props });
     window.localStorage.setItem(KEY, JSON.stringify(list.slice(-500)));
   } catch {

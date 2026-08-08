@@ -1,51 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { BaseReport } from "@/components/BaseReport";
-import { exportEvents } from "@/lib/analytics/events";
-import { analyzeRoute } from "@/lib/engine";
-import { fetchExplanation } from "@/lib/explain/fetchExplanation";
+import { PredictionCard } from "@/components/PredictionCard";
 import {
-  clearAllLocalData,
-  listAnalyses,
-  patchSavedAnalysis,
-  saveAnalysis,
-  type SavedAnalysis,
-} from "@/lib/history/storage";
-import { loadProfile } from "@/lib/profile/storage";
-import { fetchWeather } from "@/lib/weather/fetchWeather";
+  getAnalysis,
+  getRoute,
+  listPredictions,
+  markPredictionHiking,
+  type Prediction,
+} from "@/domain";
+import { exportEvents } from "@/lib/analytics/events";
+import { clearAllLocalData } from "@/lib/history/storage";
+import { scoreBand } from "@/lib/engine";
 
 export default function HistoryPage() {
-  const [items, setItems] = useState<SavedAnalysis[]>(() => listAnalyses());
-  const [active, setActive] = useState<SavedAnalysis | null>(null);
+  const [items, setItems] = useState<Prediction[]>(() => listPredictions());
+  const [active, setActive] = useState<Prediction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [reanalyzing, setReanalyzing] = useState(false);
-  const currentProfile = useMemo(() => loadProfile(), []);
 
-  // Backfill LLM explanation for older snapshots that only saved the template.
-  useEffect(() => {
-    if (!active) return;
-    if (active.analysis.explanation.source === "llm") return;
-    let cancelled = false;
-    void fetchExplanation(active.analysis).then((explained) => {
-      if (cancelled || !explained || explained.source !== "llm") return;
-      const explanation = {
-        text: explained.text,
-        source: explained.source,
-        model: explained.model,
-      };
-      patchSavedAnalysis(active.id, { explanation });
-      setActive((prev) =>
-        prev && prev.id === active.id
-          ? { ...prev, analysis: { ...prev.analysis, explanation } }
-          : prev,
-      );
-      setItems(listAnalyses());
-    });
-    return () => {
-      cancelled = true;
-    };
+  const activeAnalysis = useMemo(() => {
+    if (!active) return null;
+    return getAnalysis(active.analysisId)?.result ?? null;
+  }, [active]);
+
+  const activeRoute = useMemo(() => {
+    if (!active) return null;
+    return getRoute(active.routeId) ?? null;
   }, [active]);
 
   return (
@@ -61,33 +43,37 @@ export default function HistoryPage() {
         {!active ? (
           <>
             <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em]">
-              历史分析
+              已保存的预测
             </h1>
             <p className="mt-3 text-sm text-[var(--ink-soft)]">
-              数据仅保存在本机浏览器（localStorage）。AI
-              解释会随记录一并保存。
+              Prediction 独立、不可变（
+              <code className="text-xs">modelVersion: v0.1-analyze</code>
+              ）。算法升级不会改写这里的数字。
             </p>
             <ul className="mt-8 space-y-4">
               {items.length === 0 ? (
-                <li className="text-sm text-[var(--rock)]">还没有保存的分析。</li>
+                <li className="text-sm text-[var(--rock)]">
+                  还没有保存的预测。去分析页生成并点「保存这次预测」。
+                </li>
               ) : (
                 items.map((item) => (
                   <li key={item.id}>
                     <button
                       type="button"
-                      onClick={() => setActive(item)}
+                      onClick={() => {
+                        setActive(item);
+                        setMessage(null);
+                      }}
                       className="w-full border-b border-black/10 pb-3 text-left"
                     >
                       <p className="font-[family-name:var(--font-display)] text-xl">
                         {item.title}
                       </p>
                       <p className="mt-1 text-xs text-[var(--rock)]">
-                        {new Date(item.createdAt).toLocaleString("zh-CN")} · 个人{" "}
-                        {item.analysis.personalDifficulty.overall}
-                        {item.feedback ? " · 已回填" : ""}
-                        {item.analysis.explanation.source === "llm"
-                          ? " · AI 解释"
-                          : ""}
+                        {new Date(item.createdAt).toLocaleString("zh-CN")} ·{" "}
+                        {item.personalDifficulty.overall}/100（
+                        {scoreBand(item.personalDifficulty.overall)}）·{" "}
+                        {item.status === "hiking" ? "准备徒步" : "已保存"}
                       </p>
                     </button>
                   </li>
@@ -96,6 +82,12 @@ export default function HistoryPage() {
             </ul>
 
             <div className="mt-10 space-y-3 text-sm">
+              <Link
+                href="/analyze"
+                className="block font-semibold text-[var(--pine-deep)] underline-offset-4 hover:underline"
+              >
+                新建分析 →
+              </Link>
               <button
                 type="button"
                 className="underline-offset-4 hover:underline"
@@ -112,7 +104,7 @@ export default function HistoryPage() {
                   URL.revokeObjectURL(url);
                 }}
               >
-                导出本地事件
+                导出漏斗事件
               </button>
               <button
                 type="button"
@@ -135,95 +127,50 @@ export default function HistoryPage() {
             >
               ← 返回列表
             </button>
-            {active.points?.length >= 2 ? (
-              <button
-                type="button"
-                className="mb-6 block text-sm font-semibold text-[var(--pine-deep)] underline-offset-4 hover:underline"
-                disabled={reanalyzing}
-                onClick={() => {
-                  void (async () => {
-                    setReanalyzing(true);
-                    setMessage(null);
-                    try {
-                      const center =
-                        active.points[Math.floor(active.points.length / 2)] ??
-                        active.points[0];
-                      const date =
-                        active.analysis.weather.date ??
-                        new Date().toISOString().slice(0, 10);
-                      const weather = await fetchWeather(
-                        center.lat,
-                        center.lon,
-                        date,
-                      );
-                      let result = analyzeRoute({
-                        points: active.points,
-                        profile: currentProfile ?? active.profileSnapshot,
-                        weather,
-                      });
-                      const explained = await fetchExplanation(result);
-                      if (explained) {
-                        result = {
-                          ...result,
-                          explanation: {
-                            text: explained.text,
-                            source: explained.source,
-                            model: explained.model,
-                          },
-                        };
-                      }
-                      const saved = saveAnalysis({
-                        title: active.title,
-                        analysis: result,
-                        points: active.points,
-                        profileSnapshot:
-                          currentProfile ?? active.profileSnapshot,
-                        replaceId: active.id,
-                      });
-                      if (!saved.ok) {
-                        setMessage(saved.message);
-                        return;
-                      }
-                      const refreshed = listAnalyses().find(
-                        (i) => i.id === active.id,
-                      );
-                      if (refreshed) setActive(refreshed);
-                      setItems(listAnalyses());
-                      setMessage(
-                        weather.source === "open-meteo"
-                          ? "已用当前档案与最新天气重新分析。"
-                          : "已用当前档案重新分析（天气接口不可用，使用假设值）。",
-                      );
-                    } finally {
-                      setReanalyzing(false);
-                    }
-                  })();
-                }}
-              >
-                {reanalyzing ? "重算中…" : "用当前档案重新分析"}
-              </button>
-            ) : (
-              <p className="mb-6 text-sm text-amber-800">
-                此记录缺少轨迹点，无法重算（旧数据）。请重新上传分析。
-              </p>
-            )}
             {message ? (
               <p className="mb-4 text-sm text-[var(--pine)]">{message}</p>
             ) : null}
-            <BaseReport
-              analysis={active.analysis}
-              title={active.title}
-              mode="personal"
-              analysisId={active.id}
-              onFeedbackSaved={() => {
-                setItems(listAnalyses());
-                const refreshed = listAnalyses().find((i) => i.id === active.id);
-                if (refreshed) setActive(refreshed);
-              }}
-            />
+            {activeAnalysis ? (
+              <>
+                <PredictionCard
+                  analysis={activeAnalysis}
+                  saved
+                  onMarkHiking={() => {
+                    markPredictionHiking(active.id);
+                    setItems(listPredictions());
+                    setActive(getPredictionFresh(active.id));
+                    setMessage("已标记「准备徒步」。");
+                  }}
+                />
+                <p className="mt-4 text-xs text-[var(--rock)]">
+                  modelVersion: {active.modelVersion} · predictionId:{" "}
+                  {active.id.slice(0, 8)}…
+                  {activeRoute
+                    ? ` · ${activeRoute.summary.distanceKm.toFixed(1)} km`
+                    : ""}
+                </p>
+                <div className="mt-8">
+                  <BaseReport
+                    analysis={activeAnalysis}
+                    title={active.title}
+                    mode="personal"
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-amber-800">
+                找不到关联分析快照。预测数字仍在：个人{" "}
+                {active.personalDifficulty.overall}/100，时长{" "}
+                {active.duration.lowMin}–{active.duration.highMin} 分钟。
+              </p>
+            )}
           </>
         )}
       </div>
     </main>
   );
+}
+
+function getPredictionFresh(id: string): Prediction | null {
+  return listPredictions().find((p) => p.id === id) ?? null;
 }

@@ -131,5 +131,11 @@ export function clearAllLocalData(): void {
   window.localStorage.removeItem(KEY);
   window.localStorage.removeItem(FEEDBACK_KEY);
   window.localStorage.removeItem("outdoor_copilot_profile_v1");
+  window.localStorage.removeItem("outdoor_copilot_profile_v2");
+  window.localStorage.removeItem("outdoor_copilot_user_v1");
+  window.localStorage.removeItem("outdoor_copilot_predictions_v1");
+  window.localStorage.removeItem("outdoor_copilot_routes_v1");
+  window.localStorage.removeItem("outdoor_copilot_analyses_v1");
+  window.localStorage.removeItem("outdoor_copilot_activities_v1");
   window.localStorage.removeItem("outdoor_copilot_events_v1");
 }

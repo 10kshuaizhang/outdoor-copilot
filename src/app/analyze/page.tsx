@@ -3,19 +3,27 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BaseReport } from "@/components/BaseReport";
-import { ProfileForm } from "@/components/ProfileForm";
+import { PredictionCard } from "@/components/PredictionCard";
+import { ProfileForm, type ProfileFormValue } from "@/components/ProfileForm";
+import {
+  engineProfileToOutdoor,
+  getOrCreateUser,
+  loadOutdoorProfile,
+  markPredictionHiking,
+  outdoorProfileToEngine,
+  saveOutdoorProfile,
+  savePrediction,
+  type OutdoorProfile,
+} from "@/domain";
 import { trackEvent } from "@/lib/analytics/events";
 import {
   analyzeRoute,
   parseGpx,
   type RouteAnalysis,
   type TrackPoint,
-  type UserProfile,
 } from "@/lib/engine";
 import { readAndValidateGpxFile } from "@/lib/engine/validateUpload";
 import { fetchExplanation } from "@/lib/explain/fetchExplanation";
-import { patchSavedAnalysis, saveAnalysis } from "@/lib/history/storage";
-import { loadProfile, saveProfile } from "@/lib/profile/storage";
 import { fetchWeather } from "@/lib/weather/fetchWeather";
 
 type SampleMeta = {
@@ -28,6 +36,7 @@ type SampleMeta = {
 };
 
 type Stage = "pick" | "base" | "profile" | "personal";
+type RouteSource = "sample" | "upload";
 
 export default function AnalyzePage() {
   const [samples, setSamples] = useState<SampleMeta[]>([]);
@@ -36,16 +45,20 @@ export default function AnalyzePage() {
   const [analysis, setAnalysis] = useState<RouteAnalysis | null>(null);
   const [activeTitle, setActiveTitle] = useState<string | undefined>();
   const [points, setPoints] = useState<TrackPoint[]>([]);
+  const [routeSource, setRouteSource] = useState<RouteSource>("sample");
   const [stage, setStage] = useState<Stage>("pick");
-  const [profile, setProfile] = useState<Partial<UserProfile> | null>(() =>
-    loadProfile(),
+  const [profile, setProfile] = useState<OutdoorProfile | null>(() =>
+    loadOutdoorProfile(),
   );
   const [hikeDate, setHikeDate] = useState(
     () => new Date().toISOString().slice(0, 10),
   );
   const [plannedStart, setPlannedStart] = useState<string | undefined>();
-  const [savedId, setSavedId] = useState<string | undefined>();
+  const [predictionId, setPredictionId] = useState<string | undefined>();
+  const [predictionSaved, setPredictionSaved] = useState(false);
+  const [savingPrediction, setSavingPrediction] = useState(false);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
+  const [hikeMessage, setHikeMessage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -59,8 +72,8 @@ export default function AnalyzePage() {
     async (
       nextPoints: TrackPoint[],
       title: string,
-      source: "sample" | "upload",
-      nextProfile?: Partial<UserProfile>,
+      source: RouteSource,
+      nextProfile?: Partial<OutdoorProfile>,
       nextStage: Stage = "base",
       startIso?: string,
       date = hikeDate,
@@ -75,62 +88,69 @@ export default function AnalyzePage() {
         return;
       }
 
+      trackEvent("analysis_started", { source, stage: nextStage });
+
       const center =
         nextPoints[Math.floor(nextPoints.length / 2)] ?? nextPoints[0];
       const weather = await fetchWeather(center.lat, center.lon, date);
+      const engineProfile = outdoorProfileToEngine(nextProfile);
 
       const result = analyzeRoute({
         points: nextPoints,
-        profile: nextProfile,
+        profile: engineProfile,
         weather,
         plannedStart: startIso,
       });
       setPoints(nextPoints);
+      setRouteSource(source);
       setAnalysis(result);
       setActiveTitle(title);
       setStage(nextStage);
       setPlannedStart(result.recommendation.suggestedStart);
-      trackEvent(nextStage === "personal" ? "analyze_personal" : "analyze_base", {
+      setPredictionSaved(false);
+      setPredictionId(undefined);
+      setHikeMessage(null);
+
+      trackEvent(
+        nextStage === "personal" ? "analyze_personal" : "analyze_base",
+        { source, distanceKm: result.route.distanceKm },
+      );
+      trackEvent("analysis_completed", {
         source,
-        distanceKm: result.route.distanceKm,
+        stage: nextStage,
+        overall:
+          nextStage === "personal"
+            ? result.personalDifficulty.overall
+            : result.baseDifficulty.overall,
       });
+
       if (nextStage === "personal") {
-        const saved = saveAnalysis({
-          title,
-          analysis: result,
-          points: nextPoints,
-          profileSnapshot: nextProfile,
-          replaceId: savedId,
+        trackEvent("prediction_created", {
+          overall: result.personalDifficulty.overall,
+          confidence: Number(result.confidence.toFixed(2)),
         });
-        const historyId = saved.ok ? saved.id : undefined;
-        if (saved.ok) {
-          setSavedId(saved.id);
-          setSaveWarning(null);
-        } else {
-          setSaveWarning(saved.message);
-        }
         void fetchExplanation(result).then((explained) => {
           if (!explained) return;
-          const explanation = {
-            text: explained.text,
-            source: explained.source,
-            model: explained.model,
-          };
           setAnalysis((prev) =>
-            prev ? { ...prev, explanation } : prev,
+            prev
+              ? {
+                  ...prev,
+                  explanation: {
+                    text: explained.text,
+                    source: explained.source,
+                    model: explained.model,
+                  },
+                }
+              : prev,
           );
-          // Persist LLM/template text so /history can reopen the same copy.
-          if (historyId) {
-            patchSavedAnalysis(historyId, { explanation });
-          }
         });
       }
     },
-    [hikeDate, savedId],
+    [hikeDate],
   );
 
   const runFromXml = useCallback(
-    async (xml: string, title: string, source: "sample" | "upload") => {
+    async (xml: string, title: string, source: RouteSource) => {
       await runFromPoints(parseGpx(xml), title, source);
     },
     [runFromPoints],
@@ -167,7 +187,11 @@ export default function AnalyzePage() {
           setAnalysis(null);
           return;
         }
-        trackEvent("upload", { bytes: file.size, name: file.name || "unknown" });
+        trackEvent("upload_gpx", {
+          bytes: file.size,
+          name: file.name || "unknown",
+        });
+        trackEvent("upload", { bytes: file.size });
         await runFromXml(validated.xml, validated.displayName, "upload");
       } catch {
         setError("读取文件失败，请重试或改用示例路线。");
@@ -181,29 +205,64 @@ export default function AnalyzePage() {
   );
 
   const applyProfile = useCallback(
-    async (next: Partial<UserProfile> | undefined, skipped: boolean) => {
-      const effective = skipped
-        ? { experience: "intermediate" as const }
-        : next;
+    async (next: ProfileFormValue | undefined, skipped: boolean) => {
+      let outdoor: OutdoorProfile;
       if (!skipped && next) {
-        saveProfile(next);
-        setProfile(next);
+        outdoor = saveOutdoorProfile(next);
+        setProfile(outdoor);
+      } else {
+        outdoor = engineProfileToOutdoor(getOrCreateUser().id, {
+          experience: "intermediate",
+        });
       }
       setLoadingId("personal");
-      setSavedId(undefined);
       await runFromPoints(
         points,
         activeTitle ?? "路线分析",
-        "sample",
-        effective,
+        routeSource,
+        outdoor,
         "personal",
         plannedStart,
         hikeDate,
       );
       setLoadingId(null);
     },
-    [activeTitle, hikeDate, plannedStart, points, runFromPoints],
+    [activeTitle, hikeDate, plannedStart, points, routeSource, runFromPoints],
   );
+
+  const onSavePrediction = useCallback(() => {
+    if (!analysis || predictionSaved) return;
+    setSavingPrediction(true);
+    setSaveWarning(null);
+    const snapshot =
+      profile ??
+      engineProfileToOutdoor("local", { experience: "intermediate" });
+    const result = savePrediction({
+      title: activeTitle ?? "路线预测",
+      points,
+      analysis,
+      profileSnapshot: snapshot,
+      source: routeSource,
+    });
+    setSavingPrediction(false);
+    if (!result.ok) {
+      setSaveWarning(result.message);
+      return;
+    }
+    setPredictionId(result.prediction.id);
+    setPredictionSaved(true);
+    trackEvent("prediction_saved", {
+      predictionId: result.prediction.id,
+      overall: result.prediction.personalDifficulty.overall,
+    });
+  }, [
+    activeTitle,
+    analysis,
+    points,
+    predictionSaved,
+    profile,
+    routeSource,
+  ]);
 
   return (
     <main className="min-h-dvh bg-[var(--cream)] text-[var(--ink)]">
@@ -224,15 +283,14 @@ export default function AnalyzePage() {
               上传 GPX 或选示例
             </h1>
             <p className="mt-4 text-base leading-relaxed text-[var(--ink-soft)]">
-              先得到路线基础负荷，再可选完善档案与出行日期，算出对你的难度。
+              先看基础负荷，再填档案，生成并<strong>保存</strong>
+              对你的预测——为徒步后对比打底。
             </p>
 
             <div className="mt-8">
               <input
                 ref={fileRef}
                 type="file"
-                // Intentionally broad: iOS Files grays out .gpx when accept is narrow.
-                // Content validation happens in readAndValidateGpxFile.
                 accept="*/*"
                 className="sr-only"
                 id="gpx-upload"
@@ -245,7 +303,7 @@ export default function AnalyzePage() {
                 {loadingId === "upload" ? "正在分析…" : "上传 GPX 文件"}
               </label>
               <p className="mt-3 text-xs leading-relaxed text-[var(--rock)]">
-                iPhone：若文件发灰，请选「浏览」→「文件」，不要限制只看 GPX；我们会按内容识别轨迹。
+                iPhone：若文件发灰，请选「浏览」→「文件」；我们会按内容识别轨迹。
               </p>
             </div>
 
@@ -288,10 +346,6 @@ export default function AnalyzePage() {
                 {error}
               </p>
             ) : null}
-
-            <p className="mt-auto pt-10 text-xs leading-relaxed text-[var(--rock)]">
-              本工具仅提供辅助判断，不能替代你的经验、向导建议或现场决策。
-            </p>
           </>
         ) : null}
 
@@ -320,7 +374,7 @@ export default function AnalyzePage() {
               onClick={() => applyProfile(undefined, true)}
               className="mt-4 text-sm text-[var(--rock)] underline-offset-4 hover:underline"
             >
-              跳过，用默认档案查看个人报告
+              跳过，用默认档案生成预测
             </button>
           </>
         ) : null}
@@ -338,7 +392,7 @@ export default function AnalyzePage() {
               你的户外档案
             </h2>
             <p className="mt-3 mb-4 text-sm text-[var(--ink-soft)]">
-              四问即可拉开个人难度；再选出行日期以纳入天气与日落。
+              声明式 Profile，用于生成本次 Prediction。选出行日期以纳入天气。
             </p>
             <label className="mb-6 block text-sm text-[var(--rock)]">
               计划出行日期
@@ -355,7 +409,7 @@ export default function AnalyzePage() {
               onSkip={() => applyProfile(undefined, true)}
             />
             {loadingId === "personal" ? (
-              <p className="mt-4 text-sm text-[var(--rock)]">正在生成个人报告…</p>
+              <p className="mt-4 text-sm text-[var(--rock)]">正在生成预测…</p>
             ) : null}
           </>
         ) : null}
@@ -374,24 +428,47 @@ export default function AnalyzePage() {
                 {saveWarning}
               </p>
             ) : null}
-            <BaseReport
+            {hikeMessage ? (
+              <p className="mb-4 text-sm text-[var(--pine)]" role="status">
+                {hikeMessage}
+              </p>
+            ) : null}
+
+            <PredictionCard
               analysis={analysis}
-              title={activeTitle}
-              mode="personal"
-              analysisId={savedId}
-              onStartChange={async (iso) => {
-                setPlannedStart(iso);
-                await runFromPoints(
-                  points,
-                  activeTitle ?? "路线分析",
-                  "sample",
-                  profile ?? { experience: "intermediate" },
-                  "personal",
-                  iso,
-                  hikeDate,
+              saved={predictionSaved}
+              saving={savingPrediction}
+              onSave={onSavePrediction}
+              onMarkHiking={() => {
+                if (!predictionId) return;
+                markPredictionHiking(predictionId);
+                setHikeMessage(
+                  "已标记「准备徒步」。走完后回来上传实际用时（即将支持）。",
                 );
               }}
             />
+
+            <div className="mt-10">
+              <BaseReport
+                analysis={analysis}
+                title={activeTitle}
+                mode="personal"
+                onStartChange={async (iso) => {
+                  setPlannedStart(iso);
+                  setPredictionSaved(false);
+                  setPredictionId(undefined);
+                  await runFromPoints(
+                    points,
+                    activeTitle ?? "路线分析",
+                    routeSource,
+                    profile ?? undefined,
+                    "personal",
+                    iso,
+                    hikeDate,
+                  );
+                }}
+              />
+            </div>
           </>
         ) : null}
       </div>

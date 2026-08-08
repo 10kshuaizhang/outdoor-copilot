@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import { LandingTracker } from "@/components/LandingTracker";
 
 export default function Home() {
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[var(--bg-deep)] text-[var(--cream)]">
+      <LandingTracker />
       <div className="absolute inset-0">
         <Image
           src="/hero-trail.jpg"
@@ -57,7 +59,7 @@ export default function Home() {
                 如何使用
               </Link>
               <Link href="/history" className="underline-offset-4 hover:underline">
-                本机历史
+                已保存预测
               </Link>
             </div>
           </div>

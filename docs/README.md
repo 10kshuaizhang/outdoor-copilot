@@ -12,6 +12,8 @@
 | [05-decision-log.md](./05-decision-log.md) | ADR-style decisions |
 | [06-metrics.md](./06-metrics.md) | North star, funnel, prediction quality |
 | [07-week-1-2-execution.md](./07-week-1-2-execution.md) | Locked near-term execution (Prediction → Segments) |
+| [contracts/data-contract-v1.md](./contracts/data-contract-v1.md) | Week-1 entity / Prediction rules |
+| [baseline/v0.1-analyze.md](./baseline/v0.1-analyze.md) | Frozen analyze MVP inventory |
 
 Engineering agents: start from root [`AGENTS.md`](../AGENTS.md).
 

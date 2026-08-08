@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import type { OutdoorProfile } from "@/domain/types";
 import type {
   ExperienceLevel,
   RiskPreference,
   UserProfile,
 } from "@/lib/engine";
 
+export type ProfileFormValue = Partial<OutdoorProfile> &
+  Partial<UserProfile> & { lastHikeAt?: string };
+
 type Props = {
-  initial?: Partial<UserProfile>;
-  onSubmit: (profile: Partial<UserProfile>) => void;
+  initial?: ProfileFormValue;
+  onSubmit: (profile: ProfileFormValue) => void;
   onSkip: () => void;
 };
 
@@ -17,16 +21,23 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
   const [experience, setExperience] = useState<ExperienceLevel>(
     initial?.experience ?? "intermediate",
   );
-  const [comfortableDistanceKm, setDistance] = useState(
-    initial?.comfortableDistanceKm ?? 10,
+  const [typicalDistanceKm, setDistance] = useState(
+    initial?.typicalDistanceKm ??
+      initial?.comfortableDistanceKm ??
+      10,
   );
-  const [comfortableElevationM, setElevation] = useState(
-    initial?.comfortableElevationM ?? 500,
+  const [typicalElevationM, setElevation] = useState(
+    initial?.typicalElevationM ??
+      initial?.comfortableElevationM ??
+      500,
   );
   const [riskPreference, setRisk] = useState<RiskPreference>(
     initial?.riskPreference ?? "balanced",
   );
-  const [showMore, setShowMore] = useState(false);
+  const [lastHikeAt, setLastHikeAt] = useState(initial?.lastHikeAt ?? "");
+  const [showMore, setShowMore] = useState(
+    Boolean(initial?.age || initial?.heightCm || initial?.weightKg),
+  );
   const [age, setAge] = useState(initial?.age?.toString() ?? "");
   const [heightCm, setHeight] = useState(initial?.heightCm?.toString() ?? "");
   const [weightKg, setWeight] = useState(initial?.weightKg?.toString() ?? "");
@@ -44,9 +55,13 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
         e.preventDefault();
         onSubmit({
           experience,
-          comfortableDistanceKm: Number(comfortableDistanceKm),
-          comfortableElevationM: Number(comfortableElevationM),
+          typicalDistanceKm: Number(typicalDistanceKm),
+          typicalElevationM: Number(typicalElevationM),
+          // Keep engine aliases in sync for analyzeRoute.
+          comfortableDistanceKm: Number(typicalDistanceKm),
+          comfortableElevationM: Number(typicalElevationM),
           riskPreference,
+          lastHikeAt: lastHikeAt || undefined,
           age: age ? Number(age) : undefined,
           heightCm: heightCm ? Number(heightCm) : undefined,
           weightKg: weightKg ? Number(weightKg) : undefined,
@@ -55,6 +70,11 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
         });
       }}
     >
+      <p className="text-xs leading-relaxed text-[var(--rock)]">
+        这是你告诉系统的档案（OutdoorProfile），不是系统从活动中学到的
+        Personal Model。
+      </p>
+
       <div>
         <label className="text-sm text-[var(--rock)]">徒步经验</label>
         <select
@@ -71,13 +91,13 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
 
       <div>
         <label className="text-sm text-[var(--rock)]">
-          近期舒适距离（km）：{comfortableDistanceKm}
+          典型徒步距离（km）：{typicalDistanceKm}
         </label>
         <input
           type="range"
           min={3}
           max={25}
-          value={comfortableDistanceKm}
+          value={typicalDistanceKm}
           onChange={(e) => setDistance(Number(e.target.value))}
           className="mt-2 w-full"
         />
@@ -85,16 +105,26 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
 
       <div>
         <label className="text-sm text-[var(--rock)]">
-          近期舒适爬升（m）：{comfortableElevationM}
+          典型爬升（m）：{typicalElevationM}
         </label>
         <input
           type="range"
           min={100}
           max={1500}
           step={50}
-          value={comfortableElevationM}
+          value={typicalElevationM}
           onChange={(e) => setElevation(Number(e.target.value))}
           className="mt-2 w-full"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm text-[var(--rock)]">最近一次徒步</label>
+        <input
+          type="date"
+          value={lastHikeAt}
+          onChange={(e) => setLastHikeAt(e.target.value)}
+          className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
         />
       </div>
 
@@ -116,7 +146,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
         className="text-sm text-[var(--pine-deep)] underline-offset-4 hover:underline"
         onClick={() => setShowMore((v) => !v)}
       >
-        {showMore ? "收起生理数据" : "可选：补充生理数据"}
+        {showMore ? "收起身体数据" : "可选：身高 / 体重 / 年龄 / 心率"}
       </button>
 
       {showMore ? (
@@ -148,7 +178,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
           type="submit"
           className="bg-[var(--pine-deep)] px-5 py-3 text-sm font-semibold text-[var(--cream)]"
         >
-          生成个人报告
+          生成个人预测
         </button>
         <button
           type="button"
