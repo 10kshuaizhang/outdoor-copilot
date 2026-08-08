@@ -52,13 +52,31 @@ export function detectChallenges(
     });
   }
 
+  const endKm = segments[segments.length - 1]?.endKm ?? 0;
+
   if ((weather.temperatureC ?? 18) >= 28) {
     challenges.push({
       title: "高温时段预期疲劳上升",
       startKm: 0,
-      endKm: segments[segments.length - 1]?.endKm ?? 0,
+      endKm,
       kind: "heat",
       severity: 70,
+    });
+  }
+
+  if (
+    weather.thunderstormRisk === "high" ||
+    weather.thunderstormRisk === "medium"
+  ) {
+    challenges.push({
+      title:
+        weather.thunderstormRisk === "high"
+          ? "雷暴风险偏高，注意早出发与避险"
+          : "对流天气可能增强，留意午后变化",
+      startKm: 0,
+      endKm,
+      kind: "thunderstorm",
+      severity: weather.thunderstormRisk === "high" ? 85 : 60,
     });
   }
 

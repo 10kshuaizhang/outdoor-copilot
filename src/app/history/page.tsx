@@ -12,11 +12,13 @@ import {
   type SavedAnalysis,
 } from "@/lib/history/storage";
 import { loadProfile } from "@/lib/profile/storage";
+import { fetchWeather } from "@/lib/weather/fetchWeather";
 
 export default function HistoryPage() {
   const [items, setItems] = useState<SavedAnalysis[]>(() => listAnalyses());
   const [active, setActive] = useState<SavedAnalysis | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const currentProfile = useMemo(() => loadProfile(), []);
 
   return (
@@ -106,30 +108,57 @@ export default function HistoryPage() {
               <button
                 type="button"
                 className="mb-6 block text-sm font-semibold text-[var(--pine-deep)] underline-offset-4 hover:underline"
+                disabled={reanalyzing}
                 onClick={() => {
-                  const result = analyzeRoute({
-                    points: active.points,
-                    profile: currentProfile ?? active.profileSnapshot,
-                    weather: active.analysis.weather,
-                  });
-                  const saved = saveAnalysis({
-                    title: active.title,
-                    analysis: result,
-                    points: active.points,
-                    profileSnapshot: currentProfile ?? active.profileSnapshot,
-                    replaceId: active.id,
-                  });
-                  if (!saved.ok) {
-                    setMessage(saved.message);
-                    return;
-                  }
-                  const refreshed = listAnalyses().find((i) => i.id === active.id);
-                  if (refreshed) setActive(refreshed);
-                  setItems(listAnalyses());
-                  setMessage("已用当前档案重新分析。");
+                  void (async () => {
+                    setReanalyzing(true);
+                    setMessage(null);
+                    try {
+                      const center =
+                        active.points[Math.floor(active.points.length / 2)] ??
+                        active.points[0];
+                      const date =
+                        active.analysis.weather.date ??
+                        new Date().toISOString().slice(0, 10);
+                      const weather = await fetchWeather(
+                        center.lat,
+                        center.lon,
+                        date,
+                      );
+                      const result = analyzeRoute({
+                        points: active.points,
+                        profile: currentProfile ?? active.profileSnapshot,
+                        weather,
+                      });
+                      const saved = saveAnalysis({
+                        title: active.title,
+                        analysis: result,
+                        points: active.points,
+                        profileSnapshot:
+                          currentProfile ?? active.profileSnapshot,
+                        replaceId: active.id,
+                      });
+                      if (!saved.ok) {
+                        setMessage(saved.message);
+                        return;
+                      }
+                      const refreshed = listAnalyses().find(
+                        (i) => i.id === active.id,
+                      );
+                      if (refreshed) setActive(refreshed);
+                      setItems(listAnalyses());
+                      setMessage(
+                        weather.source === "open-meteo"
+                          ? "已用当前档案与最新天气重新分析。"
+                          : "已用当前档案重新分析（天气接口不可用，使用假设值）。",
+                      );
+                    } finally {
+                      setReanalyzing(false);
+                    }
+                  })();
                 }}
               >
-                用当前档案重新分析
+                {reanalyzing ? "重算中…" : "用当前档案重新分析"}
               </button>
             ) : (
               <p className="mb-6 text-sm text-amber-800">

@@ -11,12 +11,11 @@ import {
   type RouteAnalysis,
   type TrackPoint,
   type UserProfile,
-  type WeatherSnapshot,
 } from "@/lib/engine";
-import { fallbackWeather } from "@/lib/engine/weatherAdjust";
 import { readAndValidateGpxFile } from "@/lib/engine/validateUpload";
 import { saveAnalysis } from "@/lib/history/storage";
 import { loadProfile, saveProfile } from "@/lib/profile/storage";
+import { fetchWeather } from "@/lib/weather/fetchWeather";
 
 type SampleMeta = {
   id: string;
@@ -28,22 +27,6 @@ type SampleMeta = {
 };
 
 type Stage = "pick" | "base" | "profile" | "personal";
-
-async function fetchWeather(
-  lat: number,
-  lon: number,
-  date: string,
-): Promise<WeatherSnapshot> {
-  try {
-    const res = await fetch(
-      `/api/weather?lat=${lat}&lon=${lon}&date=${date}`,
-    );
-    if (!res.ok) return fallbackWeather(lat, lon, date);
-    return (await res.json()) as WeatherSnapshot;
-  } catch {
-    return fallbackWeather(lat, lon, date);
-  }
-}
 
 export default function AnalyzePage() {
   const [samples, setSamples] = useState<SampleMeta[]>([]);
@@ -93,10 +76,7 @@ export default function AnalyzePage() {
 
       const center =
         nextPoints[Math.floor(nextPoints.length / 2)] ?? nextPoints[0];
-      const weather =
-        nextStage === "personal" || nextStage === "base"
-          ? await fetchWeather(center.lat, center.lon, date)
-          : fallbackWeather(center.lat, center.lon, date);
+      const weather = await fetchWeather(center.lat, center.lon, date);
 
       const result = analyzeRoute({
         points: nextPoints,

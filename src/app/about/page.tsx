@@ -50,7 +50,8 @@ export default function AboutPage() {
         <div className="mt-10 space-y-3 border-t border-black/10 pt-6 text-sm leading-relaxed text-[var(--rock)]">
           <p>数据默认只保存在你的浏览器本机，无需注册。</p>
           <p>
-            这是辅助判断工具，不是导航、天气预报权威源，也不能替代经验、向导或现场决策。
+            这是辅助判断工具，不是导航、天气预报权威源，也不能替代经验、向导或现场决策。天气数据来自
+            Open-Meteo；解释文案可选用兼容 LLM 润色（见仓库 docs/SETUP-APIS.md）。
           </p>
           <p>
             示例轨迹用于体验产品；同一座山常有多种走法，正式出行请以你确认要走的 GPX

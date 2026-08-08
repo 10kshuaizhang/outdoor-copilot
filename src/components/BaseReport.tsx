@@ -104,7 +104,12 @@ export function BaseReport({
         </div>
         <p className="mt-2 text-sm text-[var(--rock)]">
           置信度 {Math.round(analysis.confidence * 100)}%
-          {analysis.weather.source === "fallback" ? " · 天气为假设值" : ""}
+          {analysis.weather.source === "fallback"
+            ? " · 天气为假设值"
+            : " · 天气来自 Open-Meteo"}
+          {analysis.weather.temperatureC != null
+            ? ` · ${Math.round(analysis.weather.temperatureC)}°C`
+            : ""}
         </p>
       </div>
 
@@ -257,7 +262,9 @@ export function BaseReport({
       {showPersonal ? (
         <p className="text-xs text-[var(--rock)]">
           解释来源：
-          {analysis.explanation.source === "llm" ? "AI 润色" : "模板"}
+          {analysis.explanation.source === "llm"
+            ? "AI 润色（已配置 LLM）"
+            : "模板（未配置或 LLM 不可用）"}
         </p>
       ) : null}
 

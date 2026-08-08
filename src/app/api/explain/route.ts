@@ -14,7 +14,7 @@ type ExplainBody = {
       mainRisk?: string;
       waterLiters?: number;
     };
-    explanation?: { text?: string };
+    explanation?: { text: string };
   };
 };
 
@@ -29,7 +29,8 @@ function templateText(analysis: NonNullable<ExplainBody["analysis"]>): string {
       .map((c) => `${c.label}（${c.delta > 0 ? "+" : ""}${c.delta}）`)
       .join("；") || "负荷主要来自距离与爬升结构";
   const challenge =
-    analysis.challenges?.map((c) => c.title).join("；") || "关注连续爬升与后程疲劳";
+    analysis.challenges?.map((c) => c.title).join("；") ||
+    "关注连续爬升与后程疲劳";
   return `这条约 ${dist} km、爬升约 ${gain} m 的路线，对你大约是 ${personal}/100（基础 ${base}）。原因包括：${why}。需要留意：${challenge}。建议完成窗口 ${analysis.recommendation?.finishWindow ?? "见报告"}，主风险：${analysis.recommendation?.mainRisk ?? "后程疲劳"}。`;
 }
 
@@ -40,15 +41,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "analysis required" }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
   const baseURL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
   const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "LLM unavailable", text: templateText(analysis), source: "template" },
-      { status: 503 },
-    );
+    return NextResponse.json({
+      text: templateText(analysis),
+      source: "template",
+      reason: "missing_openai_api_key",
+    });
   }
 
   try {
@@ -78,7 +80,10 @@ export async function POST(req: NextRequest) {
       signal: controller.signal,
     });
     clearTimeout(timer);
-    if (!res.ok) throw new Error("llm failed");
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      throw new Error(`llm ${res.status} ${errBody.slice(0, 120)}`);
+    }
     const data = (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
@@ -89,6 +94,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       text: templateText(analysis),
       source: "template",
+      reason: "llm_request_failed",
     });
   }
 }

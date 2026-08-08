@@ -24,6 +24,8 @@ export function weatherMultiplier(weather: WeatherSnapshot): number {
   let m = 1;
   const temp = weather.temperatureC ?? 18;
   const precip = weather.precipMm ?? 0;
+  const wind = weather.windMs ?? 0;
+  const humidity = weather.humidity ?? 0;
 
   if (temp >= 32) m *= 1.5;
   else if (temp >= 28) m *= 1.25;
@@ -32,6 +34,13 @@ export function weatherMultiplier(weather: WeatherSnapshot): number {
   if (precip >= 5) m *= 1.2;
   if (weather.thunderstormRisk === "high") m *= 1.35;
   else if (weather.thunderstormRisk === "medium") m *= 1.15;
+
+  // Open-Meteo wind is converted to m/s; strong wind increases effort.
+  if (wind >= 12) m *= 1.15;
+  else if (wind >= 8) m *= 1.08;
+
+  // Hot + humid days feel harder than dry heat alone.
+  if (temp >= 28 && humidity >= 75) m *= 1.08;
 
   return m;
 }

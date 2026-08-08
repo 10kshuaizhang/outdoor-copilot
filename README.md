@@ -83,7 +83,9 @@ npm test
 npm run build
 ```
 
-环境变量见 `.env.example`（可选 `OPENAI_*`、`NEXT_PUBLIC_SITE_URL`）。
+环境变量见 `.env.example`（可选 `OPENAI_*`、`NEXT_PUBLIC_SITE_URL`）。  
+**天气与 LLM 配置步骤：** [docs/SETUP-APIS.md](docs/SETUP-APIS.md)（天气默认真接 Open-Meteo；LLM 需你自备 Key）。  
+运行时探测：`GET /api/status`。
 
 ---
 
