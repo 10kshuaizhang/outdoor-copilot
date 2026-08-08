@@ -11,6 +11,7 @@
 | [04-ai-architecture.md](./04-ai-architecture.md) | LLM vs deterministic engine |
 | [05-decision-log.md](./05-decision-log.md) | ADR-style decisions |
 | [06-metrics.md](./06-metrics.md) | North star, funnel, prediction quality |
+| [07-week-1-2-execution.md](./07-week-1-2-execution.md) | Locked near-term execution (Prediction → Segments) |
 
 Engineering agents: start from root [`AGENTS.md`](../AGENTS.md).
 

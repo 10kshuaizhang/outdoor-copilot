@@ -15,6 +15,14 @@ Format per entry:
 
 ## Product & Scope
 
+### D-040 — Week 1–2 = Prediction skeleton, then Route Intelligence
+
+- **Date:** 2026-08-08  
+- **Decision:** Near-term execution prioritizes **saving immutable Predictions** (Week 1) before Difficulty Profile UI (Week 2). Aligns 12-week roadmap with “predict → hike → actual → learn”. See [07-week-1-2-execution.md](./07-week-1-2-execution.md).  
+- **Context:** Grill draft had leaned viz-first; product correction: without stored Prediction there is no baseline for later accuracy.  
+- **Consequences:** Freeze scoring algorithm as `v0.1-analyze` baseline; Profile ≠ Personal Model in schema; no chat/Strava/Watch/social; terrain recognition deferred.  
+- **Status:** active  
+
 ### D-001 — Personal Route Intelligence first, not trail encyclopedia
 
 - **Date:** 2026-08-08  
