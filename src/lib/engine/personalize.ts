@@ -119,7 +119,8 @@ export function personalizeDifficulty(
 
   let climbingAdj = Math.round((0.5 - cap.climbing) * 32);
   if (elevDelta > 0) {
-    const d = Math.round(Math.min(26, elevDelta / 35));
+    // Softer than /35 so +200–300m over comfort doesn't feel like a cliff.
+    const d = Math.round(Math.min(18, elevDelta / 55));
     climbingAdj += d;
     contributions.push({
       code: "elevation_vs_comfort",

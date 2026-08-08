@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BaseReport } from "@/components/BaseReport";
 import { exportEvents } from "@/lib/analytics/events";
 import { analyzeRoute } from "@/lib/engine";
+import { fetchExplanation } from "@/lib/explain/fetchExplanation";
 import {
   clearAllLocalData,
   listAnalyses,
+  patchSavedAnalysis,
   saveAnalysis,
   type SavedAnalysis,
 } from "@/lib/history/storage";
@@ -20,6 +22,30 @@ export default function HistoryPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [reanalyzing, setReanalyzing] = useState(false);
   const currentProfile = useMemo(() => loadProfile(), []);
+
+  // Backfill LLM explanation for older snapshots that only saved the template.
+  useEffect(() => {
+    if (!active) return;
+    if (active.analysis.explanation.source === "llm") return;
+    let cancelled = false;
+    void fetchExplanation(active.analysis).then((explained) => {
+      if (cancelled || !explained || explained.source !== "llm") return;
+      const explanation = {
+        text: explained.text,
+        source: explained.source,
+      };
+      patchSavedAnalysis(active.id, { explanation });
+      setActive((prev) =>
+        prev && prev.id === active.id
+          ? { ...prev, analysis: { ...prev.analysis, explanation } }
+          : prev,
+      );
+      setItems(listAnalyses());
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [active]);
 
   return (
     <main className="min-h-dvh bg-[var(--cream)] text-[var(--ink)]">
@@ -37,7 +63,8 @@ export default function HistoryPage() {
               历史分析
             </h1>
             <p className="mt-3 text-sm text-[var(--ink-soft)]">
-              数据仅保存在本机浏览器（localStorage）。
+              数据仅保存在本机浏览器（localStorage）。AI
+              解释会随记录一并保存。
             </p>
             <ul className="mt-8 space-y-4">
               {items.length === 0 ? (
@@ -57,6 +84,9 @@ export default function HistoryPage() {
                         {new Date(item.createdAt).toLocaleString("zh-CN")} · 个人{" "}
                         {item.analysis.personalDifficulty.overall}
                         {item.feedback ? " · 已回填" : ""}
+                        {item.analysis.explanation.source === "llm"
+                          ? " · AI 解释"
+                          : ""}
                       </p>
                     </button>
                   </li>
@@ -125,11 +155,21 @@ export default function HistoryPage() {
                         center.lon,
                         date,
                       );
-                      const result = analyzeRoute({
+                      let result = analyzeRoute({
                         points: active.points,
                         profile: currentProfile ?? active.profileSnapshot,
                         weather,
                       });
+                      const explained = await fetchExplanation(result);
+                      if (explained) {
+                        result = {
+                          ...result,
+                          explanation: {
+                            text: explained.text,
+                            source: explained.source,
+                          },
+                        };
+                      }
                       const saved = saveAnalysis({
                         title: active.title,
                         analysis: result,

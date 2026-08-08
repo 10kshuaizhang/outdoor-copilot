@@ -66,6 +66,44 @@ export function saveAnalysis(input: {
   }
 }
 
+/** Patch fields on an existing history entry (e.g. persist LLM explanation). */
+export function patchSavedAnalysis(
+  id: string,
+  patch: {
+    analysis?: RouteAnalysis;
+    explanation?: RouteAnalysis["explanation"];
+    profileSnapshot?: Partial<UserProfile>;
+  },
+): SaveResult {
+  if (typeof window === "undefined") {
+    return { ok: false, message: "当前环境无法写入本地存储。" };
+  }
+  try {
+    const list = listAnalyses();
+    const idx = list.findIndex((item) => item.id === id);
+    if (idx < 0) {
+      return { ok: false, message: "未找到该历史记录。" };
+    }
+    const prev = list[idx];
+    const analysis = patch.analysis
+      ? patch.analysis
+      : patch.explanation
+        ? { ...prev.analysis, explanation: patch.explanation }
+        : prev.analysis;
+    const nextEntry: SavedAnalysis = {
+      ...prev,
+      analysis,
+      profileSnapshot: patch.profileSnapshot ?? prev.profileSnapshot,
+    };
+    const next = [...list];
+    next[idx] = nextEntry;
+    window.localStorage.setItem(KEY, JSON.stringify(next));
+    return { ok: true, id };
+  } catch {
+    return { ok: false, message: "更新历史记录失败。" };
+  }
+}
+
 export function saveFeedback(feedback: ActivityFeedback): SaveResult {
   if (typeof window === "undefined") {
     return { ok: false, message: "无法保存回填。" };

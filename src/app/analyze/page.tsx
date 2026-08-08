@@ -13,7 +13,8 @@ import {
   type UserProfile,
 } from "@/lib/engine";
 import { readAndValidateGpxFile } from "@/lib/engine/validateUpload";
-import { saveAnalysis } from "@/lib/history/storage";
+import { fetchExplanation } from "@/lib/explain/fetchExplanation";
+import { patchSavedAnalysis, saveAnalysis } from "@/lib/history/storage";
 import { loadProfile, saveProfile } from "@/lib/profile/storage";
 import { fetchWeather } from "@/lib/weather/fetchWeather";
 
@@ -101,38 +102,27 @@ export default function AnalyzePage() {
           profileSnapshot: nextProfile,
           replaceId: savedId,
         });
+        const historyId = saved.ok ? saved.id : undefined;
         if (saved.ok) {
           setSavedId(saved.id);
           setSaveWarning(null);
         } else {
           setSaveWarning(saved.message);
         }
-        void fetch("/api/explain", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ analysis: result }),
-        })
-          .then(async (res) => {
-            const data = (await res.json()) as {
-              text?: string;
-              source?: "template" | "llm";
-            };
-            if (!data.text) return;
-            setAnalysis((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    explanation: {
-                      text: data.text as string,
-                      source: data.source === "llm" ? "llm" : "template",
-                    },
-                  }
-                : prev,
-            );
-          })
-          .catch(() => {
-            /* keep engine template */
-          });
+        void fetchExplanation(result).then((explained) => {
+          if (!explained) return;
+          const explanation = {
+            text: explained.text,
+            source: explained.source,
+          };
+          setAnalysis((prev) =>
+            prev ? { ...prev, explanation } : prev,
+          );
+          // Persist LLM/template text so /history can reopen the same copy.
+          if (historyId) {
+            patchSavedAnalysis(historyId, { explanation });
+          }
+        });
       }
     },
     [hikeDate, savedId],
