@@ -1,6 +1,12 @@
 # 发布清单（GitHub + Vercel）
 
-本环境目前**没有**配置 `origin` / `GH_TOKEN` / `VERCEL_TOKEN`，Agent 无法代你推代码或生产部署。按下面做完即可上线。
+**生产站点（已部署）：** https://outdoor-copilot.vercel.app  
+
+Vercel 项目：`10kshuaizhangs-projects/outdoor-copilot`  
+已配置：`OPENAI_BASE_URL`、`OPENAI_MODEL`、`NEXT_PUBLIC_SITE_URL`  
+**待你补：** `OPENAI_API_KEY`（换新后的 DeepSeek Key）→ 然后 Redeploy。
+
+Cloud Agent 环境有 Vercel 登录，但通常**没有**你本机的 `GH_TOKEN`；GitHub 推送请在本机执行。
 
 ## A. GitHub 仓库（一次性）
 
