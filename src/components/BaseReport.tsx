@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { ElevationProfile } from "@/components/ElevationProfile";
+import { trackEvent } from "@/lib/analytics/events";
 import type { RouteAnalysis } from "@/lib/engine";
 
 function formatDuration(min: number): string {
@@ -8,11 +12,18 @@ function formatDuration(min: number): string {
   return `${h} 小时 ${m} 分钟`;
 }
 
+function formatClock(iso?: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 type Props = {
   analysis: RouteAnalysis;
   title?: string;
   mode?: "base" | "personal";
   onPersonalize?: () => void;
+  onStartChange?: (iso: string) => void;
 };
 
 export function BaseReport({
@@ -20,10 +31,38 @@ export function BaseReport({
   title,
   mode = "base",
   onPersonalize,
+  onStartChange,
 }: Props) {
   const { route, baseDifficulty, personalDifficulty, duration, band } = analysis;
   const showPersonal = mode === "personal";
   const focus = showPersonal ? personalDifficulty : baseDifficulty;
+  const [actualMin, setActualMin] = useState("");
+  const [perceived, setPerceived] = useState("3");
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+
+  const copyShare = async () => {
+    const text = [
+      `Outdoor Copilot · ${title ?? "路线分析"}`,
+      `个人难度 ${personalDifficulty.overall}/100（${band}）· 基础 ${baseDifficulty.overall}`,
+      `距离 ${route.distanceKm.toFixed(1)} km · 爬升 +${route.elevationGainM} m`,
+      `预估 ${formatDuration(duration.lowMin)} – ${formatDuration(duration.highMin)}`,
+      analysis.recommendation.suggestedStart
+        ? `建议出发 ${formatClock(analysis.recommendation.suggestedStart)} · 完成 ${analysis.recommendation.finishWindow}`
+        : "",
+      analysis.recommendation.mainRisk
+        ? `主风险：${analysis.recommendation.mainRisk}`
+        : "",
+      "Know the trail. Know yourself. Go smarter.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      trackEvent("copy_share");
+    } catch {
+      // ignore
+    }
+  };
 
   return (
     <article className="space-y-8">
@@ -50,6 +89,7 @@ export function BaseReport({
         </div>
         <p className="mt-2 text-sm text-[var(--rock)]">
           置信度 {Math.round(analysis.confidence * 100)}%
+          {analysis.weather.source === "fallback" ? " · 天气为假设值" : ""}
         </p>
       </div>
 
@@ -135,6 +175,67 @@ export function BaseReport({
         </div>
       ) : null}
 
+      {showPersonal && analysis.challenges.length > 0 ? (
+        <div>
+          <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+            主要挑战
+          </p>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
+            {analysis.challenges.map((c) => (
+              <li key={`${c.kind}-${c.startKm}`}>{c.title}</li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
+      {showPersonal ? (
+        <div className="space-y-3 border-t border-black/10 pt-5 text-sm">
+          <p className="font-[family-name:var(--font-serif-sc)] tracking-[0.12em] text-[var(--pine)]">
+            行动建议
+          </p>
+          <p>
+            建议出发：{formatClock(analysis.recommendation.suggestedStart)}
+          </p>
+          <p>预计完成：{analysis.recommendation.finishWindow ?? "—"}</p>
+          <p>建议饮水：{analysis.recommendation.waterLiters ?? "—"} L</p>
+          <p>主风险：{analysis.recommendation.mainRisk ?? "—"}</p>
+          {analysis.recommendation.paceNote ? (
+            <p className="text-[var(--ink-soft)]">
+              {analysis.recommendation.paceNote}
+            </p>
+          ) : null}
+          {onStartChange ? (
+            <label className="block pt-2 text-[var(--rock)]">
+              改出发时刻（what-if）
+              <input
+                type="time"
+                className="mt-1 block w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+                value={
+                  analysis.recommendation.suggestedStart
+                    ? formatClock(analysis.recommendation.suggestedStart)
+                    : "07:30"
+                }
+                onChange={(e) => {
+                  const [hh, mm] = e.target.value.split(":").map(Number);
+                  const base = analysis.weather.date
+                    ? new Date(`${analysis.weather.date}T00:00:00`)
+                    : new Date();
+                  base.setHours(hh || 0, mm || 0, 0, 0);
+                  onStartChange(base.toISOString());
+                }}
+              />
+            </label>
+          ) : null}
+          {analysis.physiological ? (
+            <p className="pt-2 text-xs text-[var(--rock)]">
+              估算生理强度等级（参考学术模型）：
+              {analysis.physiological.gradeLabel}
+              {analysis.physiological.usedDefaults ? " · 使用默认生理参数" : ""}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
         {analysis.explanation.text}
       </p>
@@ -147,6 +248,59 @@ export function BaseReport({
         >
           告诉我你的水平，算出对你的难度
         </button>
+      ) : null}
+
+      {showPersonal ? (
+        <>
+          <button
+            type="button"
+            onClick={copyShare}
+            className="w-full border border-[var(--pine-deep)] px-5 py-3 text-sm font-semibold text-[var(--pine-deep)]"
+          >
+            复制分享摘要
+          </button>
+          <div className="space-y-3 border-t border-black/10 pt-5 text-sm">
+            <p className="font-[family-name:var(--font-serif-sc)] tracking-[0.12em] text-[var(--pine)]">
+              走完后回填（不自动改模型）
+            </p>
+            <label className="block text-[var(--rock)]">
+              实际总用时（分钟）
+              <input
+                type="number"
+                value={actualMin}
+                onChange={(e) => setActualMin(e.target.value)}
+                className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+              />
+            </label>
+            <label className="block text-[var(--rock)]">
+              主观难度 1–5
+              <input
+                type="number"
+                min={1}
+                max={5}
+                value={perceived}
+                onChange={(e) => setPerceived(e.target.value)}
+                className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+              />
+            </label>
+            <button
+              type="button"
+              className="bg-[var(--pine-deep)] px-4 py-2.5 text-[var(--cream)]"
+              onClick={() => {
+                trackEvent("feedback", {
+                  actualMin: Number(actualMin) || 0,
+                  perceived: Number(perceived) || 0,
+                });
+                setFeedbackSaved(true);
+              }}
+            >
+              保存回填
+            </button>
+            {feedbackSaved ? (
+              <p className="text-xs text-[var(--pine)]">已记录到本地事件。</p>
+            ) : null}
+          </div>
+        </>
       ) : null}
 
       <p className="border-t border-black/10 pt-4 text-xs leading-relaxed text-[var(--rock)]">

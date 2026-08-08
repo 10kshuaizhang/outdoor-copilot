@@ -3,18 +3,24 @@ import {
   estimateDurationMinutes,
   scoreBand,
 } from "./baseDifficulty";
+import { buildRecommendation, detectChallenges } from "./challenges";
 import {
   accumulateDistances,
   elevationStats,
   routeCenter,
 } from "./geo";
 import { personalizeDifficulty } from "./personalize";
+import { estimatePhysiologicalLoad } from "./physiology";
 import { buildSegments } from "./segments";
 import type {
   AnalyzeRouteInput,
   ElevationSample,
   RouteAnalysis,
 } from "./types";
+import {
+  applyWeatherToScores,
+  fallbackWeather,
+} from "./weatherAdjust";
 
 const emptyScores = {
   overall: 0,
@@ -50,6 +56,10 @@ function buildElevationProfile(
  */
 export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
   const points = input.points ?? [];
+  const weather =
+    input.weather ??
+    fallbackWeather(0, 0);
+
   if (points.length < 2) {
     return {
       status: "stub",
@@ -80,6 +90,7 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
         text: "需要有效的轨迹点才能分析路线。",
         source: "template",
       },
+      weather,
     };
   }
 
@@ -97,13 +108,57 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
 
   const segments = buildSegments(points);
   const elevationProfile = buildElevationProfile(points);
-  const baseDifficulty = computeBaseDifficulty(route, segments);
-  const { personal, contributions, confidence } = personalizeDifficulty(
+  let baseDifficulty = computeBaseDifficulty(route, segments);
+
+  const weatherApplied = applyWeatherToScores(baseDifficulty, weather);
+  baseDifficulty = weatherApplied.scores;
+
+  const personalized = personalizeDifficulty(
     baseDifficulty,
     route,
     input.profile,
   );
-  const duration = estimateDurationMinutes(route, personal);
+
+  let duration = estimateDurationMinutes(route, personalized.personal);
+  duration = {
+    ...duration,
+    movingMin: Math.round(duration.movingMin * weatherApplied.durationFactor),
+    totalMin: Math.round(duration.totalMin * weatherApplied.durationFactor),
+    lowMin: Math.round(duration.lowMin * weatherApplied.durationFactor),
+    highMin: Math.round(duration.highMin * weatherApplied.durationFactor),
+  };
+
+  const physio = estimatePhysiologicalLoad({
+    distanceM: route.distanceKm * 1000,
+    elevationGainM: route.elevationGainM,
+    durationMin: duration.totalMin,
+    profile: input.profile,
+  });
+
+  const contributions = [
+    ...personalized.contributions,
+    ...weatherApplied.contributions,
+  ];
+  if (!physio.usedDefaults) {
+    contributions.push({
+      code: "physiology",
+      label: `生理负荷参考 ${physio.gradeLabel}`,
+      delta: 0,
+    });
+  }
+
+  let confidence = personalized.confidence;
+  if (weather.source === "fallback") confidence = Math.min(confidence, 0.62);
+  else confidence = Math.min(0.9, confidence + 0.08);
+  if (!physio.usedDefaults) confidence = Math.min(0.9, confidence + 0.05);
+
+  const challenges = detectChallenges(segments, weather);
+  const recommendation = buildRecommendation({
+    durationMin: duration.totalMin,
+    weather,
+    personalOverall: personalized.personal.overall,
+    plannedStart: input.plannedStart,
+  });
 
   return {
     status: "ready",
@@ -111,16 +166,22 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     segments,
     elevationProfile,
     baseDifficulty,
-    personalDifficulty: personal,
+    personalDifficulty: personalized.personal,
     confidence,
     contributions,
     duration,
-    challenges: [],
-    recommendation: {},
-    band: scoreBand(personal.overall),
+    challenges,
+    recommendation,
+    band: scoreBand(personalized.personal.overall),
     explanation: {
-      text: `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。基础负荷 ${baseDifficulty.overall}，对你约 ${personal.overall}（${scoreBand(personal.overall)}）。`,
+      text: `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。基础负荷 ${baseDifficulty.overall}，对你约 ${personalized.personal.overall}（${scoreBand(personalized.personal.overall)}）。`,
       source: "template",
+    },
+    weather,
+    physiological: {
+      gradeLabel: physio.gradeLabel,
+      reserveHeartbeats: physio.reserveHeartbeats,
+      usedDefaults: physio.usedDefaults,
     },
   };
 }

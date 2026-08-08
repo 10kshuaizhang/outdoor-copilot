@@ -104,6 +104,12 @@ export type RouteAnalysis = {
   };
   band: "轻松" | "适中" | "吃力" | "很难" | "不建议";
   explanation: { text: string; source: "template" | "llm" };
+  weather: WeatherSnapshot;
+  physiological?: {
+    gradeLabel: string;
+    reserveHeartbeats: number;
+    usedDefaults: boolean;
+  };
 };
 
 export type AnalyzeRouteInput = {

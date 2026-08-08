@@ -11,8 +11,11 @@ import {
   type RouteAnalysis,
   type TrackPoint,
   type UserProfile,
+  type WeatherSnapshot,
 } from "@/lib/engine";
+import { fallbackWeather } from "@/lib/engine/weatherAdjust";
 import { readAndValidateGpxFile } from "@/lib/engine/validateUpload";
+import { saveAnalysis } from "@/lib/history/storage";
 import { loadProfile, saveProfile } from "@/lib/profile/storage";
 
 type SampleMeta = {
@@ -25,6 +28,22 @@ type SampleMeta = {
 
 type Stage = "pick" | "base" | "profile" | "personal";
 
+async function fetchWeather(
+  lat: number,
+  lon: number,
+  date: string,
+): Promise<WeatherSnapshot> {
+  try {
+    const res = await fetch(
+      `/api/weather?lat=${lat}&lon=${lon}&date=${date}`,
+    );
+    if (!res.ok) return fallbackWeather(lat, lon, date);
+    return (await res.json()) as WeatherSnapshot;
+  } catch {
+    return fallbackWeather(lat, lon, date);
+  }
+}
+
 export default function AnalyzePage() {
   const [samples, setSamples] = useState<SampleMeta[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -36,6 +55,10 @@ export default function AnalyzePage() {
   const [profile, setProfile] = useState<Partial<UserProfile> | null>(() =>
     loadProfile(),
   );
+  const [hikeDate, setHikeDate] = useState(
+    () => new Date().toISOString().slice(0, 10),
+  );
+  const [plannedStart, setPlannedStart] = useState<string | undefined>();
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,12 +69,14 @@ export default function AnalyzePage() {
   }, []);
 
   const runFromPoints = useCallback(
-    (
+    async (
       nextPoints: TrackPoint[],
       title: string,
       source: "sample" | "upload",
       nextProfile?: Partial<UserProfile>,
       nextStage: Stage = "base",
+      startIso?: string,
+      date = hikeDate,
     ) => {
       if (nextPoints.length < 2) {
         setError(
@@ -62,26 +87,65 @@ export default function AnalyzePage() {
         setAnalysis(null);
         return;
       }
+
+      const center =
+        nextPoints[Math.floor(nextPoints.length / 2)] ?? nextPoints[0];
+      const weather =
+        nextStage === "personal" || nextStage === "base"
+          ? await fetchWeather(center.lat, center.lon, date)
+          : fallbackWeather(center.lat, center.lon, date);
+
       const result = analyzeRoute({
         points: nextPoints,
         profile: nextProfile,
-        weather: { source: "fallback" },
+        weather,
+        plannedStart: startIso,
       });
       setPoints(nextPoints);
       setAnalysis(result);
       setActiveTitle(title);
       setStage(nextStage);
+      setPlannedStart(result.recommendation.suggestedStart);
       trackEvent(nextStage === "personal" ? "analyze_personal" : "analyze_base", {
         source,
         distanceKm: result.route.distanceKm,
       });
+      if (nextStage === "personal") {
+        saveAnalysis(title, result);
+        void fetch("/api/explain", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ analysis: result }),
+        })
+          .then(async (res) => {
+            const data = (await res.json()) as {
+              text?: string;
+              source?: "template" | "llm";
+            };
+            if (!data.text) return;
+            setAnalysis((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    explanation: {
+                      text: data.text as string,
+                      source: data.source === "llm" ? "llm" : "template",
+                    },
+                  }
+                : prev,
+            );
+          })
+          .catch(() => {
+            /* keep engine template */
+          });
+      }
     },
-    [],
+    [hikeDate],
   );
 
   const runFromXml = useCallback(
-    (xml: string, title: string, source: "sample" | "upload") => {
-      runFromPoints(parseGpx(xml), title, source);
+    async (xml: string, title: string, source: "sample" | "upload") => {
+      await runFromPoints(parseGpx(xml), title, source);
     },
     [runFromPoints],
   );
@@ -94,7 +158,7 @@ export default function AnalyzePage() {
         const res = await fetch(sample.file);
         if (!res.ok) throw new Error("fetch failed");
         const xml = await res.text();
-        runFromXml(xml, sample.name, "sample");
+        await runFromXml(xml, sample.name, "sample");
       } catch {
         setError("分析失败，请稍后重试。");
         setAnalysis(null);
@@ -118,7 +182,11 @@ export default function AnalyzePage() {
           return;
         }
         trackEvent("upload", { bytes: file.size, name: file.name });
-        runFromXml(validated.xml, file.name.replace(/\.gpx$/i, ""), "upload");
+        await runFromXml(
+          validated.xml,
+          file.name.replace(/\.gpx$/i, ""),
+          "upload",
+        );
       } catch {
         setError("读取文件失败，请重试或改用示例路线。");
         setAnalysis(null);
@@ -131,20 +199,24 @@ export default function AnalyzePage() {
   );
 
   const applyProfile = useCallback(
-    (next: Partial<UserProfile> | undefined, skipped: boolean) => {
+    async (next: Partial<UserProfile> | undefined, skipped: boolean) => {
       if (!skipped && next) {
         saveProfile(next);
         setProfile(next);
       }
-      runFromPoints(
+      setLoadingId("personal");
+      await runFromPoints(
         points,
         activeTitle ?? "路线分析",
         "sample",
         skipped ? undefined : next,
         "personal",
+        plannedStart,
+        hikeDate,
       );
+      setLoadingId(null);
     },
-    [activeTitle, points, runFromPoints],
+    [activeTitle, hikeDate, plannedStart, points, runFromPoints],
   );
 
   return (
@@ -166,7 +238,7 @@ export default function AnalyzePage() {
               上传 GPX 或选示例
             </h1>
             <p className="mt-4 text-base leading-relaxed text-[var(--ink-soft)]">
-              先得到路线基础负荷，再可选完善档案，算出对你的难度。
+              先得到路线基础负荷，再可选完善档案与出行日期，算出对你的难度。
             </p>
 
             <div className="mt-8">
@@ -269,14 +341,26 @@ export default function AnalyzePage() {
             <h2 className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]">
               你的户外档案
             </h2>
-            <p className="mt-3 mb-6 text-sm text-[var(--ink-soft)]">
-              四问即可拉开个人难度；生理数据可选，用于提高置信度。
+            <p className="mt-3 mb-4 text-sm text-[var(--ink-soft)]">
+              四问即可拉开个人难度；再选出行日期以纳入天气与日落。
             </p>
+            <label className="mb-6 block text-sm text-[var(--rock)]">
+              计划出行日期
+              <input
+                type="date"
+                value={hikeDate}
+                onChange={(e) => setHikeDate(e.target.value)}
+                className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+              />
+            </label>
             <ProfileForm
               initial={profile ?? undefined}
               onSubmit={(p) => applyProfile(p, false)}
               onSkip={() => applyProfile(undefined, true)}
             />
+            {loadingId === "personal" ? (
+              <p className="mt-4 text-sm text-[var(--rock)]">正在生成个人报告…</p>
+            ) : null}
           </>
         ) : null}
 
@@ -293,6 +377,18 @@ export default function AnalyzePage() {
               analysis={analysis}
               title={activeTitle}
               mode="personal"
+              onStartChange={async (iso) => {
+                setPlannedStart(iso);
+                await runFromPoints(
+                  points,
+                  activeTitle ?? "路线分析",
+                  "sample",
+                  profile ?? undefined,
+                  "personal",
+                  iso,
+                  hikeDate,
+                );
+              }}
             />
           </>
         ) : null}

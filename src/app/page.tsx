@@ -45,12 +45,18 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="hero-cta motion-reduce:animate-none">
+          <div className="hero-cta flex flex-col gap-3 motion-reduce:animate-none sm:flex-row sm:items-center">
             <Link
               href="/analyze"
               className="inline-flex items-center justify-center bg-[var(--cta)] px-7 py-3.5 text-center text-base font-semibold tracking-wide text-[var(--cta-ink)] transition hover:brightness-105"
             >
               分析我的路线
+            </Link>
+            <Link
+              href="/history"
+              className="text-sm text-[var(--mist)] underline-offset-4 hover:underline"
+            >
+              本机历史
             </Link>
           </div>
         </section>
