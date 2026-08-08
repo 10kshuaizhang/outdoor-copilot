@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>第 1 课 · 唯一分析缝 analyzeRoute</title>
+    <link rel="stylesheet" href="../assets/lesson.css" />
+  </head>
+  <body>
+    <main class="page">
+      <p class="eyebrow">Lesson 0001 · Outdoor Copilot 实现</p>
+      <h1>唯一分析缝：<code>analyzeRoute</code></h1>
+      <p class="lead">
+        本课只教一件事：整份报告的数字，几乎都从同一个函数出来。掌握它，你就抓住了实现的脊柱。
+      </p>
+
+      <h2>为何从这里开始</h2>
+      <p>
+        产品要验证的是「对你的难度」是否有用，不是堆页面。Spec 把计算收敛到单一入口，方便测试与改需求时不散架——见
+        <a href="../docs/superpowers/specs/2026-08-08-outdoor-copilot-v01-design.md">V0.1 Design Spec</a>
+        与 <a href="../README.md">README 管道图</a>。
+      </p>
+
+      <h2>先建立图景</h2>
+      <div class="pipeline">
+        <div class="step">
+          <span class="n">01</span>
+          <div>
+            <strong>GPX → 点列</strong><br />
+            <code>parseGpx</code> 把 XML 轨迹变成 <code>TrackPoint[]</code>。
+            GPX 是轨迹交换的事实标准（
+            <a href="https://www.topografix.com/gpx.asp">TopoGrafix / GPX</a>）。
+          </div>
+        </div>
+        <div class="step">
+          <span class="n">02</span>
+          <div>
+            <strong>可选输入</strong><br />
+            个人档案 <code>profile</code>、天气 <code>weather</code>、计划出发
+            <code>plannedStart</code>。缺了也能算——置信度会下降。
+          </div>
+        </div>
+        <div class="step">
+          <span class="n">03</span>
+          <div>
+            <strong><code>analyzeRoute</code></strong><br />
+            文件：<code>src/lib/engine/analyzeRoute.ts</code>。输出完整
+            <code>RouteAnalysis</code>（分数、时长、挑战、建议、解释模板……）。
+          </div>
+        </div>
+        <div class="step">
+          <span class="n">04</span>
+          <div>
+            <strong>UI 只编排，不重算核心</strong><br />
+            <code>/analyze</code> 负责上传、档案、展示；天气与 LLM 走可选 API，失败有退路。
+          </div>
+        </div>
+      </div>
+
+      <h2>管道里发生了什么（够用版）</h2>
+      <p>函数内部按固定顺序组合模块——你不必背公式，但要能复述顺序：</p>
+      <ol>
+        <li>距离 / 爬升 / 中心点</li>
+        <li>分段 + 海拔剖面</li>
+        <li>Base Difficulty</li>
+        <li>天气调整（含时长因子）</li>
+        <li>生理负荷参考层（学术公式；可缺省）</li>
+        <li>Personal Difficulty（有档案才真正「对你」）</li>
+        <li>时长区间、挑战路段、出发建议、模板解释</li>
+      </ol>
+      <p>
+        生理层出处见
+        <a href="https://www.hanspub.org/journal/PaperInformation?paperID=55411"
+          >刘泓舟等《户外运动强度测定与定级》</a
+        >；在产品里它是<strong>参考层</strong>，不是主叙事。天气外部源是
+        <a href="https://open-meteo.com/en/docs">Open-Meteo Forecast API</a>，经
+        <code>/api/weather</code> 代理。
+      </p>
+
+      <div class="callout warn">
+        <p>
+          <strong>硬规则（请记住）：</strong>难度分、时长、挑战公里段只来自确定性引擎。LLM（<code>/api/explain</code>）最多润色中文，禁止改数字——这是信任边界，不是实现细节。
+        </p>
+      </div>
+
+      <h2>和页面的关系</h2>
+      <p>
+        Next.js 用 App Router 把文件夹映射成 URL（
+        <a href="https://nextjs.org/docs/app">官方文档</a>）。本产品大致是：
+      </p>
+      <ul>
+        <li><code>src/app/analyze/</code> — 交互与展示</li>
+        <li><code>src/lib/engine/</code> — 可在浏览器跑、也可在 Node 用 Vitest 单测</li>
+        <li><code>src/lib/history/</code> — 本机快照，不是云端账号</li>
+      </ul>
+      <p>
+        引擎测试把 <code>analyzeRoute</code> 当作 seam，避免 UI 改动悄悄改写难度逻辑（见
+        <a href="https://vitest.dev/">Vitest</a>）。
+      </p>
+
+      <h2>练习：检索，不是翻笔记</h2>
+      <div
+        class="quiz"
+        data-quiz
+        data-answer="1"
+        data-ok="正确：LLM 只能解释，不能创造或改写关键数字。"
+        data-bad="再想：哪些输出必须由引擎锁定？"
+      >
+        <h3>练习</h3>
+        <p class="prompt">下列哪一项<strong>不允许</strong>由 LLM API 修改？</p>
+        <div class="choices">
+          <button type="button" class="choice" data-choice="0">
+            免责声明文案措辞与语气润色
+          </button>
+          <button type="button" class="choice" data-choice="1">
+            个人难度分数与挑战公里段落
+          </button>
+          <button type="button" class="choice" data-choice="2">
+            模板解释段落连接词语气调整
+          </button>
+        </div>
+        <p class="feedback" data-feedback aria-live="polite"></p>
+      </div>
+
+      <div
+        class="quiz"
+        data-quiz
+        data-answer="2"
+        data-ok="正确：所有路径应汇入 analyzeRoute，它才是测试与改需求的锚点。"
+        data-bad="再想：Spec 指定的「单一公共入口」叫什么？"
+      >
+        <h3>练习</h3>
+        <p class="prompt">若要改「爬升如何影响基础分」，应先打开哪里？</p>
+        <div class="choices">
+          <button type="button" class="choice" data-choice="0">
+            只改首页展示文案不碰计算引擎
+          </button>
+          <button type="button" class="choice" data-choice="1">
+            只改解释接口提示不碰计算引擎
+          </button>
+          <button type="button" class="choice" data-choice="2">
+            从分析缝跟进基础难度相关模块
+          </button>
+        </div>
+        <p class="feedback" data-feedback aria-live="polite"></p>
+      </div>
+
+      <h2>本课主阅读</h2>
+      <div class="refs">
+        <p>
+          请打开并扫读（5–10 分钟）：
+          <a href="../src/lib/engine/analyzeRoute.ts"><code>src/lib/engine/analyzeRoute.ts</code></a>
+          ——对照上面的步骤顺序做批注。产品级权威仍以
+          <a href="../docs/superpowers/specs/2026-08-08-outdoor-copilot-v01-design.md">Design Spec § Architecture</a>
+          为准。
+        </p>
+      </div>
+
+      <h2>速查与术语</h2>
+      <p class="nav-links">
+        <a href="../reference/pipeline.html">分析管道速查</a>
+        <a href="../reference/glossary.html">术语表</a>
+        <a href="../MISSION.md">学习使命</a>
+        <a href="../RESOURCES.md">资源列表</a>
+      </p>
+
+      <div class="footer-note">
+        <p>
+          <strong>有不清楚的就问我。</strong>我是你的老师：可以追问某一行代码、某个分数从哪来，或「如果我想加 XX 该动哪里」。下一课建议：<code>/analyze</code> 页面如何编排「基础上报 → 档案 → 个人报告」。
+        </p>
+      </div>
+    </main>
+    <script type="module" src="../assets/quiz.js"></script>
+  </body>
+</html>

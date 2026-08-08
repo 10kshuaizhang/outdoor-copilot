@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>分析管道速查 · Outdoor Copilot</title>
+    <link rel="stylesheet" href="../assets/lesson.css" />
+  </head>
+  <body>
+    <main class="page">
+      <p class="eyebrow">Reference</p>
+      <h1>分析管道速查</h1>
+      <p class="lead">打印友好的一页纸：从文件到报告数字。</p>
+
+      <h2>入口</h2>
+      <pre><code>parseGpx(xml) → TrackPoint[]
+analyzeRoute({ points, profile?, weather?, plannedStart? }) → RouteAnalysis</code></pre>
+
+      <h2>管道（顺序固定）</h2>
+      <ol>
+        <li>距离 / 爬升 / 中心点（<code>geo.ts</code>）</li>
+        <li>自适应分段 + 海拔剖面（<code>segments.ts</code>）</li>
+        <li>Base 分项（<code>baseDifficulty.ts</code>）</li>
+        <li>天气调整分数与时长因子（<code>weatherAdjust.ts</code>）</li>
+        <li>时长种子 → 生理负荷层（<code>physiology.ts</code>）</li>
+        <li>个人化（<code>personalize.ts</code>）→ Personal Difficulty</li>
+        <li>最终时长区间（再乘天气因子）</li>
+        <li>挑战路段 + 出发建议（<code>challenges.ts</code>）</li>
+        <li>模板 explanation（UI 可选再调 <code>/api/explain</code>）</li>
+      </ol>
+
+      <h2>硬规则</h2>
+      <div class="callout warn">
+        <p><strong>分数、时长、挑战公里段只来自确定性引擎。</strong> LLM 只能解释，不能创造关键数据。</p>
+      </div>
+
+      <h2>仓库地图</h2>
+      <pre><code>src/lib/engine/     ← 计算核心（可 Node 单测）
+src/app/analyze/    ← 交互编排
+src/app/api/weather ← Open-Meteo 代理
+src/app/api/explain ← 可选 LLM 润色
+src/lib/history/    ← 本机存储
+src/lib/share/      ← 分享摘要</code></pre>
+
+      <p class="nav-links">
+        <a href="glossary.html">术语表</a>
+        <a href="../lessons/0001-analyze-route-seam.html">第 1 课</a>
+      </p>
+    </main>
+  </body>
+</html>

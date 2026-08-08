@@ -1,0 +1,279 @@
+/* Shared lesson stylesheet — Outdoor Copilot teaching workspace */
+@import url("https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --ink: #142018;
+  --ink-soft: #3a4a3f;
+  --paper: #f3f1eb;
+  --paper-deep: #e7e3d8;
+  --pine: #1f4d3a;
+  --pine-soft: #2f6b52;
+  --clay: #8a4b2f;
+  --line: rgba(20, 32, 24, 0.14);
+  --ok: #1f4d3a;
+  --bad: #7a2e2e;
+  --shadow: 0 1px 0 rgba(20, 32, 24, 0.06);
+  --measure: 40rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 18px;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(47, 107, 82, 0.08), transparent 55%),
+    radial-gradient(900px 400px at 100% 0%, rgba(138, 75, 47, 0.06), transparent 50%),
+    linear-gradient(180deg, #f7f5ef 0%, var(--paper) 40%, #efece4 100%);
+  font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+.page {
+  width: min(720px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 4rem;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pine);
+  font-weight: 600;
+  margin: 0 0 0.6rem;
+}
+
+h1,
+h2,
+h3 {
+  font-family: Literata, "Songti SC", "Noto Serif SC", serif;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: clamp(1.7rem, 4vw, 2.25rem);
+  margin: 0 0 0.75rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin: 2.25rem 0 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+
+h3 {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+p,
+li {
+  color: var(--ink-soft);
+}
+
+p.lead {
+  font-size: 1.05rem;
+  color: var(--ink);
+  max-width: var(--measure);
+}
+
+a {
+  color: var(--pine);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  color: var(--clay);
+}
+
+code,
+.mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.88em;
+}
+
+code {
+  background: var(--paper-deep);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
+pre {
+  background: #17241c;
+  color: #e8efe9;
+  padding: 1rem 1.1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  box-shadow: var(--shadow);
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.pipeline {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1.25rem 0;
+}
+
+.pipeline .step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.7rem 0.85rem;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.pipeline .n {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--pine);
+  min-width: 1.5rem;
+}
+
+.pipeline strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.callout {
+  border-left: 3px solid var(--pine);
+  padding: 0.65rem 0 0.65rem 1rem;
+  margin: 1.25rem 0;
+  background: rgba(31, 77, 58, 0.06);
+}
+
+.callout.warn {
+  border-left-color: var(--clay);
+  background: rgba(138, 75, 47, 0.08);
+}
+
+.quiz {
+  margin: 1.5rem 0;
+  padding: 1rem 1.1rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.quiz h3 {
+  margin-top: 0;
+  border: 0;
+  padding: 0;
+}
+
+.quiz .prompt {
+  margin: 0.5rem 0 0.9rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.quiz .choices {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.quiz button.choice {
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.65rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.quiz button.choice:hover:not(:disabled) {
+  border-color: var(--pine-soft);
+}
+
+.quiz button.choice:disabled {
+  cursor: default;
+}
+
+.quiz button.choice.correct {
+  border-color: var(--ok);
+  background: rgba(31, 77, 58, 0.1);
+}
+
+.quiz button.choice.wrong {
+  border-color: var(--bad);
+  background: rgba(122, 46, 46, 0.08);
+}
+
+.quiz .feedback {
+  margin: 0.85rem 0 0;
+  min-height: 1.4em;
+  font-size: 0.95rem;
+}
+
+.quiz .feedback.ok {
+  color: var(--ok);
+}
+
+.quiz .feedback.bad {
+  color: var(--bad);
+}
+
+.refs {
+  font-size: 0.92rem;
+}
+
+.refs ul {
+  padding-left: 1.15rem;
+}
+
+.footer-note {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin: 1rem 0 0;
+  font-size: 0.92rem;
+}
+
+@media print {
+  body {
+    background: white;
+    font-size: 11pt;
+  }
+
+  .page {
+    width: 100%;
+    padding: 0;
+  }
+
+  .quiz button.choice {
+    break-inside: avoid;
+  }
+}

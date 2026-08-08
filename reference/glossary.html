@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>术语表 · Outdoor Copilot</title>
+    <link rel="stylesheet" href="../assets/lesson.css" />
+  </head>
+  <body>
+    <main class="page">
+      <p class="eyebrow">Reference</p>
+      <h1>术语表</h1>
+      <p class="lead">全课共用词汇。释义以仓库 Spec 与实现为准。</p>
+
+      <h2>核心概念</h2>
+      <dl>
+        <dt><strong>Base Difficulty</strong></dt>
+        <dd>路线本身的基础负荷（0–100），不含个人档案调整；可含天气与生理参考层对分数的贡献。</dd>
+        <dt><strong>Personal Difficulty</strong></dt>
+        <dd>在 Base 之上按经验、舒适距离/爬升、风险偏好等调整后的「对你」难度。</dd>
+        <dt><strong>分析缝 / Seam</strong></dt>
+        <dd>唯一公共计算入口 <code>analyzeRoute(input) → RouteAnalysis</code>；页面与测试都经此调用。</dd>
+        <dt><strong>贡献项（contributions）</strong></dt>
+        <dd>可解释的加减分条目（code / label / delta），构成 Why，而非黑盒一句话。</dd>
+        <dt><strong>置信度（confidence）</strong></dt>
+        <dd>系统对当前结果把握程度；档案不全、天气 fallback 等会压低。</dd>
+        <dt><strong>档位（band）</strong></dt>
+        <dd>分数映射的中文标签：轻松 / 适中 / 吃力 / 很难 / 不建议。</dd>
+      </dl>
+
+      <h2>数据与边界</h2>
+      <dl>
+        <dt><strong>GPX</strong></dt>
+        <dd>GPS Exchange Format：轨迹 XML；本产品解析为 <code>TrackPoint[]</code>。</dd>
+        <dt><strong>模板解释</strong></dt>
+        <dd>引擎生成的中文说明；始终可用。LLM 仅可润色文案，不得改数字。</dd>
+        <dt><strong>Fallback 天气</strong></dt>
+        <dd>Open-Meteo 失败时的中性天气假设，保证报告仍可出。</dd>
+      </dl>
+
+      <p class="nav-links">
+        <a href="pipeline.html">管道速查</a>
+        <a href="../lessons/0001-analyze-route-seam.html">第 1 课</a>
+        <a href="../MISSION.md">Mission</a>
+      </p>
+    </main>
+  </body>
+</html>
