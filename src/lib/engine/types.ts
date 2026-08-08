@@ -56,10 +56,28 @@ export type RouteSummary = {
   center: { lat: number; lon: number };
 };
 
+export type Segment = {
+  idx: number;
+  startKm: number;
+  endKm: number;
+  distanceM: number;
+  gainM: number;
+  lossM: number;
+  avgGradePct: number;
+  maxGradePct: number;
+};
+
+export type ElevationSample = {
+  km: number;
+  ele: number;
+};
+
 export type RouteAnalysis = {
-  /** V0.1 stub marker; real analyses use "ready". */
+  /** Empty/invalid input stays "stub"; successful parses use "ready". */
   status: "stub" | "ready";
   route: RouteSummary;
+  segments: Segment[];
+  elevationProfile: ElevationSample[];
   baseDifficulty: DifficultyScores;
   personalDifficulty: DifficultyScores;
   confidence: number;

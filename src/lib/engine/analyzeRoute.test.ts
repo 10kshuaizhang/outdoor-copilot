@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { analyzeRoute } from "./analyzeRoute";
+import {
+  SHORT_CLIMB_EXPECT,
+  SHORT_CLIMB_POINTS,
+} from "./fixtures/shortClimb.points";
 
 const BANDS = ["轻松", "适中", "吃力", "很难", "不建议"] as const;
 
@@ -55,18 +59,34 @@ function expectFullShape(result: ReturnType<typeof analyzeRoute>) {
 }
 
 describe("analyzeRoute", () => {
-  it("returns a stub RouteAnalysis with the stable public shape", () => {
+  it("computes distance and elevation for the short-climb fixture", () => {
     const result = analyzeRoute({
-      points: [
-        { lat: 40.0, lon: 116.0, ele: 100 },
-        { lat: 40.01, lon: 116.01, ele: 180 },
-      ],
-      profile: { experience: "intermediate" },
+      points: SHORT_CLIMB_POINTS,
       weather: { source: "fallback" },
     });
 
-    expect(result.status).toBe("stub");
+    expect(result.status).toBe("ready");
     expectFullShape(result);
+    expect(result.route.distanceKm).toBeGreaterThanOrEqual(
+      SHORT_CLIMB_EXPECT.distanceKmMin,
+    );
+    expect(result.route.distanceKm).toBeLessThanOrEqual(
+      SHORT_CLIMB_EXPECT.distanceKmMax,
+    );
+    expect(result.route.elevationGainM).toBeGreaterThanOrEqual(
+      SHORT_CLIMB_EXPECT.elevationGainMMin,
+    );
+    expect(result.route.elevationGainM).toBeLessThanOrEqual(
+      SHORT_CLIMB_EXPECT.elevationGainMMax,
+    );
+    expect(result.route.minElevM).toBe(80);
+    expect(result.route.maxElevM).toBe(200);
+    expect(result.segments.length).toBeGreaterThan(0);
+    expect(result.elevationProfile.length).toBeGreaterThan(1);
+    expect(result.baseDifficulty.overall).toBeGreaterThan(0);
+    expect(result.baseDifficulty.climbing).toBeGreaterThan(
+      result.baseDifficulty.endurance,
+    );
   });
 
   it("still returns a complete RouteAnalysis for empty points and default profile", () => {
@@ -75,7 +95,24 @@ describe("analyzeRoute", () => {
       weather: { source: "fallback" },
     });
 
+    expect(result.status).toBe("stub");
     expectFullShape(result);
     expect(result.route.center).toEqual({ lat: 0, lon: 0 });
+  });
+
+  it("uses finer segments for short routes than long routes", () => {
+    const short = analyzeRoute({ points: SHORT_CLIMB_POINTS });
+    const longPoints = Array.from({ length: 80 }, (_, i) => ({
+      lat: 40 + i * 0.003,
+      lon: 116,
+      ele: 100 + (i % 5) * 10,
+    }));
+    const long = analyzeRoute({ points: longPoints });
+
+    expect(short.route.distanceKm).toBeLessThan(6);
+    expect(long.route.distanceKm).toBeGreaterThan(20);
+    const shortTarget = short.segments[0]?.distanceM ?? 0;
+    const longTarget = long.segments[0]?.distanceM ?? 0;
+    expect(shortTarget).toBeLessThan(longTarget);
   });
 });

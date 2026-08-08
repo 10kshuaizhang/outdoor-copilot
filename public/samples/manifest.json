@@ -1,0 +1,16 @@
+[
+  {
+    "id": "beijing-steep",
+    "name": "北京周边短陡线",
+    "region": "北京",
+    "blurb": "爬升密集，适合检验攀爬负荷。",
+    "file": "/samples/beijing-steep.gpx"
+  },
+  {
+    "id": "hangzhou-hills",
+    "name": "杭州丘陵中长线",
+    "region": "杭州",
+    "blurb": "距离更长、起伏绵延，偏耐力。",
+    "file": "/samples/hangzhou-hills.gpx"
+  }
+]
