@@ -11,5 +11,11 @@ fi
 npm run test
 npm run build
 
-npx --yes vercel@39.4.2 pull --yes --environment=production --token "$VERCEL_TOKEN" || true
-npx --yes vercel@39.4.2 deploy --prod --yes --token "$VERCEL_TOKEN"
+# Prefer logged-in CLI; fall back to VERCEL_TOKEN when provided.
+if [[ -n "${VERCEL_TOKEN:-}" ]]; then
+  npx --yes vercel@58.9.0 pull --yes --environment=production --token "$VERCEL_TOKEN" || true
+  npx --yes vercel@58.9.0 deploy --prod --yes --token "$VERCEL_TOKEN"
+else
+  npx --yes vercel@58.9.0 pull --yes --environment=production || true
+  npx --yes vercel@58.9.0 deploy --prod --yes
+fi
