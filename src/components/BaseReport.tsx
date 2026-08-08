@@ -4,6 +4,11 @@ import { useState } from "react";
 import { ElevationProfile } from "@/components/ElevationProfile";
 import { trackEvent } from "@/lib/analytics/events";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
+import {
+  downloadShareCard,
+  generateShareCard,
+  shareOrDownloadCard,
+} from "@/lib/share/exportShareCard";
 import { exportSummaryText } from "@/lib/share/exportSummary";
 
 function formatDuration(min: number): string {
@@ -47,6 +52,9 @@ export function BaseReport({
   const [feedbackSaved, setFeedbackSaved] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [showManualCopy, setShowManualCopy] = useState(false);
+  const [cardBusy, setCardBusy] = useState(false);
+  const [cardPreviewUrl, setCardPreviewUrl] = useState<string | null>(null);
+  const [cardCaption, setCardCaption] = useState<string | null>(null);
 
   const summaryText = [
     `Outdoor Copilot · ${title ?? "路线分析"}`,
@@ -64,14 +72,76 @@ export function BaseReport({
     .filter(Boolean)
     .join("\n");
 
-  const exportSummary = async () => {
+  const ensureCard = async () => {
+    const { blob, caption } = await generateShareCard({
+      analysis,
+      title,
+    });
+    setCardCaption(caption);
+    setCardPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(blob);
+    });
+    return { caption };
+  };
+
+  const makeShareCard = async () => {
     setShareStatus(null);
     setShowManualCopy(false);
-    const result = await exportSummaryText(summaryText);
+    setCardBusy(true);
+    try {
+      await ensureCard();
+      const result = await shareOrDownloadCard({ analysis, title });
+      if (result.ok) {
+        trackEvent("share_image", { method: result.method });
+        setCardCaption(result.caption);
+        setShareStatus(
+          result.method === "share"
+            ? "已打开系统分享（可直接发小红书/保存到相册）。"
+            : "图片已下载。打开小红书发图，再点「复制文案」。",
+        );
+        return;
+      }
+      setShareStatus(result.message);
+      if (result.caption) setCardCaption(result.caption);
+    } finally {
+      setCardBusy(false);
+    }
+  };
+
+  const saveCardOnly = async () => {
+    setCardBusy(true);
+    setShareStatus(null);
+    try {
+      await ensureCard();
+      const result = await downloadShareCard({ analysis, title });
+      if (result.ok) {
+        trackEvent("share_image", { method: "download" });
+        setShareStatus("图片已保存。发小红书时配上下方文案。");
+      } else {
+        setShareStatus(result.message);
+      }
+    } finally {
+      setCardBusy(false);
+    }
+  };
+
+  const copyCaption = async () => {
+    let caption = cardCaption;
+    if (!caption) {
+      try {
+        caption = (await ensureCard()).caption;
+      } catch {
+        caption = summaryText;
+      }
+    }
+    const result = await exportSummaryText(caption);
     if (result.ok) {
       trackEvent("copy_share", { method: result.method });
       setShareStatus(
-        result.method === "share" ? "已打开系统分享。" : "摘要已复制到剪贴板。",
+        result.method === "share"
+          ? "已打开系统分享文案。"
+          : "小红书文案已复制，粘贴到配文即可。",
       );
       return;
     }
@@ -280,26 +350,69 @@ export function BaseReport({
 
       {showPersonal ? (
         <>
-          <button
-            type="button"
-            onClick={exportSummary}
-            className="w-full border border-[var(--pine-deep)] px-5 py-3 text-sm font-semibold text-[var(--pine-deep)]"
-          >
-            导出 / 分享摘要
-          </button>
-          {shareStatus ? (
-            <p className="text-sm text-[var(--pine-deep)]" role="status">
-              {shareStatus}
+          <div className="space-y-3">
+            <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+              分享到小红书
             </p>
-          ) : null}
-          {showManualCopy ? (
-            <textarea
-              readOnly
-              value={summaryText}
-              className="min-h-32 w-full border border-black/15 bg-white p-3 text-sm text-[var(--ink)]"
-              onFocus={(e) => e.currentTarget.select()}
-            />
-          ) : null}
+            <p className="text-sm text-[var(--rock)]">
+              生成 3:4 海报图（不是纯文字）。保存后发笔记，再复制配文。
+            </p>
+            <button
+              type="button"
+              disabled={cardBusy}
+              onClick={() => void makeShareCard()}
+              className="w-full bg-[var(--pine-deep)] px-5 py-3.5 text-sm font-semibold text-[var(--cream)] disabled:opacity-60"
+            >
+              {cardBusy ? "生成中…" : "生成小红书分享图"}
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={cardBusy}
+                onClick={() => void saveCardOnly()}
+                className="border border-[var(--pine-deep)] px-3 py-2.5 text-sm font-semibold text-[var(--pine-deep)] disabled:opacity-60"
+              >
+                仅保存图片
+              </button>
+              <button
+                type="button"
+                disabled={cardBusy}
+                onClick={() => void copyCaption()}
+                className="border border-[var(--pine-deep)] px-3 py-2.5 text-sm font-semibold text-[var(--pine-deep)] disabled:opacity-60"
+              >
+                复制文案
+              </button>
+            </div>
+            {cardPreviewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cardPreviewUrl}
+                alt="小红书分享预览"
+                className="mx-auto w-full max-w-xs border border-black/10"
+              />
+            ) : null}
+            {cardCaption ? (
+              <textarea
+                readOnly
+                value={cardCaption}
+                className="min-h-28 w-full border border-black/15 bg-white p-3 text-sm text-[var(--ink)]"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+            ) : null}
+            {shareStatus ? (
+              <p className="text-sm text-[var(--pine-deep)]" role="status">
+                {shareStatus}
+              </p>
+            ) : null}
+            {showManualCopy ? (
+              <textarea
+                readOnly
+                value={cardCaption ?? summaryText}
+                className="min-h-32 w-full border border-black/15 bg-white p-3 text-sm text-[var(--ink)]"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+            ) : null}
+          </div>
           <div className="space-y-3 border-t border-black/10 pt-5 text-sm">
             <p className="font-[family-name:var(--font-serif-sc)] tracking-[0.12em] text-[var(--pine)]">
               走完后回填（不自动改模型）

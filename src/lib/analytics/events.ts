@@ -3,6 +3,7 @@ export type AnalyticsEventName =
   | "analyze_base"
   | "analyze_personal"
   | "copy_share"
+  | "share_image"
   | "feedback";
 
 export type AnalyticsEvent = {

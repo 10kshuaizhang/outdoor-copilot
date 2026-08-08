@@ -45,6 +45,12 @@ export default function AboutPage() {
               Difficulty、时长区间、挑战路段与出发建议。
             </p>
           </li>
+          <li>
+            <p className="font-semibold text-[var(--ink)]">4. 分享到小红书</p>
+            <p className="mt-1">
+              在个人报告点「生成小红书分享图」，保存 3:4 海报，再「复制文案」贴到笔记配文——不要只发一段纯文字摘要。
+            </p>
+          </li>
         </ol>
 
         <div className="mt-10 space-y-3 border-t border-black/10 pt-6 text-sm leading-relaxed text-[var(--rock)]">

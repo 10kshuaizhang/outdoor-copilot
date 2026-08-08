@@ -122,13 +122,19 @@ git push -u origin main
 
 ### 部署到 Vercel
 
+完整清单见 [docs/DEPLOY.md](docs/DEPLOY.md)（含 GitHub、环境变量、小红书手测）。
+
 ```bash
 export VERCEL_TOKEN=...   # https://vercel.com/account/tokens
 ./scripts/deploy-vercel.sh
 # 或：npx vercel --prod --yes --token "$VERCEL_TOKEN"
 ```
 
-部署后把 `NEXT_PUBLIC_SITE_URL` 设为正式域名。
+部署后把 `NEXT_PUBLIC_SITE_URL` 设为正式域名；LLM 变量见 [docs/SETUP-APIS.md](docs/SETUP-APIS.md)。
+
+### 小红书分享
+
+个人报告 → **生成小红书分享图**（3:4 PNG）→ 保存/系统分享 → **复制文案** 作为笔记配文。
 
 ---
 
