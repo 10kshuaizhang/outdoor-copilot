@@ -37,6 +37,12 @@ export type HikeBrief = {
   };
   phases: HikeBriefPhase[];
   feel: HikeBriefFeel;
+  /** Rule-based clothing advice. */
+  clothing: string[];
+  /** Rule-based gear checklist. */
+  gear: string[];
+  /** Photography / visibility tips. */
+  photoTips: string[];
   actions: string[];
   copyText: string;
 };
@@ -65,12 +71,26 @@ export type WeatherSnapshot = {
   lat?: number;
   lon?: number;
   temperatureC?: number;
+  /** Daily minimum when available. */
+  temperatureMinC?: number;
   precipMm?: number;
   windMs?: number;
   humidity?: number;
   thunderstormRisk?: "low" | "medium" | "high" | "unknown";
   sunrise?: string;
   sunset?: string;
+  uvIndexMax?: number;
+  /** Human label for wetter hours, China local clock. */
+  rainWindow?: string;
+  peakHourPrecipMm?: number;
+  cloudCoverPct?: number;
+  visibilityKm?: number;
+  modelAgreement?: {
+    models: string[];
+    precipMm: number[];
+    level: "aligned" | "mixed" | "divergent" | "unknown";
+    summary: string;
+  };
   source: "open-meteo" | "fallback";
 };
 

@@ -38,6 +38,12 @@ describe("buildHikeBrief", () => {
     expect(brief.audience.experienced).toBeTruthy();
     expect(brief.phases.length).toBeGreaterThanOrEqual(3);
     expect(brief.copyText).toContain("降雨");
+    expect(brief.copyText).toContain("穿衣");
+    expect(brief.copyText).toContain("装备");
+    expect(brief.copyText).toContain("出片");
+    expect(brief.clothing.length).toBeGreaterThan(0);
+    expect(brief.gear.length).toBeGreaterThan(0);
+    expect(brief.photoTips.length).toBeGreaterThan(0);
     expect(brief.copyText).toContain("整体判断");
     expect(result.explanation.text).toBe(brief.copyText);
   });

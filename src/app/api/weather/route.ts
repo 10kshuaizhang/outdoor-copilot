@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fallbackWeather } from "@/lib/engine/weatherAdjust";
-import {
-  mapOpenMeteoDaily,
-  openMeteoForecastUrl,
-  type OpenMeteoDaily,
-} from "@/lib/weather/openMeteo";
+import { fetchOpenMeteoSnapshot } from "@/lib/weather/openMeteo";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -20,19 +16,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(openMeteoForecastUrl({ lat, lon, date }), {
-      next: { revalidate: 1800 },
-    });
-    if (!res.ok) throw new Error(`open-meteo ${res.status}`);
-    const data = (await res.json()) as { daily?: OpenMeteoDaily };
-    if (!data.daily?.time?.length && data.daily?.temperature_2m_max == null) {
-      // Some error payloads omit daily; treat as failure
-      if (!data.daily) throw new Error("open-meteo empty daily");
-    }
-
-    return NextResponse.json(
-      mapOpenMeteoDaily({ date, lat, lon, daily: data.daily }),
-    );
+    const snap = await fetchOpenMeteoSnapshot({ lat, lon, date });
+    return NextResponse.json(snap);
   } catch {
     return NextResponse.json(fallbackWeather(lat, lon, date));
   }

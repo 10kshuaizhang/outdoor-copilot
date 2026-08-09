@@ -119,6 +119,7 @@ function buildWeatherBlocks(input: {
   route: RouteSummary;
 }): HikeBriefPhase[] {
   const temp = input.weather.temperatureC ?? 18;
+  const tempMin = input.weather.temperatureMinC;
   const precip = input.weather.precipMm ?? 0;
   const wind = input.weather.windMs ?? 0;
   const humidity = input.weather.humidity ?? 50;
@@ -129,26 +130,41 @@ function buildWeatherBlocks(input: {
   );
   const ridgeApprox = Math.round(temp - (elevSpan / 100) * 0.55);
   const valleyHigh = Math.round(temp);
-  const valleyLow = Math.round(temp - 6);
+  const valleyLow = Math.round(tempMin ?? temp - 6);
 
-  const rainDetail =
+  let rainDetail =
     precip < 0.2
-      ? "多源单点预报显示系统性降水不明显；山区仍可能有局地飘雨。"
+      ? "系统性降水不明显；山区仍可能有局地飘雨。"
       : precip < 10
         ? `预计降水约 ${precip.toFixed(1)} mm（${precipLabel(precip)}）。更像分散性阵雨，不是下整天；但仍会把土路/苔石打湿。`
         : `预计降水约 ${precip.toFixed(1)} mm（${precipLabel(precip)}）。短时可能偏强，沟谷涨水、冲刷和下山难度都会上去。`;
+  if (input.weather.rainWindow) {
+    rainDetail += ` ${input.weather.rainWindow}。`;
+  }
+  if (input.weather.peakHourPrecipMm != null && input.weather.peakHourPrecipMm >= 1) {
+    rainDetail += ` 小时峰值约 ${input.weather.peakHourPrecipMm} mm。`;
+  }
 
   const windBeaufortish =
-    wind < 3 ? "约1–2级，整体不大" : wind < 6 ? "约3级左右" : wind < 10 ? "约4级，山脊更明显" : "偏大，垭口/山脊阵风需小心";
+    wind < 3
+      ? "约1–2级，整体不大"
+      : wind < 6
+        ? "约3级左右"
+        : wind < 10
+          ? "约4级，山脊更明显"
+          : "偏大，垭口/山脊阵风需小心";
 
+  const uvIdx = input.weather.uvIndexMax;
   const uv =
     precip >= 5 || input.weather.thunderstormRisk === "high"
       ? "云雨为主，晒感不强，但仍建议常规防晒"
-      : temp >= 28
-        ? "紫外偏强（约7–9级量级），山脊缺遮挡，帽子墨镜防晒霜都要"
-        : "紫外中等偏强，云天也建议防晒";
+      : uvIdx != null
+        ? `紫外线指数约 ${uvIdx}，${uvIdx >= 7 ? "偏强，山脊缺遮挡务必防晒" : "中等，建议常规防晒"}`
+        : temp >= 28
+          ? "紫外偏强，山脊缺遮挡，帽子墨镜防晒霜都要"
+          : "紫外中等偏强，云天也建议防晒";
 
-  return [
+  const blocks: HikeBriefPhase[] = [
     { label: "降雨", detail: rainDetail },
     { label: "对流/雷暴", detail: `${storm.level}。${storm.detail}` },
     {
@@ -168,6 +184,100 @@ function buildWeatherBlocks(input: {
     },
     { label: "紫外线", detail: uv },
   ];
+
+  if (input.weather.modelAgreement?.summary) {
+    blocks.unshift({
+      label: "多模型",
+      detail: input.weather.modelAgreement.summary,
+    });
+  }
+
+  return blocks;
+}
+
+function buildClothing(weather: WeatherSnapshot, route: RouteSummary): string[] {
+  const temp = weather.temperatureC ?? 18;
+  const tempMin = weather.temperatureMinC ?? temp - 5;
+  const precip = weather.precipMm ?? 0;
+  const wind = weather.windMs ?? 0;
+  const ridge = Math.round(temp - Math.max(0, route.maxElevM - route.minElevM) / 100 * 0.55);
+  const items: string[] = [];
+
+  if (temp >= 30) {
+    items.push("短袖速干 + 薄防晒衣；避免棉质吸汗不干。");
+  } else if (temp >= 22) {
+    items.push("短袖/薄长袖速干；山脊风大时加一件薄外套。");
+  } else if (temp >= 12) {
+    items.push("长袖速干 + 薄抓绒；早晚偏凉可备轻羽绒/棉服。");
+  } else {
+    items.push("抓绒 + 防风壳；低温时加保暖层，手套帽子备上。");
+  }
+
+  if (ridge <= 12 || tempMin <= 10) {
+    items.push(`高处体感可能到 ${ridge}℃ 上下，多带一层比少带稳。`);
+  }
+  if (precip >= 1 || weather.thunderstormRisk === "medium" || weather.thunderstormRisk === "high") {
+    items.push("外套优先选防泼水/冲锋衣，内层保持速干。");
+  }
+  if (wind >= 8) {
+    items.push("防风层很重要，山脊停下来会明显降温。");
+  }
+  items.push("鞋子：防滑徒步鞋；雨后优先深纹鞋底。");
+  return items.slice(0, 4);
+}
+
+function buildGear(weather: WeatherSnapshot, focusOverall: number): string[] {
+  const precip = weather.precipMm ?? 0;
+  const storm = weather.thunderstormRisk ?? "unknown";
+  const temp = weather.temperatureC ?? 18;
+  const gear: string[] = ["足够饮水", "能量食物", "导航/离线地图", "头灯（防拖延）"];
+
+  if (precip >= 0.5 || storm === "medium" || storm === "high") {
+    gear.push("雨衣或硬壳", "背包防雨罩", "防水袋保护手机");
+  }
+  if (temp >= 28 || (weather.uvIndexMax ?? 0) >= 7) {
+    gear.push("防晒霜", "帽檐帽", "墨镜");
+  }
+  if (focusOverall >= 65 || precip >= 5) {
+    gear.push("备用袜子", "护膝（可选，长下坡有用）");
+  }
+  if (storm === "high") {
+    gear.push("避免金属登山杖在暴露雷雨山脊久留");
+  }
+  // unique preserve order
+  return [...new Set(gear)].slice(0, 8);
+}
+
+function buildPhotoTips(weather: WeatherSnapshot): string[] {
+  const precip = weather.precipMm ?? 0;
+  const cloud = weather.cloudCoverPct;
+  const vis = weather.visibilityKm;
+  const tips: string[] = [];
+
+  if (precip >= 8 || weather.thunderstormRisk === "high") {
+    tips.push("强降水/对流日：远景出片差，优先拍局部雨雾、云瀑；注意设备防水。");
+  } else if (precip >= 1) {
+    tips.push("阵雨间隙常有云雾翻山，短窗出片；雨停后1–2小时植被颜色更饱和。");
+  } else if (cloud != null && cloud >= 70) {
+    tips.push("云量偏高：适合拍云海/软光人像，硬光大景机会少。");
+  } else {
+    tips.push("晴到多云：远景通透机会高；顶光硬时避开正午，侧光更好看。");
+  }
+
+  if (vis != null) {
+    tips.push(
+      vis >= 15
+        ? `能见度约 ${vis} km，适合大远景。`
+        : vis >= 8
+          ? `能见度约 ${vis} km，中景可用，远山可能发灰。`
+          : `能见度约 ${vis} km，偏糊，别强求大远景。`,
+    );
+  } else {
+    tips.push("能见度数据不足；雨后更通透，沙尘/高湿日远景易发雾。");
+  }
+
+  tips.push("经验窗口：上午云雾、傍晚侧光；正午多留给赶路。");
+  return tips.slice(0, 4);
 }
 
 function buildFeel(
@@ -283,8 +393,14 @@ export function buildHikeBrief(input: {
   });
   const feel = buildFeel(input.weather, input.route);
   const phases = buildPhases(input.segments, hardest);
+  const clothing = buildClothing(input.weather, input.route);
+  const gear = buildGear(input.weather, input.focus.overall);
+  const photoTips = buildPhotoTips(input.weather);
 
   const leadParts: string[] = [];
+  if (input.weather.modelAgreement?.summary) {
+    leadParts.push(input.weather.modelAgreement.summary);
+  }
   if (storm === "high" || precip >= 10) {
     leadParts.push(
       `今天这条线对应点预报：${precipLabel(precip)}，对流${stormLabel(storm).level}。`,
@@ -294,9 +410,7 @@ export function buildHikeBrief(input: {
       `预报有阵雨/对流扰动（约 ${precip.toFixed(1)} mm），差异往往在开始时间；不是一定下整天，但会把路打湿。`,
     );
   } else {
-    leadParts.push(
-      `系统性降水不明显，体感主要看晒、热和路线本身负荷。`,
-    );
+    leadParts.push("系统性降水不明显，体感主要看晒、热和路线本身负荷。");
   }
   leadParts.push(
     `${name}约 ${input.route.distanceKm.toFixed(1)} km / +${input.route.elevationGainM} m，对你约 ${input.focus.overall}/100（${band}）。`,
@@ -336,22 +450,17 @@ export function buildHikeBrief(input: {
     headline,
     leadParts.join(""),
     "",
-    "降雨",
-    weatherBlocks.find((b) => b.label === "降雨")?.detail ?? "",
+    ...weatherBlocks.flatMap((b) => [b.label, b.detail, ""]),
+    "穿衣",
+    ...clothing.map((c) => `· ${c}`),
     "",
-    "对流/雷暴",
-    weatherBlocks.find((b) => b.label === "对流/雷暴")?.detail ?? "",
+    "装备",
+    ...gear.map((g) => `· ${g}`),
     "",
-    "风力",
-    weatherBlocks.find((b) => b.label === "风力")?.detail ?? "",
+    "出片",
+    ...photoTips.map((p) => `· ${p}`),
     "",
-    "温度",
-    weatherBlocks.find((b) => b.label === "温度")?.detail ?? "",
-    "",
-    "紫外线",
-    weatherBlocks.find((b) => b.label === "紫外线")?.detail ?? "",
-    "",
-    "路线分段（我们的增量）",
+    "路线分段",
     ...phases.map((p) => `· ${p.label}：${p.detail}`),
     "",
     "整体判断",
@@ -375,6 +484,9 @@ export function buildHikeBrief(input: {
     },
     phases,
     feel,
+    clothing,
+    gear,
+    photoTips,
     actions: actions.slice(0, 5),
     copyText: copyLines.join("\n"),
   };

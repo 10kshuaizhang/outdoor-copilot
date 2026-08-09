@@ -74,6 +74,33 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
       </div>
 
       <div>
+        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">穿衣</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+          {brief.clothing.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">装备</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+          {brief.gear.map((g) => (
+            <li key={g}>{g}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">出片</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+          {brief.photoTips.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
         <p className="text-xs tracking-[0.12em] text-[var(--rock)]">
           路线分段
         </p>
