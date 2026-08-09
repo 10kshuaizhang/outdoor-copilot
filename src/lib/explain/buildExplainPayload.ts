@@ -73,9 +73,11 @@ export function buildOverviewExplainPayload(analysis: RouteAnalysis) {
           verdict: analysis.hikeBrief.verdict,
           verdictLabel: analysis.hikeBrief.verdictLabel,
           headline: analysis.hikeBrief.headline,
+          lead: analysis.hikeBrief.lead,
           why: analysis.hikeBrief.why,
+          weatherBlocks: analysis.hikeBrief.weatherBlocks,
+          audience: analysis.hikeBrief.audience,
           phases: analysis.hikeBrief.phases,
-          feel: analysis.hikeBrief.feel,
           actions: analysis.hikeBrief.actions,
         }
       : null,

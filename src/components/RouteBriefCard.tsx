@@ -5,7 +5,6 @@ import type { HikeBrief } from "@/lib/engine";
 
 type Props = {
   brief: HikeBrief;
-  /** Show copy button for XHS-style paste. */
   enableCopy?: boolean;
 };
 
@@ -39,20 +38,45 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
         <p
           className={`mt-2 font-[family-name:var(--font-display)] text-2xl leading-snug tracking-[-0.02em] ${verdictClass(brief.verdict)}`}
         >
-          {brief.verdictLabel}
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">
           {brief.headline}
         </p>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">
+          {brief.lead}
+        </p>
       </div>
 
       <div>
-        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">为什么</p>
-        <p className="mt-1 text-sm leading-relaxed">{brief.why}</p>
+        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">天气分项</p>
+        <ul className="mt-2 space-y-2.5 text-sm">
+          {brief.weatherBlocks.map((b) => (
+            <li key={b.label}>
+              <p className="font-semibold text-[var(--pine-deep)]">{b.label}</p>
+              <p className="mt-0.5 leading-relaxed text-[var(--ink-soft)]">
+                {b.detail}
+              </p>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div>
-        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">分段</p>
+        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">整体判断</p>
+        <ul className="mt-2 space-y-1.5 text-sm">
+          <li>
+            <span className="font-semibold">新手 · </span>
+            {brief.audience.novice}
+          </li>
+          <li>
+            <span className="font-semibold">老驴 · </span>
+            {brief.audience.experienced}
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">
+          路线分段
+        </p>
         <ul className="mt-2 space-y-2 text-sm">
           {brief.phases.map((p) => (
             <li
@@ -66,28 +90,6 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
             </li>
           ))}
         </ul>
-      </div>
-
-      <div>
-        <p className="text-xs tracking-[0.12em] text-[var(--rock)]">体感</p>
-        <dl className="mt-2 grid grid-cols-1 gap-1.5 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="inline text-[var(--rock)]">晒 · </dt>
-            <dd className="inline">{brief.feel.sun}</dd>
-          </div>
-          <div>
-            <dt className="inline text-[var(--rock)]">热 · </dt>
-            <dd className="inline">{brief.feel.heat}</dd>
-          </div>
-          <div>
-            <dt className="inline text-[var(--rock)]">闷 · </dt>
-            <dd className="inline">{brief.feel.humidity}</dd>
-          </div>
-          <div>
-            <dt className="inline text-[var(--rock)]">路 · </dt>
-            <dd className="inline">{brief.feel.slip}</dd>
-          </div>
-        </dl>
       </div>
 
       <div>

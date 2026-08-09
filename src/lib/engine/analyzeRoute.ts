@@ -175,6 +175,7 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
   const focusScores = hasProfile ? personalized.personal : baseDifficulty;
   const focusOverall = focusScores.overall;
   const hikeBrief = buildHikeBrief({
+    title: input.title,
     route,
     segments,
     weather,

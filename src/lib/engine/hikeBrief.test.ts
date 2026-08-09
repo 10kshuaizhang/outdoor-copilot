@@ -32,10 +32,13 @@ describe("buildHikeBrief", () => {
     const brief = result.hikeBrief!;
     expect(["go", "caution", "nogo"]).toContain(brief.verdict);
     expect(brief.verdictLabel.length).toBeGreaterThan(0);
+    expect(brief.lead.length).toBeGreaterThan(0);
+    expect(brief.weatherBlocks.length).toBeGreaterThanOrEqual(4);
+    expect(brief.audience.novice).toBeTruthy();
+    expect(brief.audience.experienced).toBeTruthy();
     expect(brief.phases.length).toBeGreaterThanOrEqual(3);
-    expect(brief.feel.sun).toBeTruthy();
-    expect(brief.copyText).toContain("分段");
-    expect(brief.copyText).toContain("体感");
+    expect(brief.copyText).toContain("降雨");
+    expect(brief.copyText).toContain("整体判断");
     expect(result.explanation.text).toBe(brief.copyText);
   });
 
@@ -51,7 +54,8 @@ describe("buildHikeBrief", () => {
       profile: { experience: "intermediate" },
     });
     expect(result.hikeBrief?.verdict).toBe("nogo");
-    expect(result.hikeBrief?.verdictLabel).toContain("不建议");
+    expect(result.hikeBrief?.verdictLabel).toMatch(/不宜|不建议/);
+    expect(result.hikeBrief?.audience.novice).toContain("不建议");
   });
 });
 
@@ -125,6 +129,8 @@ describe("buildHikeBrief unit", () => {
       finishWindow: "12:00–13:30",
     });
     expect(brief.headline).toContain("东灵山");
-    expect(brief.phases.some((p) => p.label.includes("最难"))).toBe(true);
+    expect(brief.weatherBlocks.some((b) => b.label === "降雨")).toBe(true);
+    expect(brief.phases.map((p) => p.label).join("|")).toMatch(/最难/);
+    expect(brief.audience.novice.length).toBeGreaterThan(0);
   });
 });

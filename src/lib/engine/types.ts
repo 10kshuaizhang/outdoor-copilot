@@ -25,7 +25,16 @@ export type HikeBrief = {
   verdict: HikeVerdict;
   verdictLabel: string;
   headline: string;
+  /** Opening paragraph under the headline. */
+  lead: string;
   why: string;
+  /** Blogger-style weather sections: 降雨 / 对流 / 风力 / 温度 / 紫外… */
+  weatherBlocks: HikeBriefPhase[];
+  /** Dual audience line, e.g. 新手不宜 / 老驴可谨慎冲. */
+  audience: {
+    novice: string;
+    experienced: string;
+  };
   phases: HikeBriefPhase[];
   feel: HikeBriefFeel;
   actions: string[];
@@ -156,4 +165,6 @@ export type AnalyzeRouteInput = {
   profile?: Partial<UserProfile>;
   weather?: WeatherSnapshot;
   plannedStart?: string;
+  /** Optional trail name for briefing headlines. */
+  title?: string;
 };

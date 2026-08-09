@@ -100,6 +100,7 @@ export default function AnalyzePage() {
         profile: engineProfile,
         weather,
         plannedStart: startIso,
+        title,
       });
       setPoints(nextPoints);
       setRouteSource(source);
