@@ -122,7 +122,8 @@ AI Chat · Strava · Watch · 社区 · Trail Expert · 推荐 · Route Discover
 
 结构化 Segment（含最难段）→ LLM **只解释**为什么该段最难。不发明数字。
 
-- [x] `/api/explain` `mode=hardest_segment`（个人报告可选 LLM；失败回落模板）
+- [x] `/api/explain` `mode=hardest_segment`（基础报告 + 个人报告均可 LLM；失败回落模板）
+- [x] `/api/explain` `mode=brief_polish`（徒步简报 → 小红书决策帖润色；失败回落 copyText）
 
 ### 4. 产品假设验证
 

@@ -21,12 +21,30 @@ type HardestPayload = {
   };
 };
 
+type BriefPolishPayload = {
+  copyText?: string;
+  title?: string;
+  brief?: Record<string, unknown>;
+  route?: { distanceKm?: number; elevationGainM?: number };
+  band?: string;
+};
+
 /** Accepts both legacy RouteAnalysis-shaped bodies and slim explain payloads. */
 type ExplainBody = {
-  mode?: "overview" | "hardest_segment";
+  mode?: "overview" | "hardest_segment" | "brief_polish";
   hardest?: HardestPayload;
   analysis?: Record<string, unknown>;
+  brief?: BriefPolishPayload;
 };
+
+const BRIEF_POLISH_SYSTEM = `你是 Outdoor Copilot 的小红书文案润色器，面向中国大陆徒步用户。
+
+硬规则：
+1. 只能润色措辞与段落节奏。禁止改写、发明或省略 JSON / copyText 里的任何数字、结论档位（verdictLabel）、地点、建议时刻、水量、坡度、公里等事实。
+2. copyText 是数字与结论的唯一真相来源；结构化 brief 用于组织章节。
+3. 输出一篇可直接发小红书的「天气决策帖」：结论开头 → 天气分项 → 新手/老驴 → 穿衣/装备/出片 → 分段 → 行动。
+4. 简洁中文，可用换行与「1. 2. 3.」。不要 Markdown（不要 **、#、\`\`\`、HTML）。不要话题标签（客户端会追加）。
+5. 语气像户外决策博主：先给能不能去，再讲为什么；少废话。`;
 
 const OVERVIEW_SYSTEM = `你是 Outdoor Copilot 的解释器，面向中国大陆徒步用户。
 
@@ -132,6 +150,14 @@ export async function POST(req: NextRequest) {
     return explainHardest(hardest);
   }
 
+  if (mode === "brief_polish") {
+    const brief = body.brief;
+    if (!brief?.copyText) {
+      return NextResponse.json({ error: "brief.copyText required" }, { status: 400 });
+    }
+    return polishBrief(brief);
+  }
+
   const analysis = body.analysis;
   if (!analysis) {
     return NextResponse.json({ error: "analysis required" }, { status: 400 });
@@ -224,6 +250,56 @@ async function explainHardest(hardest: HardestPayload) {
             role: "user",
             content: JSON.stringify(hardest),
           },
+        ],
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`llm ${res.status}`);
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error("empty");
+    return NextResponse.json({ text, model, source: "llm" });
+  } catch {
+    return NextResponse.json({
+      text: fallback,
+      source: "template",
+      reason: "llm_request_failed",
+    });
+  }
+}
+
+async function polishBrief(brief: BriefPolishPayload) {
+  const fallback = brief.copyText ?? "";
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const baseURL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+  const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+
+  if (!apiKey) {
+    return NextResponse.json({
+      text: fallback,
+      source: "template",
+      reason: "missing_openai_api_key",
+    });
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 18000);
+    const res = await fetch(`${baseURL.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: BRIEF_POLISH_SYSTEM },
+          { role: "user", content: JSON.stringify(brief) },
         ],
       }),
       signal: controller.signal,

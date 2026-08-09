@@ -489,5 +489,6 @@ export function buildHikeBrief(input: {
     photoTips,
     actions: actions.slice(0, 5),
     copyText: copyLines.join("\n"),
+    copySource: "template",
   };
 }

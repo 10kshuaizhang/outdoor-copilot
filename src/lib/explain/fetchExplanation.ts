@@ -1,5 +1,6 @@
 import type { HardestStretch } from "@/lib/engine/effort";
 import type { RouteAnalysis } from "@/lib/engine";
+import { buildBriefPolishPayload } from "./buildBriefPolishPayload";
 import { buildOverviewExplainPayload } from "./buildExplainPayload";
 
 export type ExplanationResult = {
@@ -19,6 +20,41 @@ export async function fetchExplanation(
       body: JSON.stringify({
         mode: "overview",
         analysis: buildOverviewExplainPayload(analysis),
+      }),
+    });
+    const data = (await res.json()) as {
+      text?: string;
+      source?: "template" | "llm";
+      model?: string;
+    };
+    if (!data.text) return null;
+    const source = data.source === "llm" ? "llm" : "template";
+    return {
+      text: data.text,
+      source,
+      model: source === "llm" ? data.model : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Polish structured hike brief into XHS-style decision prose.
+ * Numbers must stay aligned with brief.copyText; never throws.
+ */
+export async function fetchBriefPolish(
+  analysis: RouteAnalysis,
+): Promise<ExplanationResult | null> {
+  const payload = buildBriefPolishPayload(analysis);
+  if (!payload) return null;
+  try {
+    const res = await fetch("/api/explain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "brief_polish",
+        brief: payload,
       }),
     });
     const data = (await res.json()) as {

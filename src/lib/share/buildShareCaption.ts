@@ -14,9 +14,11 @@ export function buildShareCaption(
   title = "路线分析",
 ): string {
   if (analysis.hikeBrief) {
+    const body =
+      analysis.hikeBrief.polishedCopy?.trim() || analysis.hikeBrief.copyText;
     return [
       `【${title}】${analysis.hikeBrief.verdictLabel}`,
-      analysis.hikeBrief.copyText,
+      body,
       "",
       "Outdoor Copilot · 先看清这条路对你有多难",
       "#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot #个人难度",

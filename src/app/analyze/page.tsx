@@ -23,7 +23,10 @@ import {
   type TrackPoint,
 } from "@/lib/engine";
 import { readAndValidateGpxFile } from "@/lib/engine/validateUpload";
-import { fetchExplanation } from "@/lib/explain/fetchExplanation";
+import {
+  fetchBriefPolish,
+  fetchExplanation,
+} from "@/lib/explain/fetchExplanation";
 import { fetchWeather } from "@/lib/weather/fetchWeather";
 
 type SampleMeta = {
@@ -124,6 +127,24 @@ export default function AnalyzePage() {
             ? result.personalDifficulty.overall
             : result.baseDifficulty.overall,
       });
+
+      // High-priority LLM: polish XHS brief (base + personal). Numbers stay in engine.
+      if (result.hikeBrief) {
+        void fetchBriefPolish(result).then((polished) => {
+          if (!polished?.text) return;
+          setAnalysis((prev) => {
+            if (!prev?.hikeBrief) return prev;
+            return {
+              ...prev,
+              hikeBrief: {
+                ...prev.hikeBrief,
+                polishedCopy: polished.text,
+                copySource: polished.source,
+              },
+            };
+          });
+        });
+      }
 
       if (nextStage === "personal") {
         trackEvent("prediction_created", {

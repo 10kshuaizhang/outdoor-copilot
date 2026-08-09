@@ -16,11 +16,12 @@ function verdictClass(verdict: HikeBrief["verdict"]): string {
 
 export function RouteBriefCard({ brief, enableCopy = true }: Props) {
   const [copied, setCopied] = useState(false);
+  const shareBody = brief.polishedCopy?.trim() || brief.copyText;
 
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(
-        `${brief.copyText}\n\n#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot`,
+        `${shareBody}\n\n#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot`,
       );
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -129,13 +130,22 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
       </div>
 
       {enableCopy ? (
-        <button
-          type="button"
-          onClick={() => void onCopy()}
-          className="w-full border border-[var(--pine-deep)] px-4 py-2.5 text-sm font-semibold text-[var(--pine-deep)]"
-        >
-          {copied ? "已复制简报" : "复制徒步简报（发小红书）"}
-        </button>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => void onCopy()}
+            className="w-full border border-[var(--pine-deep)] px-4 py-2.5 text-sm font-semibold text-[var(--pine-deep)]"
+          >
+            {copied ? "已复制简报" : "复制徒步简报（发小红书）"}
+          </button>
+          {brief.copySource ? (
+            <p className="text-center text-xs text-[var(--rock)]">
+              {brief.copySource === "llm"
+                ? "复制稿已 LLM 润色（数字仍来自引擎）"
+                : "复制稿为模板文案"}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

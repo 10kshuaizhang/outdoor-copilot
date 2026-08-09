@@ -248,10 +248,7 @@ export function BaseReport({
         <DifficultyProfile segments={analysis.segments} />
       </div>
 
-      <HardestSegmentNote
-        segments={analysis.segments}
-        enableLlm={showPersonal}
-      />
+      <HardestSegmentNote segments={analysis.segments} enableLlm />
 
       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         {(

@@ -44,7 +44,11 @@ export type HikeBrief = {
   /** Photography / visibility tips. */
   photoTips: string[];
   actions: string[];
+  /** Deterministic template copy (numbers source of truth). */
   copyText: string;
+  /** Optional LLM-polished XHS-style post; numbers must match copyText facts. */
+  polishedCopy?: string;
+  copySource?: "template" | "llm";
 };
 
 export type TrackPoint = {
