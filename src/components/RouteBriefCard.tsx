@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { HikeBrief } from "@/lib/engine";
+import { copyToClipboard } from "@/lib/share/exportSummary";
 
 type Props = {
   brief: HikeBrief;
@@ -14,20 +15,26 @@ function verdictClass(verdict: HikeBrief["verdict"]): string {
   return "text-[var(--pine-deep)]";
 }
 
+function buildShareText(body: string): string {
+  return `${body}\n\n#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot`;
+}
+
 export function RouteBriefCard({ brief, enableCopy = true }: Props) {
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
+  const [showManual, setShowManual] = useState(false);
   const shareBody = brief.polishedCopy?.trim() || brief.copyText;
+  const shareText = buildShareText(shareBody);
 
   const onCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(
-        `${shareBody}\n\n#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot`,
-      );
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
+    const ok = await copyToClipboard(shareText);
+    if (ok) {
+      setCopyState("ok");
+      setShowManual(false);
+      setTimeout(() => setCopyState("idle"), 2000);
+      return;
     }
+    setCopyState("fail");
+    setShowManual(true);
   };
 
   return (
@@ -136,7 +143,11 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
             onClick={() => void onCopy()}
             className="w-full border border-[var(--pine-deep)] px-4 py-2.5 text-sm font-semibold text-[var(--pine-deep)]"
           >
-            {copied ? "已复制简报" : "复制徒步简报（发小红书）"}
+            {copyState === "ok"
+              ? "已复制简报"
+              : copyState === "fail"
+                ? "自动复制失败，请手动复制下方文案"
+                : "复制徒步简报（发小红书）"}
           </button>
           {brief.copySource ? (
             <p className="text-center text-xs text-[var(--rock)]">
@@ -144,6 +155,15 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
                 ? "复制稿已 LLM 润色（数字仍来自引擎）"
                 : "复制稿为模板文案"}
             </p>
+          ) : null}
+          {showManual ? (
+            <textarea
+              readOnly
+              value={shareText}
+              rows={8}
+              className="w-full resize-y border border-black/15 bg-white px-3 py-2 text-sm text-[var(--ink)]"
+              onFocus={(e) => e.currentTarget.select()}
+            />
           ) : null}
         </div>
       ) : null}

@@ -1,5 +1,42 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { exportSummaryText } from "./exportSummary";
+import { copyToClipboard, exportSummaryText } from "./exportSummary";
+
+describe("copyToClipboard", () => {
+  it("uses execCommand when not a secure context (HTTP)", async () => {
+    Object.defineProperty(globalThis, "isSecureContext", {
+      configurable: true,
+      value: false,
+    });
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const textarea = {
+      value: "",
+      style: {} as Record<string, string>,
+      setAttribute: vi.fn(),
+      focus: vi.fn(),
+      select: vi.fn(),
+      setSelectionRange: vi.fn(),
+    };
+    const doc = {
+      createElement: vi.fn(() => textarea),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() },
+      getSelection: vi.fn(() => null),
+      execCommand: vi.fn(() => true),
+    };
+    vi.stubGlobal("document", doc);
+
+    const ok = await copyToClipboard("brief body");
+    expect(ok).toBe(true);
+    expect(doc.execCommand).toHaveBeenCalledWith("copy");
+    expect(writeText).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
+});
 
 describe("exportSummaryText", () => {
   const originalShare = navigator.share;

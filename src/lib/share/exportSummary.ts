@@ -42,7 +42,11 @@ function copyWithExecCommand(text: string): boolean {
   return ok;
 }
 
-async function copyToClipboard(text: string): Promise<boolean> {
+/**
+ * Copy plain text. Uses Clipboard API only in secure contexts (HTTPS/localhost);
+ * falls back to execCommand so HTTP mirrors (e.g. Tencent Cloud IP) still work.
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
   const secure =
     typeof globalThis !== "undefined" &&
     "isSecureContext" in globalThis &&
@@ -58,7 +62,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
       await navigator.clipboard.writeText(text);
       return true;
     } catch {
-      // fall through to execCommand — common on iOS Safari
+      // fall through to execCommand — common on iOS Safari / denied permission
     }
   }
   return copyWithExecCommand(text);
