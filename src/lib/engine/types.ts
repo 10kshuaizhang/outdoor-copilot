@@ -6,6 +6,32 @@ export type ExperienceLevel =
 
 export type RiskPreference = "conservative" | "balanced" | "aggressive";
 
+export type HikeVerdict = "go" | "caution" | "nogo";
+
+export type HikeBriefPhase = {
+  label: string;
+  detail: string;
+};
+
+export type HikeBriefFeel = {
+  sun: string;
+  heat: string;
+  humidity: string;
+  slip: string;
+};
+
+/** Structured hike briefing for report + XHS-style copy. */
+export type HikeBrief = {
+  verdict: HikeVerdict;
+  verdictLabel: string;
+  headline: string;
+  why: string;
+  phases: HikeBriefPhase[];
+  feel: HikeBriefFeel;
+  actions: string[];
+  copyText: string;
+};
+
 export type TrackPoint = {
   lat: number;
   lon: number;
@@ -108,6 +134,8 @@ export type RouteAnalysis = {
     mainRisk?: string;
     paceNote?: string;
   };
+  /** Structured hike briefing for report + XHS-style copy. */
+  hikeBrief?: HikeBrief;
   band: "轻松" | "适中" | "吃力" | "很难" | "不建议";
   explanation: {
     text: string;

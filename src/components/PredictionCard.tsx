@@ -56,6 +56,14 @@ export function PredictionCard({
             </p>
           </div>
         </div>
+        {analysis.hikeBrief ? (
+          <p className="mt-2 text-sm font-semibold text-[var(--pine-deep)]">
+            {analysis.hikeBrief.verdictLabel}
+            <span className="ml-2 font-normal text-[var(--rock)]">
+              · {analysis.hikeBrief.headline}
+            </span>
+          </p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">

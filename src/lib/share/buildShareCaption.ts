@@ -13,6 +13,16 @@ export function buildShareCaption(
   analysis: RouteAnalysis,
   title = "路线分析",
 ): string {
+  if (analysis.hikeBrief) {
+    return [
+      `【${title}】${analysis.hikeBrief.verdictLabel}`,
+      analysis.hikeBrief.copyText,
+      "",
+      "Outdoor Copilot · 先看清这条路对你有多难",
+      "#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot #个人难度",
+    ].join("\n");
+  }
+
   const personal = analysis.personalDifficulty.overall;
   const band = scoreBand(personal);
   const { route, duration, recommendation } = analysis;

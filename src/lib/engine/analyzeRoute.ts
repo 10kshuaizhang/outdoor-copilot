@@ -4,11 +4,13 @@ import {
   scoreBand,
 } from "./baseDifficulty";
 import { buildRecommendation, detectChallenges } from "./challenges";
+import { buildHikeBrief } from "./hikeBrief";
 import {
   accumulateDistances,
   elevationStats,
   routeCenter,
 } from "./geo";
+import { formatShanghaiClock } from "@/lib/time/china";
 import { personalizeDifficulty } from "./personalize";
 import {
   applyPhysiologyToScores,
@@ -170,9 +172,18 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     plannedStart: input.plannedStart,
   });
 
-  const focusOverall = hasProfile
-    ? personalized.personal.overall
-    : baseDifficulty.overall;
+  const focusScores = hasProfile ? personalized.personal : baseDifficulty;
+  const focusOverall = focusScores.overall;
+  const hikeBrief = buildHikeBrief({
+    route,
+    segments,
+    weather,
+    focus: focusScores,
+    duration,
+    mainRisk: recommendation.mainRisk,
+    suggestedStartLabel: formatShanghaiClock(recommendation.suggestedStart),
+    finishWindow: recommendation.finishWindow,
+  });
 
   return {
     status: "ready",
@@ -186,11 +197,10 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     duration,
     challenges,
     recommendation,
+    hikeBrief,
     band: scoreBand(focusOverall),
     explanation: {
-      text: hasProfile
-        ? `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。基础负荷 ${baseDifficulty.overall}，对你约 ${personalized.personal.overall}（${scoreBand(personalized.personal.overall)}）。`
-        : `这条路线约 ${route.distanceKm.toFixed(1)} km，累计爬升约 ${route.elevationGainM} m。当前为基础负荷 ${baseDifficulty.overall}（${scoreBand(baseDifficulty.overall)}）；完善档案后可得到对你的难度。`,
+      text: hikeBrief.copyText,
       source: "template",
     },
     weather,

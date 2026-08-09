@@ -5,6 +5,7 @@ import { DifficultyProfile } from "@/components/DifficultyProfile";
 import { ElevationProfile } from "@/components/ElevationProfile";
 import { ExplanationBody } from "@/components/ExplanationBody";
 import { HardestSegmentNote } from "@/components/HardestSegmentNote";
+import { RouteBriefCard } from "@/components/RouteBriefCard";
 import { trackEvent } from "@/lib/analytics/events";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
 import { formatShanghaiClock, shanghaiWallIso } from "@/lib/time/china";
@@ -185,6 +186,10 @@ export function BaseReport({
         </p>
       </div>
 
+      {analysis.hikeBrief ? (
+        <RouteBriefCard brief={analysis.hikeBrief} />
+      ) : null}
+
       {showPersonal ? (
         <div className="grid grid-cols-2 gap-4 border-y border-black/10 py-4">
           <div>
@@ -349,14 +354,14 @@ export function BaseReport({
 
       <div>
         <p className="mb-2 font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
-          路线概况
+          简报原文
         </p>
         <ExplanationBody text={analysis.explanation.text} />
         {showPersonal ? (
           <p className="mt-2 text-xs text-[var(--rock)]">
             {analysis.explanation.source === "llm"
               ? analysis.explanation.model ?? "LLM"
-              : "模板"}
+              : "结构化模板"}
           </p>
         ) : null}
       </div>
