@@ -68,5 +68,16 @@ export function buildOverviewExplainPayload(analysis: RouteAnalysis) {
           estimatedEffort: hardest.estimatedEffort,
         }
       : null,
+    hikeBrief: analysis.hikeBrief
+      ? {
+          verdict: analysis.hikeBrief.verdict,
+          verdictLabel: analysis.hikeBrief.verdictLabel,
+          headline: analysis.hikeBrief.headline,
+          why: analysis.hikeBrief.why,
+          phases: analysis.hikeBrief.phases,
+          feel: analysis.hikeBrief.feel,
+          actions: analysis.hikeBrief.actions,
+        }
+      : null,
   };
 }
