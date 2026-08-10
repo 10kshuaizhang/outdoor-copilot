@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "如何使用 · Outdoor Copilot",
-  description: "上传 GPX 或选用示例，得到对你的个人路线难度与出发建议。",
+  description: "上传 GPX / KML 或选用示例，得到对你的个人路线难度与出发建议。",
 };
 
 export default function AboutPage() {
@@ -28,8 +28,8 @@ export default function AboutPage() {
           <li>
             <p className="font-semibold text-[var(--ink)]">1. 选线</p>
             <p className="mt-1">
-              上传你自己的 GPX，或先点内置真实示例（海坨山 / 大黑峰 /
-              阳台山—妙峰山）。
+              上传你自己的 GPX / KML，或先点内置真实示例（海坨山 / 大黑峰 /
+              阳台山—妙峰山）。自动按文件内容识别格式。
             </p>
           </li>
           <li>
@@ -60,7 +60,7 @@ export default function AboutPage() {
             Open-Meteo；解释文案可选用兼容 LLM 润色（见仓库 docs/SETUP-APIS.md）。
           </p>
           <p>
-            示例轨迹用于体验产品；同一座山常有多种走法，正式出行请以你确认要走的 GPX
+            示例轨迹用于体验产品；同一座山常有多种走法，正式出行请以你确认要走的 GPX / KML
             为准。
           </p>
         </div>

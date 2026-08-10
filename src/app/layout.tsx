@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     template: "%s · Outdoor Copilot",
   },
   description:
-    "上传 GPX 或选用真实示例，得到对你的个人路线难度、时长区间与出发建议。Know the trail. Know yourself. Go smarter.",
+    "上传 GPX / KML 或选用真实示例，得到对你的个人路线难度、时长区间与出发建议。Know the trail. Know yourself. Go smarter.",
   applicationName: "Outdoor Copilot",
   openGraph: {
     type: "website",

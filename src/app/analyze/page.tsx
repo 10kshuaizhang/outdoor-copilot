@@ -18,11 +18,11 @@ import {
 import { trackEvent } from "@/lib/analytics/events";
 import {
   analyzeRoute,
-  parseGpx,
+  parseTrackXml,
   type RouteAnalysis,
   type TrackPoint,
 } from "@/lib/engine";
-import { readAndValidateGpxFile } from "@/lib/engine/validateUpload";
+import { readAndValidateTrackFile } from "@/lib/engine/validateUpload";
 import {
   fetchBriefPolish,
   fetchExplanation,
@@ -84,7 +84,7 @@ export default function AnalyzePage() {
       if (nextPoints.length < 2) {
         setError(
           source === "upload"
-            ? "轨迹点太少，无法分析。请换一个包含完整路线的 GPX，或改用示例。"
+            ? "轨迹点太少，无法分析。请换一个包含完整路线的 GPX / KML，或改用示例。"
             : "示例轨迹无效，请换一条路线。",
         );
         setAnalysis(null);
@@ -173,7 +173,7 @@ export default function AnalyzePage() {
 
   const runFromXml = useCallback(
     async (xml: string, title: string, source: RouteSource) => {
-      await runFromPoints(parseGpx(xml), title, source);
+      await runFromPoints(parseTrackXml(xml), title, source);
     },
     [runFromPoints],
   );
@@ -203,7 +203,7 @@ export default function AnalyzePage() {
       setLoadingId("upload");
       setError(null);
       try {
-        const validated = await readAndValidateGpxFile(file);
+        const validated = await readAndValidateTrackFile(file);
         if (!validated.ok) {
           setError(validated.message);
           setAnalysis(null);
@@ -212,8 +212,12 @@ export default function AnalyzePage() {
         trackEvent("upload_gpx", {
           bytes: file.size,
           name: file.name || "unknown",
+          format: validated.format,
         });
-        trackEvent("upload", { bytes: file.size });
+        trackEvent("upload", {
+          bytes: file.size,
+          format: validated.format,
+        });
         await runFromXml(validated.xml, validated.displayName, "upload");
       } catch {
         setError("读取文件失败，请重试或改用示例路线。");
@@ -302,7 +306,7 @@ export default function AnalyzePage() {
               分析入口
             </p>
             <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl leading-tight tracking-[-0.02em]">
-              上传 GPX 或选示例
+              上传轨迹或选示例
             </h1>
             <p className="mt-4 text-base leading-relaxed text-[var(--ink-soft)]">
               先看基础负荷，再填档案，生成并<strong>保存</strong>
@@ -313,19 +317,19 @@ export default function AnalyzePage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept="*/*"
+                accept=".gpx,.kml,.xml,application/gpx+xml,application/vnd.google-earth.kml+xml,text/xml,*/*"
                 className="sr-only"
-                id="gpx-upload"
+                id="track-upload"
                 onChange={(e) => onUpload(e.target.files?.[0] ?? null)}
               />
               <label
-                htmlFor="gpx-upload"
+                htmlFor="track-upload"
                 className="inline-flex cursor-pointer items-center justify-center bg-[var(--pine-deep)] px-6 py-3.5 text-sm font-semibold text-[var(--cream)]"
               >
-                {loadingId === "upload" ? "正在分析…" : "上传 GPX 文件"}
+                {loadingId === "upload" ? "正在分析…" : "上传 GPX / KML"}
               </label>
               <p className="mt-3 text-xs leading-relaxed text-[var(--rock)]">
-                iPhone：若文件发灰，请选「浏览」→「文件」；我们会按内容识别轨迹。
+                自动识别格式。iPhone：若文件发灰，请选「浏览」→「文件」。
               </p>
             </div>
 
