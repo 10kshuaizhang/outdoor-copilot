@@ -61,7 +61,8 @@ export default function AboutPage() {
           </p>
           <p>
             示例轨迹用于体验产品；同一座山常有多种走法，正式出行请以你确认要走的 GPX / KML
-            为准。
+            为准。运营可用 <Link href="/admin" className="underline-offset-4 hover:underline">/admin</Link>{" "}
+            管理示例（需配置 ADMIN_PASSWORD）。
           </p>
         </div>
 

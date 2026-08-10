@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminConfigured } from "@/lib/samples/auth";
 
 /**
  * Runtime capability probe for Outdoor Copilot integrations.
@@ -33,6 +34,10 @@ export async function GET() {
       needsUserKey: true,
       model: hasLlmKey ? model : null,
       baseHost: hasLlmKey ? safeHost(baseURL) : null,
+    },
+    admin: {
+      configured: isAdminConfigured(),
+      path: "/admin",
     },
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? null,
   });

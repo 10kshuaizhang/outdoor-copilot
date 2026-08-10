@@ -85,6 +85,23 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.example
 |------|------|------|
 | 历史 / 档案 / 事件 | 浏览器 `localStorage` | V0.1 无账号；Spec 允许本地持久化 |
 | 分析计算 | 浏览器内 `analyzeRoute` | 核心引擎，不是临时 Mock |
-| 示例路线 | `public/samples/*.gpx` | 产品内置 Demo，不是假 API |
+| 示例路线 | `data/samples`（由 `public/samples` 种子） | `/admin` 可 CRUD；Vercel 上为临时目录 |
+
+---
+
+## 5. 示例路线管理后台（`/admin`）
+
+```bash
+ADMIN_PASSWORD=你的强密码
+# 可选
+# ADMIN_SECRET=独立签名密钥
+# SAMPLES_DATA_DIR=/var/lib/outdoor-copilot/samples
+```
+
+1. 配置 `ADMIN_PASSWORD` 后重启服务。
+2. 打开 `/admin` 登录，即可增删改示例（上传 GPX / KML）。
+3. **腾讯云 / 自建**：写入 `./data/samples`（或 `SAMPLES_DATA_DIR`），持久化。
+4. **Vercel**：可读写但落在 `/tmp`，实例重启可能丢失；长期管理请用腾讯云镜像。
+
 
 这些**不需要**你申请第三方配置。

@@ -65,10 +65,19 @@ export default function AnalyzePage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch("/samples/manifest.json")
-      .then((r) => r.json())
-      .then((data: SampleMeta[]) => setSamples(data))
-      .catch(() => setError("无法加载示例路线列表。"));
+    fetch("/api/samples")
+      .then(async (r) => {
+        if (!r.ok) throw new Error("api");
+        return r.json() as Promise<SampleMeta[]>;
+      })
+      .then((data) => setSamples(data))
+      .catch(() => {
+        // Fallback to static seed if API unavailable.
+        fetch("/samples/manifest.json")
+          .then((r) => r.json())
+          .then((data: SampleMeta[]) => setSamples(data))
+          .catch(() => setError("无法加载示例路线列表。"));
+      });
   }, []);
 
   const runFromPoints = useCallback(
