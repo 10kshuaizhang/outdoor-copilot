@@ -5,7 +5,9 @@ import { DifficultyProfile } from "@/components/DifficultyProfile";
 import { ElevationProfile } from "@/components/ElevationProfile";
 import { ExplanationBody } from "@/components/ExplanationBody";
 import { HardestSegmentNote } from "@/components/HardestSegmentNote";
+import { LabelWithTip } from "@/components/InfoTip";
 import { RouteBriefCard } from "@/components/RouteBriefCard";
+import { TIPS } from "@/components/tipCopy";
 import { trackEvent } from "@/lib/analytics/events";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
 import { formatShanghaiClock, shanghaiWallIso } from "@/lib/time/china";
@@ -227,16 +229,25 @@ export function BaseReport({
       ) : null}
 
       {!hideScoreHero ? (
-        <div className="score-hero relative overflow-hidden px-5 py-7">
-          <div
-            className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full opacity-40"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(232,217,192,0.55), transparent 70%)",
-            }}
-          />
+        <div className="score-hero relative px-5 py-7">
+          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+            <div
+              className="absolute -right-10 -top-16 h-48 w-48 rounded-full opacity-40"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(232,217,192,0.55), transparent 70%)",
+              }}
+            />
+          </div>
+          <div className="relative">
           <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--dawn)]">
-            {showPersonal ? "对你的吃力程度" : "路线基础负荷"}
+            <LabelWithTip
+              tip={showPersonal ? TIPS.scoreHeroPersonal : TIPS.scoreHeroBase}
+              tipLabel="吃力程度说明"
+              className="text-[var(--dawn)]"
+            >
+              {showPersonal ? "对你的吃力程度" : "路线基础负荷"}
+            </LabelWithTip>
           </p>
           <div className="mt-3 flex items-end gap-4">
             <p className="score-number font-[family-name:var(--font-display)] text-7xl leading-none tracking-[-0.04em]">
@@ -245,12 +256,16 @@ export function BaseReport({
             <div className="flex flex-col justify-end gap-1 pb-1">
               <p className="text-sm leading-none text-[var(--mist)]/80">/ 100</p>
               <p className="score-band font-[family-name:var(--font-serif-sc)] text-xl leading-tight">
-                {band}
+                <LabelWithTip tip={TIPS.scoreBand} tipLabel="难度档位说明">
+                  {band}
+                </LabelWithTip>
               </p>
             </div>
           </div>
           <p className="mt-3 text-sm text-[var(--mist)]/85">
-            置信度 {Math.round(analysis.confidence * 100)}%
+            <LabelWithTip tip={TIPS.confidence} tipLabel="置信度说明">
+              置信度 {Math.round(analysis.confidence * 100)}%
+            </LabelWithTip>
             {analysis.weather.source === "fallback"
               ? " · 天气为假设值"
               : " · 天气来自 Open-Meteo"}
@@ -258,19 +273,28 @@ export function BaseReport({
               ? ` · ${Math.round(analysis.weather.temperatureC)}°C`
               : ""}
           </p>
+          </div>
         </div>
       ) : null}
 
       {showPersonal && !hideScoreHero ? (
         <div className="grid grid-cols-2 gap-4 border-y border-[var(--border-soft)] py-4">
           <div>
-            <p className="text-sm text-[var(--rock)]">路线基础</p>
+            <p className="text-sm text-[var(--rock)]">
+              <LabelWithTip tip={TIPS.baseVsPersonal} tipLabel="路线基础说明">
+                路线基础
+              </LabelWithTip>
+            </p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-3xl">
               {baseDifficulty.overall}
             </p>
           </div>
           <div>
-            <p className="text-sm text-[var(--rock)]">对你而言</p>
+            <p className="text-sm text-[var(--rock)]">
+              <LabelWithTip tip={TIPS.baseVsPersonal} tipLabel="对你而言说明">
+                对你而言
+              </LabelWithTip>
+            </p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-3xl text-[var(--cta)]">
               {personalDifficulty.overall}
             </p>
@@ -280,15 +304,17 @@ export function BaseReport({
 
       {showPersonal && hideScoreHero ? (
         <p className="text-sm text-[var(--rock)]">
-          路线基础负荷{" "}
-          <span className="font-semibold tabular-nums text-[var(--ink)]">
-            {baseDifficulty.overall}
-          </span>
-          <span className="mx-2 text-[var(--border-soft)]">·</span>
-          对你{" "}
-          <span className="font-semibold tabular-nums text-[var(--ink)]">
-            {personalDifficulty.overall}
-          </span>
+          <LabelWithTip tip={TIPS.baseVsPersonal} tipLabel="基础与个人分说明">
+            路线基础负荷{" "}
+            <span className="font-semibold tabular-nums text-[var(--ink)]">
+              {baseDifficulty.overall}
+            </span>
+            <span className="mx-2 text-[var(--border-soft)]">·</span>
+            对你{" "}
+            <span className="font-semibold tabular-nums text-[var(--ink)]">
+              {personalDifficulty.overall}
+            </span>
+          </LabelWithTip>
         </p>
       ) : null}
 
@@ -300,11 +326,19 @@ export function BaseReport({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--rock)]">爬升</dt>
+          <dt className="text-[var(--rock)]">
+            <LabelWithTip tip={TIPS.elevGain} tipLabel="爬升说明">
+              爬升
+            </LabelWithTip>
+          </dt>
           <dd className="mt-1 text-lg font-semibold">+{route.elevationGainM} m</dd>
         </div>
         <div>
-          <dt className="text-[var(--rock)]">预估时长（行进向）</dt>
+          <dt className="text-[var(--rock)]">
+            <LabelWithTip tip={TIPS.durationMoving} tipLabel="预估时长说明">
+              预估时长（行进向）
+            </LabelWithTip>
+          </dt>
           <dd className="mt-1 text-lg font-semibold">
             {formatDuration(duration.lowMin)} – {formatDuration(duration.highMin)}
           </dd>
@@ -313,7 +347,11 @@ export function BaseReport({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--rock)]">最高海拔</dt>
+          <dt className="text-[var(--rock)]">
+            <LabelWithTip tip={TIPS.maxElev} tipLabel="最高海拔说明">
+              最高海拔
+            </LabelWithTip>
+          </dt>
           <dd className="mt-1 text-lg font-semibold">{route.maxElevM} m</dd>
         </div>
       </dl>
@@ -329,7 +367,9 @@ export function BaseReport({
 
       <div>
         <p className="mb-1 font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
-          难度剖面
+          <LabelWithTip tip={TIPS.difficultyProfile} tipLabel="难度剖面说明">
+            难度剖面
+          </LabelWithTip>
         </p>
         <p className="mb-2 text-sm text-[var(--rock)]">
           公里轴上的相对负荷——不是总分，而是哪里真正吃力
@@ -342,14 +382,18 @@ export function BaseReport({
       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         {(
           [
-            ["体力", focus.endurance],
-            ["强度结构", focus.climbing],
-            ["环境", focus.weather],
-            ["行动风险", focus.risk],
+            ["体力", focus.endurance, TIPS.axisPhysical],
+            ["强度结构", focus.climbing, TIPS.axisIntensity],
+            ["环境", focus.weather, TIPS.axisEnvironment],
+            ["行动风险", focus.risk, TIPS.axisRisk],
           ] as const
-        ).map(([label, value]) => (
+        ).map(([label, value, tip]) => (
           <div key={label} className="border-t border-[var(--border-soft)] pt-2">
-            <p className="text-[var(--rock)]">{label}</p>
+            <p className="text-[var(--rock)]">
+              <LabelWithTip tip={tip} tipLabel={`${label}说明`}>
+                {label}
+              </LabelWithTip>
+            </p>
             <p className="mt-1 text-xl font-semibold">{value}</p>
           </div>
         ))}
@@ -362,7 +406,9 @@ export function BaseReport({
       {showPersonal && analysis.contributions.length > 0 ? (
         <div>
           <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
-            为什么是这个分数
+            <LabelWithTip tip={TIPS.contributions} tipLabel="分数加减说明">
+              为什么是这个分数
+            </LabelWithTip>
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             {analysis.contributions.map((c) => (
@@ -403,7 +449,9 @@ export function BaseReport({
           </p>
           <p>预计完成：{analysis.recommendation.finishWindow ?? "—"}</p>
           <p>
-            建议携行：
+            <LabelWithTip tip={TIPS.waterCarry} tipLabel="建议携行说明">
+              建议携行：
+            </LabelWithTip>
             {analysis.recommendation.waterCarryLiters ??
               analysis.recommendation.waterLiters ??
               "—"}{" "}
@@ -411,7 +459,10 @@ export function BaseReport({
             {analysis.recommendation.waterConsumeLiters != null ? (
               <span className="text-[var(--ink-soft)]">
                 {" "}
-                · 预计消耗约 {analysis.recommendation.waterConsumeLiters} L
+                ·{" "}
+                <LabelWithTip tip={TIPS.waterConsume} tipLabel="预计消耗说明">
+                  预计消耗约 {analysis.recommendation.waterConsumeLiters} L
+                </LabelWithTip>
               </span>
             ) : null}
           </p>
@@ -451,7 +502,9 @@ export function BaseReport({
           ) : null}
           {analysis.physiological ? (
             <p className="pt-2 text-xs text-[var(--rock)]">
-              估算生理强度等级（参考学术模型）：
+              <LabelWithTip tip={TIPS.physioGrade} tipLabel="生理强度说明">
+                估算生理强度等级（参考学术模型）：
+              </LabelWithTip>
               {analysis.physiological.gradeLabel}
               {analysis.physiological.usedDefaults ? " · 使用默认生理参数" : ""}
             </p>

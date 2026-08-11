@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { LabelWithTip } from "@/components/InfoTip";
+import { TIPS } from "@/components/tipCopy";
 import type { OutdoorProfile } from "@/domain/types";
 import type {
   ExperienceLevel,
@@ -111,7 +113,9 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
 
       <div>
         <label className="text-sm text-[var(--rock)]">
-          典型徒步距离（km）：{typicalDistanceKm}
+          <LabelWithTip tip={TIPS.comfortDist} tipLabel="典型距离说明">
+            典型徒步距离（km）：{typicalDistanceKm}
+          </LabelWithTip>
         </label>
         <input
           type="range"
@@ -128,7 +132,9 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
 
       <div>
         <label className="text-sm text-[var(--rock)]">
-          典型爬升（m）：{typicalElevationM}
+          <LabelWithTip tip={TIPS.comfortElev} tipLabel="典型爬升说明">
+            典型爬升（m）：{typicalElevationM}
+          </LabelWithTip>
         </label>
         <input
           type="range"

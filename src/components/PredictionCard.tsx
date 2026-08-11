@@ -1,5 +1,7 @@
 "use client";
 
+import { LabelWithTip } from "@/components/InfoTip";
+import { TIPS } from "@/components/tipCopy";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
 
 function formatDuration(min: number): string {
@@ -44,7 +46,11 @@ export function PredictionCard({
       </p>
 
       <div>
-        <p className="text-sm text-[var(--rock)]">个人难度</p>
+        <p className="text-sm text-[var(--rock)]">
+          <LabelWithTip tip={TIPS.scoreHeroPersonal} tipLabel="个人难度说明">
+            个人难度
+          </LabelWithTip>
+        </p>
         <div className="mt-1 flex items-end gap-4">
           <p className="font-[family-name:var(--font-display)] text-5xl leading-none tracking-[-0.03em] text-[var(--pine-deep)]">
             {personal}
@@ -52,13 +58,17 @@ export function PredictionCard({
           <div className="flex flex-col justify-end gap-1 pb-1">
             <p className="text-sm leading-none text-[var(--rock)]">/ 100</p>
             <p className="font-[family-name:var(--font-serif-sc)] text-xl leading-tight text-[var(--cta)]">
-              {band}
+              <LabelWithTip tip={TIPS.scoreBand} tipLabel="难度档位说明">
+                {band}
+              </LabelWithTip>
             </p>
           </div>
         </div>
         {analysis.hikeBrief ? (
           <p className="mt-2 text-sm font-semibold text-[var(--pine-deep)]">
-            {analysis.hikeBrief.verdictLabel}
+            <LabelWithTip tip={TIPS.briefVerdict} tipLabel="宜行结论说明">
+              {analysis.hikeBrief.verdictLabel}
+            </LabelWithTip>
             <span className="ml-2 font-normal text-[var(--rock)]">
               · {analysis.hikeBrief.headline}
             </span>
@@ -68,13 +78,21 @@ export function PredictionCard({
 
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="text-[var(--rock)]">预估时长</p>
+          <p className="text-[var(--rock)]">
+            <LabelWithTip tip={TIPS.durationMoving} tipLabel="预估时长说明">
+              预估时长
+            </LabelWithTip>
+          </p>
           <p className="mt-1 text-lg font-semibold tabular-nums">
             {formatDuration(duration.lowMin)} – {formatDuration(duration.highMin)}
           </p>
         </div>
         <div>
-          <p className="text-[var(--rock)]">置信度</p>
+          <p className="text-[var(--rock)]">
+            <LabelWithTip tip={TIPS.confidence} tipLabel="置信度说明">
+              置信度
+            </LabelWithTip>
+          </p>
           <p className="mt-1 text-lg font-semibold">
             {confidenceLabel(analysis.confidence)}
             <span className="ml-1 text-sm font-normal text-[var(--rock)]">

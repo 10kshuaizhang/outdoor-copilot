@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { LabelWithTip } from "@/components/InfoTip";
+import { TIPS } from "@/components/tipCopy";
 import type { HikeBrief } from "@/lib/engine";
 import { copyToClipboard } from "@/lib/share/exportSummary";
 import { stripMultimodelFromShareText } from "@/lib/share/stripMultimodel";
@@ -42,7 +44,9 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
     <section className="panel space-y-4 px-4 py-5">
       <div>
         <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--pine)]">
-          徒步简报
+          <LabelWithTip tip={TIPS.briefVerdict} tipLabel="徒步简报说明">
+            徒步简报
+          </LabelWithTip>
         </p>
         <p
           className={`mt-2 font-[family-name:var(--font-display)] text-2xl leading-snug tracking-[-0.02em] ${verdictClass(brief.verdict)}`}
@@ -59,7 +63,15 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
         <ul className="mt-2 space-y-2.5 text-sm">
           {brief.weatherBlocks.map((b) => (
             <li key={b.label}>
-              <p className="font-semibold text-[var(--pine-deep)]">{b.label}</p>
+              <p className="font-semibold text-[var(--pine-deep)]">
+                {b.label === "多模型" ? (
+                  <LabelWithTip tip={TIPS.multiModel} tipLabel="多模型说明">
+                    {b.label}
+                  </LabelWithTip>
+                ) : (
+                  b.label
+                )}
+              </p>
               <p className="mt-0.5 leading-relaxed text-[var(--ink-soft)]">
                 {b.detail}
               </p>
