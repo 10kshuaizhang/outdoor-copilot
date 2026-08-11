@@ -182,5 +182,5 @@ export function engineProfileToOutdoor(
   };
 }
 
-/** Weather×route coupling + personalize/physio honesty. */
-export const MODEL_VERSION = "v0.1.6-weather-couple";
+/** Altitude/descent honesty + extreme clamps + UI axis labels. */
+export const MODEL_VERSION = "v0.1.7-elev-descent";

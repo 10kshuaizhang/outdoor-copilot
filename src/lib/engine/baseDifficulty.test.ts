@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { analyzeRoute } from "./analyzeRoute";
 import {
+  altitudeLoadBump,
   computeBaseDifficulty,
   equivalentEffortKm,
   scoreBand,
@@ -239,8 +240,8 @@ describe("P0 physical + intensity scoring sanity", () => {
         gradeTrack({ distanceKm: 30, gainM: 400, lossM: 400, points: 100 }),
       ),
     );
-    // Old formula: 30*1.35 + 400/55 + 6 ≈ 54. Risk should stay modest.
-    expect(long.risk).toBeLessThan(40);
+    // Old formula: 30*1.35 + 400/55 + 6 ≈ 54. Still well below that.
+    expect(long.risk).toBeLessThan(48);
   });
 
   it("scoreBand thresholds unchanged", () => {
@@ -249,5 +250,51 @@ describe("P0 physical + intensity scoring sanity", () => {
     expect(scoreBand(71)).toBe("吃力");
     expect(scoreBand(72)).toBe("很难");
     expect(scoreBand(88)).toBe("不建议");
+  });
+
+  it("High elevation adds load vs same geometry at low altitude", () => {
+    const low = computeBaseDifficulty(
+      {
+        distanceKm: 10,
+        elevationGainM: 600,
+        elevationLossM: 600,
+        minElevM: 200,
+        maxElevM: 800,
+        center: { lat: 0, lon: 0 },
+      },
+      [],
+    );
+    const high = computeBaseDifficulty(
+      {
+        distanceKm: 10,
+        elevationGainM: 600,
+        elevationLossM: 600,
+        minElevM: 3200,
+        maxElevM: 3800,
+        center: { lat: 0, lon: 0 },
+      },
+      [],
+    );
+    expect(high.endurance).toBeGreaterThan(low.endurance);
+    expect(high.overall).toBeGreaterThan(low.overall);
+    expect(altitudeLoadBump(3800)).toBe(10);
+    expect(altitudeLoadBump(1800)).toBe(0);
+  });
+
+  it("Extreme inputs stay finite and within 0–100 / duration cap", () => {
+    const insanePoints = Array.from({ length: 200 }, (_, i) => ({
+      lat: 40 + i * 0.01,
+      lon: 116,
+      ele: 1000 + (i % 3) * 500,
+    }));
+    const result = analyzeRoute({
+      points: insanePoints,
+      weather: { source: "fallback", temperatureC: 18 },
+    });
+    expect(result.baseDifficulty.overall).toBeLessThanOrEqual(100);
+    expect(result.baseDifficulty.endurance).toBeLessThanOrEqual(100);
+    expect(Number.isFinite(result.duration.totalMin)).toBe(true);
+    expect(result.duration.totalMin).toBeLessThanOrEqual(22 * 60);
+    expect(result.duration.highMin).toBeGreaterThan(0);
   });
 });

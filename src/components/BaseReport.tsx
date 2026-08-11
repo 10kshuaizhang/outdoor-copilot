@@ -342,10 +342,10 @@ export function BaseReport({
       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         {(
           [
-            ["耐力", focus.endurance],
-            ["攀爬", focus.climbing],
-            ["天气", focus.weather],
-            ["风险", focus.risk],
+            ["体力", focus.endurance],
+            ["强度结构", focus.climbing],
+            ["环境", focus.weather],
+            ["行动风险", focus.risk],
           ] as const
         ).map(([label, value]) => (
           <div key={label} className="border-t border-[var(--border-soft)] pt-2">
@@ -354,6 +354,10 @@ export function BaseReport({
           </div>
         ))}
       </div>
+      <p className="text-xs leading-relaxed text-[var(--rock)]">
+        分数基于轨迹几何与天气：距离、爬升/下降结构、气温降水风力等。
+        轨迹无法判断路况、技术通过性、暴露与导航复杂度——这些需要你结合地图与经验自行补全。
+      </p>
 
       {showPersonal && analysis.contributions.length > 0 ? (
         <div>

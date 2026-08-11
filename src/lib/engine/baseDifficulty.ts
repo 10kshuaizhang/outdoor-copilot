@@ -37,23 +37,37 @@ export function composeOverall(
 
 /**
  * Equivalent effort (km): flat distance + climb + descent burden.
- * Descent weighted lighter than climb (knees/focus, not cardio).
- * Used so short-steep and long-flat no longer collapse to "just km".
+ * Descent weighted for knees/quads — still lighter than climb, but not ignored.
  */
 export function equivalentEffortKm(route: RouteSummary): number {
   const dist = Math.max(0, route.distanceKm);
   const gain = Math.max(0, route.elevationGainM);
   const loss = Math.max(0, route.elevationLossM);
-  return dist * 0.7 + gain / 100 + loss / 180;
+  return dist * 0.7 + gain / 100 + loss / 140;
+}
+
+/**
+ * Mild load from time spent high — not AMS diagnosis.
+ * Uses summit/max elev from the track (best available without a DEM).
+ */
+export function altitudeLoadBump(maxElevM: number): number {
+  if (!(maxElevM > 0) || !Number.isFinite(maxElevM)) return 0;
+  if (maxElevM >= 4500) return 14;
+  if (maxElevM >= 3500) return 10;
+  if (maxElevM >= 3000) return 7;
+  if (maxElevM >= 2500) return 4;
+  return 0;
 }
 
 export type RouteStructureMetrics = {
   climbDensityMPerKm: number;
   longestClimbKm: number;
+  longestDescentKm: number;
   steepShare: number;
   hardClimbShare: number;
   rollingIndex: number;
   lateClimbShare: number;
+  lateDescentShare: number;
 };
 
 /**
@@ -69,13 +83,21 @@ export function routeStructureMetrics(
   const climbDensityMPerKm = dist > 0 ? gain / dist : 0;
 
   let longestClimbKm = 0;
-  let run = 0;
+  let longestDescentKm = 0;
+  let climbRun = 0;
+  let descentRun = 0;
   for (const seg of segments) {
     if (seg.gainM >= seg.lossM && seg.avgGradePct > 3) {
-      run += seg.endKm - seg.startKm;
-      longestClimbKm = Math.max(longestClimbKm, run);
+      climbRun += seg.endKm - seg.startKm;
+      longestClimbKm = Math.max(longestClimbKm, climbRun);
+      descentRun = 0;
+    } else if (seg.lossM > seg.gainM * 1.1 && seg.avgGradePct < -2) {
+      descentRun += seg.endKm - seg.startKm;
+      longestDescentKm = Math.max(longestDescentKm, descentRun);
+      climbRun = 0;
     } else {
-      run = 0;
+      climbRun = 0;
+      descentRun = 0;
     }
   }
 
@@ -104,42 +126,53 @@ export function routeStructureMetrics(
 
   const midKm = dist / 2;
   let lateGain = 0;
+  let lateLoss = 0;
   let totalSegGain = 0;
+  let totalSegLoss = 0;
   for (const seg of segments) {
     totalSegGain += Math.max(0, seg.gainM);
-    if (seg.startKm >= midKm) lateGain += Math.max(0, seg.gainM);
+    totalSegLoss += Math.max(0, seg.lossM);
+    if (seg.startKm >= midKm) {
+      lateGain += Math.max(0, seg.gainM);
+      lateLoss += Math.max(0, seg.lossM);
+    }
   }
   const lateClimbShare =
     totalSegGain > 0 ? Math.min(1, lateGain / totalSegGain) : 0;
+  const lateDescentShare =
+    totalSegLoss > 0 ? Math.min(1, lateLoss / totalSegLoss) : 0;
 
   return {
     climbDensityMPerKm,
     longestClimbKm,
+    longestDescentKm,
     steepShare,
     hardClimbShare,
     rollingIndex,
     lateClimbShare,
+    lateDescentShare,
   };
 }
 
 /**
  * Physical load (stored as `endurance`): how much work the day asks.
  * Intensity / structure (stored as `climbing`): how that work is packed.
- * `risk` is no longer a second copy of dist+gain — only light operational
- * flags (big descent day, very long day, very high cumulative climb).
+ * `risk` is light operational load (descent fatigue, long day, high camp).
+ * Inputs are sanitized so extreme GPX junk cannot explode scores/duration.
  */
 export function computeBaseDifficulty(
   route: RouteSummary,
   segments: Segment[],
 ): DifficultyScores {
-  const equiv = equivalentEffortKm(route);
-  const structure = routeStructureMetrics(route, segments);
+  const safeRoute = sanitizeRouteSummary(route);
+  const equiv = equivalentEffortKm(safeRoute);
+  const structure = routeStructureMetrics(safeRoute, segments);
+  const altBump = altitudeLoadBump(safeRoute.maxElevM);
 
   // Physical: ~10 equiv → 轻松边；~22 → 适中；~35 → 吃力；~50+ → 很难+
-  const endurance = clamp(equiv * 2.35);
+  const endurance = clamp(equiv * 2.35 + altBump * 0.65);
 
   // Intensity: density + continuous climb + steep/hard shares + rolling + late climbs.
-  // Cap continuous climb at 8 km so long ridges still matter without one-term saturation.
   const climbRun = Math.min(structure.longestClimbKm, 8);
   const climbing = clamp(
     structure.climbDensityMPerKm * 0.2 +
@@ -147,23 +180,25 @@ export function computeBaseDifficulty(
       structure.steepShare * 32 +
       structure.hardClimbShare * 18 +
       structure.rollingIndex * 14 +
-      structure.lateClimbShare * 10,
+      structure.lateClimbShare * 10 +
+      altBump * 0.35,
   );
 
   const weather = 42; // neutral; weatherAdjust still rewrites this
 
-  const dist = route.distanceKm;
-  const gain = route.elevationGainM;
-  const loss = route.elevationLossM;
+  const dist = safeRoute.distanceKm;
+  const gain = safeRoute.elevationGainM;
+  const loss = safeRoute.elevationLossM;
+  const descentRun = Math.min(structure.longestDescentKm, 8);
   const risk = clamp(
-    Math.min(28, loss / 90) +
+    Math.min(22, loss / 100) +
+      descentRun * 2.2 +
+      structure.lateDescentShare * 10 +
       (dist > 22 ? 10 : dist > 16 ? 5 : 0) +
-      (gain > 1800 ? 12 : gain > 1200 ? 6 : 0),
+      (gain > 1800 ? 10 : gain > 1200 ? 5 : 0) +
+      Math.min(8, altBump * 0.4),
   );
 
-  // Blend physical + structure; weather placeholder + light operational risk.
-  // Physical floor: a long day cannot read "轻松" just because intensity is low
-  // (30 km / 400 m is endurance work, not an easy stroll).
   const overall = composeOverall({
     endurance,
     climbing,
@@ -180,19 +215,41 @@ export function computeBaseDifficulty(
   };
 }
 
+/** Clamp absurd track aggregates before they poison scoring/duration. */
+export function sanitizeRouteSummary(route: RouteSummary): RouteSummary {
+  return {
+    ...route,
+    distanceKm: clamp(route.distanceKm, 0, 120),
+    elevationGainM: clamp(route.elevationGainM, 0, 8000),
+    elevationLossM: clamp(route.elevationLossM, 0, 8000),
+    minElevM: Number.isFinite(route.minElevM) ? route.minElevM : 0,
+    maxElevM: Number.isFinite(route.maxElevM)
+      ? clamp(route.maxElevM, -500, 9000)
+      : 0,
+  };
+}
+
 export function estimateDurationMinutes(
   route: RouteSummary,
   base: DifficultyScores,
 ): { movingMin: number; totalMin: number; lowMin: number; highMin: number } {
+  const safe = sanitizeRouteSummary(route);
   // Naismith-ish: 12 min/km + 10 min / 100m gain, adjusted by difficulty.
-  const moving =
-    route.distanceKm * 12 + (route.elevationGainM / 100) * 10;
+  const moving = safe.distanceKm * 12 + (safe.elevationGainM / 100) * 10;
   const difficultyFactor = 1 + (base.overall - 40) / 200;
-  const movingMin = Math.max(1, Math.round(moving * difficultyFactor));
-  const restFactor = 1 + Math.min(0.35, route.distanceKm * 0.015 + route.elevationGainM / 4000);
-  const totalMin = Math.round(movingMin * restFactor);
+  // Thin air: slight pace tax above 2500 m (not a medical model).
+  const altFactor = 1 + altitudeLoadBump(safe.maxElevM) / 100;
+  const movingMin = Math.max(
+    1,
+    Math.round(moving * difficultyFactor * altFactor),
+  );
+  const restFactor =
+    1 +
+    Math.min(0.35, safe.distanceKm * 0.015 + safe.elevationGainM / 4000);
+  // Hard ceiling ~22 h prevents absurd GPX from inventing multi-day windows.
+  const totalMin = Math.min(22 * 60, Math.round(movingMin * restFactor));
   return {
-    movingMin,
+    movingMin: Math.min(totalMin, movingMin),
     totalMin,
     lowMin: Math.round(totalMin * 0.9),
     highMin: Math.round(totalMin * 1.15),

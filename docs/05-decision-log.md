@@ -91,6 +91,12 @@ Format per entry:
 
 ## Difficulty & Calibration
 
+### D-029 — High elev, descent fatigue, extreme clamps, honest axis labels
+
+- **Date:** 2026-08-11  
+- **Decision:** (1) Mild `altitudeLoadBump` from `maxElevM` (≥2500 m) into physical/intensity/risk — not AMS diagnosis. (2) Stronger descent weighting (`loss/140`, long/late descent → risk). (3) Sanitize route aggregates + duration ceiling (~22 h). (4) UI axes: 体力/强度结构/环境/行动风险 + explicit “no technical/nav from track” note. Verdict also respects high `risk`. `MODEL_VERSION` → `v0.1.7-elev-descent`.  
+- **Status:** active  
+
 ### D-028 — Weather×route coupling; personalize/physio honesty
 
 - **Date:** 2026-08-11  

@@ -301,6 +301,7 @@ function buildFeel(
 
 function decideVerdict(input: {
   overall: number;
+  risk?: number;
   weather: WeatherSnapshot;
 }): {
   verdict: HikeVerdict;
@@ -312,8 +313,9 @@ function decideVerdict(input: {
   const precip = input.weather.precipMm ?? 0;
   const storm = input.weather.thunderstormRisk ?? "unknown";
   const band = scoreBand(input.overall);
+  const risk = input.risk ?? 0;
 
-  if (storm === "high" || precip >= 15 || band === "不建议") {
+  if (storm === "high" || precip >= 15 || band === "不建议" || risk >= 88) {
     return {
       verdict: "nogo",
       verdictLabel: "新手不宜",
@@ -327,7 +329,8 @@ function decideVerdict(input: {
     precip >= 5 ||
     band === "很难" ||
     temp >= 33 ||
-    input.overall >= 72
+    input.overall >= 72 ||
+    risk >= 70
   ) {
     return {
       verdict: "caution",
@@ -378,6 +381,7 @@ export function buildHikeBrief(input: {
   const hardest = findHardestStretch(input.segments);
   const decided = decideVerdict({
     overall: input.focus.overall,
+    risk: input.focus.risk,
     weather: input.weather,
   });
   const { verdict, verdictLabel } = decided;
