@@ -398,7 +398,24 @@ export function BaseReport({
             建议出发：{formatClock(analysis.recommendation.suggestedStart)}
           </p>
           <p>预计完成：{analysis.recommendation.finishWindow ?? "—"}</p>
-          <p>建议饮水：{analysis.recommendation.waterLiters ?? "—"} L</p>
+          <p>
+            建议携行：
+            {analysis.recommendation.waterCarryLiters ??
+              analysis.recommendation.waterLiters ??
+              "—"}{" "}
+            L
+            {analysis.recommendation.waterConsumeLiters != null ? (
+              <span className="text-[var(--ink-soft)]">
+                {" "}
+                · 预计消耗约 {analysis.recommendation.waterConsumeLiters} L
+              </span>
+            ) : null}
+          </p>
+          {analysis.recommendation.waterNote ? (
+            <p className="text-[var(--ink-soft)]">
+              {analysis.recommendation.waterNote}
+            </p>
+          ) : null}
           <p>主风险：{analysis.recommendation.mainRisk ?? "—"}</p>
           {analysis.recommendation.paceNote ? (
             <p className="text-[var(--ink-soft)]">

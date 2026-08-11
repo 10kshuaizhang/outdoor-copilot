@@ -98,7 +98,9 @@ function templateText(analysis: Record<string, unknown>): string {
     str(rec?.finishWindow) ??
     "见报告";
   const risk = str(rec?.mainRisk) ?? "后程疲劳";
-  const water = num(rec?.waterLiters);
+  const waterCarry =
+    num(rec?.waterCarryLiters) ?? num(rec?.waterLiters);
+  const waterConsume = num(rec?.waterConsumeLiters);
   const low = num(duration?.lowMin);
   const high = num(duration?.highMin);
 
@@ -122,7 +124,7 @@ function templateText(analysis: Record<string, unknown>): string {
       ? `行进向预估约 ${low}–${high} 分钟（含长时间观景/用餐会更久）`
       : "行进向预估见报告";
 
-  return `这条约 ${dist} km、爬升约 ${gain} m 的路线，对你大约是 ${personal}/100${band ? `（${band}）` : ""}（基础 ${base}）。${contributions ? `原因包括：${contributions}。` : ""}${challenges ? `需要留意：${challenges}。` : ""}${timeRange}。建议 ${start} 出发，完成窗口 ${finish}${water != null ? `，饮水约 ${water} L` : ""}。主风险：${risk}。`;
+  return `这条约 ${dist} km、爬升约 ${gain} m 的路线，对你大约是 ${personal}/100${band ? `（${band}）` : ""}（基础 ${base}）。${contributions ? `原因包括：${contributions}。` : ""}${challenges ? `需要留意：${challenges}。` : ""}${timeRange}。建议 ${start} 出发，完成窗口 ${finish}${waterCarry != null ? `，建议携行约 ${waterCarry} L` : ""}${waterConsume != null && waterCarry != null && waterConsume > waterCarry ? `（预计消耗约 ${waterConsume} L，需沿途补水）` : ""}。主风险：${risk}。`;
 }
 
 function hardestTemplate(hardest: HardestPayload): string {

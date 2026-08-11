@@ -163,7 +163,17 @@ export type RouteAnalysis = {
   recommendation: {
     suggestedStart?: string;
     finishWindow?: string;
+    /**
+     * Suggested starting carry (L). Primary UI number — not full-day sweat total.
+     * @deprecated Prefer waterCarryLiters; kept as alias of carry for older clients.
+     */
     waterLiters?: number;
+    /** Estimated day consumption (L); may exceed what you should pack. */
+    waterConsumeLiters?: number;
+    /** Suggested liters in the pack at trailhead. */
+    waterCarryLiters?: number;
+    /** Short note: refill assumptions / no-water contingency. */
+    waterNote?: string;
     mainRisk?: string;
     paceNote?: string;
   };

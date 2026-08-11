@@ -110,6 +110,8 @@ export function buildRecommendation(input: {
   weather: WeatherSnapshot;
   personalOverall: number;
   plannedStart?: string;
+  /** Route climb — bumps carry slightly on big days. */
+  elevationGainM?: number;
 }): RouteAnalysis["recommendation"] {
   const sunset = parseChinaDayTime(input.weather.sunset);
   const day = input.weather.date ?? shanghaiToday();
@@ -136,9 +138,11 @@ export function buildRecommendation(input: {
   );
 
   const temp = input.weather.temperatureC ?? 18;
-  const waterLiters = Number(
-    Math.max(0.8, input.durationMin / 60 * (temp >= 28 ? 0.7 : 0.45)).toFixed(1),
-  );
+  const water = estimateWaterPlan({
+    durationMin: input.durationMin,
+    temperatureC: temp,
+    elevationGainM: input.elevationGainM ?? 0,
+  });
 
   let mainRisk = "后程疲劳";
   if (input.weather.thunderstormRisk === "high") mainRisk = "雷暴风险";
@@ -150,11 +154,57 @@ export function buildRecommendation(input: {
   return {
     suggestedStart: suggested,
     finishWindow: `${formatShanghaiClock(finishLow.toISOString())}–${formatShanghaiClock(finishHigh.toISOString())}`,
-    waterLiters,
+    waterLiters: water.carryLiters,
+    waterCarryLiters: water.carryLiters,
+    waterConsumeLiters: water.consumeLiters,
+    waterNote: water.note,
     mainRisk,
     paceNote:
       input.personalOverall >= 65
         ? "建议前半段保守配速，把余力留给连续爬升。预估为行进向时长；含长时间观景/用餐会明显更久。"
         : "保持均匀配速，爬升段主动减速。预估为行进向时长；含长时间观景/用餐会明显更久。",
   };
+}
+
+/**
+ * Split physiological day consumption from trailhead carry.
+ * Leaders quote carry (2–3.5 L typical); full-day sweat can be higher with refills.
+ */
+export function estimateWaterPlan(input: {
+  durationMin: number;
+  temperatureC: number;
+  elevationGainM?: number;
+}): { consumeLiters: number; carryLiters: number; note: string } {
+  const temp = input.temperatureC;
+  const hours = Math.max(0.5, input.durationMin / 60);
+  // Cap the hours used for sweat math — rest/padding shouldn't invent 8 L drinks.
+  const effortHours = Math.min(hours, 10);
+
+  let rate = 0.4;
+  if (temp >= 32) rate = 0.65;
+  else if (temp >= 28) rate = 0.55;
+  else if (temp >= 22) rate = 0.45;
+
+  const consumeLiters = Number(
+    Math.max(0.8, effortHours * rate).toFixed(1),
+  );
+
+  const gain = Math.max(0, input.elevationGainM ?? 0);
+  let carry =
+    1.6 +
+    Math.min(1.2, gain / 1500) +
+    (temp >= 28 ? 0.4 : 0) +
+    (temp >= 32 ? 0.4 : 0) +
+    (effortHours >= 8 ? 0.4 : effortHours >= 5 ? 0.2 : 0);
+
+  // Pack weight sanity: day-hike start load, not a full desert cache.
+  carry = Math.min(3.5, Math.max(1.5, carry));
+  const carryLiters = Number(carry.toFixed(1));
+
+  const note =
+    consumeLiters > carryLiters + 0.4
+      ? `预计消耗约 ${consumeLiters} L（热天/长日）；出发建议携行 ${carryLiters} L，并确认沿途补水。无可靠水源时按消耗准备。`
+      : `出发建议携行约 ${carryLiters} L；按强度与气温增减，优先确认水源。`;
+
+  return { consumeLiters, carryLiters, note };
 }

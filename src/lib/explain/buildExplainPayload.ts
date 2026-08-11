@@ -37,7 +37,10 @@ export function buildOverviewExplainPayload(analysis: RouteAnalysis) {
     recommendation: {
       suggestedStartLocal: startLocal,
       finishWindowLocal: analysis.recommendation.finishWindow ?? null,
-      waterLiters: analysis.recommendation.waterLiters ?? null,
+      waterLiters: analysis.recommendation.waterCarryLiters ?? analysis.recommendation.waterLiters ?? null,
+      waterCarryLiters: analysis.recommendation.waterCarryLiters ?? null,
+      waterConsumeLiters: analysis.recommendation.waterConsumeLiters ?? null,
+      waterNote: analysis.recommendation.waterNote ?? null,
       mainRisk: analysis.recommendation.mainRisk ?? null,
       paceNote: analysis.recommendation.paceNote ?? null,
     },

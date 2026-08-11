@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatShanghaiClock } from "@/lib/time/china";
 import { analyzeRoute } from "./analyzeRoute";
-import { buildRecommendation } from "./challenges";
+import { buildRecommendation, estimateWaterPlan } from "./challenges";
 import { parseGpx } from "./parseGpx";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -37,5 +37,41 @@ describe("challenges", () => {
     expect(formatShanghaiClock(rec.suggestedStart)).toBe("07:30");
     expect(rec.finishWindow).toMatch(/^10:\d{2}–11:\d{2}$/);
     expect(rec.mainRisk).not.toBe("可能天黑前无法结束");
+  });
+
+  it("splits water consume vs carry and caps trailhead load", () => {
+    const cool = estimateWaterPlan({
+      durationMin: 180,
+      temperatureC: 18,
+      elevationGainM: 600,
+    });
+    expect(cool.carryLiters).toBeGreaterThanOrEqual(1.5);
+    expect(cool.carryLiters).toBeLessThanOrEqual(2.5);
+    expect(cool.consumeLiters).toBeLessThanOrEqual(3);
+
+    // Old bug: 11h × 0.7 ≈ 7.7 L as "建议饮水"
+    const longHot = estimateWaterPlan({
+      durationMin: 11 * 60,
+      temperatureC: 29,
+      elevationGainM: 2100,
+    });
+    expect(longHot.consumeLiters).toBeGreaterThan(longHot.carryLiters);
+    expect(longHot.carryLiters).toBeLessThanOrEqual(3.5);
+    expect(longHot.carryLiters).toBeLessThan(5);
+    expect(longHot.note).toMatch(/携行|补水/);
+
+    const rec = buildRecommendation({
+      durationMin: 11 * 60,
+      personalOverall: 80,
+      elevationGainM: 2100,
+      weather: {
+        source: "open-meteo",
+        temperatureC: 29,
+        thunderstormRisk: "low",
+      },
+    });
+    expect(rec.waterLiters).toBe(rec.waterCarryLiters);
+    expect(rec.waterCarryLiters!).toBeLessThanOrEqual(3.5);
+    expect(rec.waterConsumeLiters!).toBeGreaterThan(rec.waterCarryLiters!);
   });
 });

@@ -189,6 +189,7 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     weather,
     personalOverall: personalized.personal.overall,
     plannedStart: input.plannedStart,
+    elevationGainM: route.elevationGainM,
   });
 
   const focusScores = hasProfile ? personalized.personal : baseDifficulty;

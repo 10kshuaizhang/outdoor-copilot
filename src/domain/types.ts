@@ -182,5 +182,5 @@ export function engineProfileToOutdoor(
   };
 }
 
-/** Physical+intensity scoring: structure in main score, physical floor (D-026). */
-export const MODEL_VERSION = "v0.1.4-physical-intensity";
+/** Water carry vs consume split + physical-intensity scoring. */
+export const MODEL_VERSION = "v0.1.5-water-plan";

@@ -91,6 +91,14 @@ Format per entry:
 
 ## Difficulty & Calibration
 
+### D-027 — Water: consume vs trailhead carry
+
+- **Date:** 2026-08-11  
+- **Decision:** Split water advice into `waterConsumeLiters` (day sweat estimate, effort-hours capped at 10) and `waterCarryLiters` (trailhead pack, clamped **1.5–3.5 L**). UI/explain emphasize carry; `waterLiters` aliases carry for compatibility. `MODEL_VERSION` → `v0.1.5-water-plan`.  
+- **Context:** Long hot days (e.g. Xiaowutai) showed **7.7 L** from `hours × 0.7`, which reads as “bring 8 kg of water” and misleads beginners.  
+- **Consequences:** Consume may still exceed carry when refills are assumed; note tells users to plan for no-water contingencies.  
+- **Status:** active  
+
 ### D-026 — Physical + intensity in main score
 
 - **Date:** 2026-08-11  
