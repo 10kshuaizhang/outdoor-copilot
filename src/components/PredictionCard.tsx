@@ -45,13 +45,13 @@ export function PredictionCard({
 
       <div>
         <p className="text-sm text-[var(--rock)]">Personal Difficulty</p>
-        <div className="mt-1 flex items-end gap-3">
+        <div className="mt-1 flex items-end gap-4">
           <p className="font-[family-name:var(--font-display)] text-5xl leading-none tracking-[-0.03em] text-[var(--pine-deep)]">
             {personal}
           </p>
-          <div className="pb-1">
-            <p className="text-sm text-[var(--rock)]">/ 100</p>
-            <p className="font-[family-name:var(--font-serif-sc)] text-xl text-[var(--cta)]">
+          <div className="flex flex-col justify-end gap-1 pb-1">
+            <p className="text-sm leading-none text-[var(--rock)]">/ 100</p>
+            <p className="font-[family-name:var(--font-serif-sc)] text-xl leading-tight text-[var(--cta)]">
               {band}
             </p>
           </div>

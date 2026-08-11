@@ -237,13 +237,13 @@ export function BaseReport({
         <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--dawn)]">
           {showPersonal ? "对你的吃力程度" : "路线基础负荷"}
         </p>
-        <div className="mt-3 flex items-end gap-3">
+        <div className="mt-3 flex items-end gap-4">
           <p className="score-number font-[family-name:var(--font-display)] text-7xl leading-none tracking-[-0.04em]">
             {focus.overall}
           </p>
-          <div className="pb-1">
-            <p className="text-sm text-[var(--mist)]/80">/ 100</p>
-            <p className="score-band font-[family-name:var(--font-serif-sc)] text-xl">
+          <div className="flex flex-col justify-end gap-1 pb-1">
+            <p className="text-sm leading-none text-[var(--mist)]/80">/ 100</p>
+            <p className="score-band font-[family-name:var(--font-serif-sc)] text-xl leading-tight">
               {band}
             </p>
           </div>

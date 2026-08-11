@@ -170,31 +170,45 @@ export async function renderShareCardPng(
   ctx.font = `600 30px ${serifSc}`;
   ctx.fillText("对你的吃力程度", 96, panelY + 64);
 
+  // Score block: large number on the left; "/100" + band stacked to its right.
+  // Never place the band under the digits — display fonts (esp. "9"/"0") have
+  // deep descenders that collide with 56px 宋体 labels like「不建议」.
+  const scoreBaseline = panelY + 248;
   ctx.fillStyle = "#1c1a17";
   ctx.font = `700 168px ${display}`;
   const scoreText = String(personal);
-  ctx.fillText(scoreText, 96, panelY + 230);
-  const scoreWidth = ctx.measureText(scoreText).width;
+  ctx.fillText(scoreText, 96, scoreBaseline);
+  const scoreMetrics = ctx.measureText(scoreText);
+  const scoreWidth = scoreMetrics.width;
+  const scoreDescent =
+    scoreMetrics.actualBoundingBoxDescent > 0
+      ? scoreMetrics.actualBoundingBoxDescent
+      : 168 * 0.22;
+
+  const metaX = 96 + scoreWidth + 28;
   ctx.font = `600 34px ${sans}`;
   ctx.fillStyle = "#6b6560";
-  ctx.fillText("/ 100", 96 + scoreWidth + 28, panelY + 150);
+  ctx.fillText("/ 100", metaX, scoreBaseline - 92);
 
   ctx.fillStyle = "#2a4a33";
-  ctx.font = `700 56px ${serifSc}`;
-  ctx.fillText(band, 96, panelY + 300);
+  ctx.font = `700 52px ${serifSc}`;
+  // Keep band vertically aligned to the lower half of the score, still to the right.
+  ctx.fillText(band, metaX, scoreBaseline - 12);
 
+  // Clearance below the score glyph before the next row.
+  const afterScoreY = scoreBaseline + Math.ceil(scoreDescent) + 36;
   ctx.fillStyle = "#6b6560";
   ctx.font = `500 28px ${sans}`;
-  ctx.fillText(`路线基础负荷 ${base}`, 96, panelY + 350);
+  ctx.fillText(`路线基础负荷 ${base}`, 96, afterScoreY);
 
-  // Stats
-  const statsY = panelY + 410;
+  // Stats — start below base-load line with consistent gap
+  const statsY = afterScoreY + 64;
   const stats = [
     ["距离", `${route.distanceKm.toFixed(1)} km`],
     ["爬升", `+${route.elevationGainM} m`],
     [
       "预估",
-      `${formatDuration(duration.lowMin)}–${formatDuration(duration.highMin)}`,
+      `${formatDuration(duration.lowMin)} – ${formatDuration(duration.highMin)}`,
     ],
   ] as const;
   stats.forEach(([label, value], i) => {
@@ -203,11 +217,16 @@ export async function renderShareCardPng(
     ctx.font = `500 24px ${sans}`;
     ctx.fillText(label, sx, statsY);
     ctx.fillStyle = "#1c1a17";
-    ctx.font = `700 36px ${display}`;
-    ctx.fillText(value, sx, statsY + 48);
+    // Slightly smaller so long duration ranges don't collide across columns.
+    ctx.font = `700 32px ${display}`;
+    const valueLines = wrapText(ctx, value, 280, 2);
+    valueLines.forEach((line, li) => {
+      ctx.fillText(line, sx, statsY + 44 + li * 36);
+    });
   });
 
-  drawElevation(ctx, elevationProfile, 96, panelY + 520, 888, 160);
+  const elevY = statsY + 120;
+  drawElevation(ctx, elevationProfile, 96, elevY, 888, 160);
 
   ctx.fillStyle = "#1c1a17";
   ctx.font = `500 28px ${serifSc}`;
@@ -216,12 +235,16 @@ export async function renderShareCardPng(
     : "Know the trail. Know yourself. Go smarter.";
   const riskLines = wrapText(ctx, risk, 888, 2);
   riskLines.forEach((line, i) => {
-    ctx.fillText(line, 96, panelY + 740 + i * 40);
+    ctx.fillText(line, 96, elevY + 220 + i * 40);
   });
 
   ctx.fillStyle = "#6b6560";
   ctx.font = `500 24px ${sans}`;
-  ctx.fillText("Know the trail. Know yourself. Go smarter.", 96, panelY + 860);
+  ctx.fillText(
+    "Know the trail. Know yourself. Go smarter.",
+    96,
+    elevY + 320,
+  );
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
