@@ -152,6 +152,72 @@ export function BaseReport({
     setShowManualCopy(true);
   };
 
+  const sharePanel = showPersonal ? (
+    <div className="panel space-y-3 px-4 py-5">
+      <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+        分享到小红书
+      </p>
+      <p className="text-sm text-[var(--rock)]">
+        生成精致 3:4 海报图。保存后发笔记，再复制配文——让人一眼想点开。
+      </p>
+      <button
+        type="button"
+        disabled={cardBusy}
+        onClick={() => void makeShareCard()}
+        className="btn-accent min-h-12 w-full px-5 py-3.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {cardBusy ? "生成中…" : "生成小红书分享图"}
+      </button>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          disabled={cardBusy}
+          onClick={() => void saveCardOnly()}
+          className="btn-ghost min-h-11 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          仅保存图片
+        </button>
+        <button
+          type="button"
+          disabled={cardBusy}
+          onClick={() => void copyCaption()}
+          className="btn-ghost min-h-11 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          复制文案
+        </button>
+      </div>
+      {cardPreviewUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={cardPreviewUrl}
+          alt="小红书分享预览"
+          className="mx-auto w-full max-w-xs border border-[var(--border-soft)] shadow-[var(--shadow-soft)]"
+        />
+      ) : null}
+      {cardCaption ? (
+        <textarea
+          readOnly
+          value={cardCaption}
+          className="field-input min-h-28 p-3 text-sm"
+          onFocus={(e) => e.currentTarget.select()}
+        />
+      ) : null}
+      {shareStatus ? (
+        <p className="text-sm text-[var(--pine-deep)]" role="status">
+          {shareStatus}
+        </p>
+      ) : null}
+      {showManualCopy ? (
+        <textarea
+          readOnly
+          value={cardCaption ?? summaryText}
+          className="field-input min-h-32 p-3 text-sm"
+          onFocus={(e) => e.currentTarget.select()}
+        />
+      ) : null}
+    </div>
+  ) : null;
+
   return (
     <article className="reveal-up space-y-8">
       {title ? (
@@ -192,10 +258,6 @@ export function BaseReport({
             : ""}
         </p>
       </div>
-
-      {analysis.hikeBrief ? (
-        <RouteBriefCard brief={analysis.hikeBrief} />
-      ) : null}
 
       {showPersonal ? (
         <div className="grid grid-cols-2 gap-4 border-y border-[var(--border-soft)] py-4">
@@ -239,6 +301,12 @@ export function BaseReport({
           <dd className="mt-1 text-lg font-semibold">{route.maxElevM} m</dd>
         </div>
       </dl>
+
+      {sharePanel}
+
+      {analysis.hikeBrief ? (
+        <RouteBriefCard brief={analysis.hikeBrief} />
+      ) : null}
 
       <div>
         <p className="mb-2 text-sm text-[var(--rock)]">海拔剖面</p>
@@ -381,126 +449,61 @@ export function BaseReport({
       ) : null}
 
       {showPersonal ? (
-        <>
-          <div className="panel space-y-3 px-4 py-5">
-            <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
-              分享到小红书
-            </p>
-            <p className="text-sm text-[var(--rock)]">
-              生成精致 3:4 海报图。保存后发笔记，再复制配文——让人一眼想点开。
-            </p>
-            <button
-              type="button"
-              disabled={cardBusy}
-              onClick={() => void makeShareCard()}
-              className="btn-accent min-h-12 w-full px-5 py-3.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {cardBusy ? "生成中…" : "生成小红书分享图"}
-            </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={cardBusy}
-                onClick={() => void saveCardOnly()}
-                className="btn-ghost min-h-11 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                仅保存图片
-              </button>
-              <button
-                type="button"
-                disabled={cardBusy}
-                onClick={() => void copyCaption()}
-                className="btn-ghost min-h-11 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                复制文案
-              </button>
-            </div>
-            {cardPreviewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={cardPreviewUrl}
-                alt="小红书分享预览"
-                className="mx-auto w-full max-w-xs border border-[var(--border-soft)] shadow-[var(--shadow-soft)]"
-              />
-            ) : null}
-            {cardCaption ? (
-              <textarea
-                readOnly
-                value={cardCaption}
-                className="field-input min-h-28 p-3 text-sm"
-                onFocus={(e) => e.currentTarget.select()}
-              />
-            ) : null}
-            {shareStatus ? (
-              <p className="text-sm text-[var(--pine-deep)]" role="status">
-                {shareStatus}
-              </p>
-            ) : null}
-            {showManualCopy ? (
-              <textarea
-                readOnly
-                value={cardCaption ?? summaryText}
-                className="field-input min-h-32 p-3 text-sm"
-                onFocus={(e) => e.currentTarget.select()}
-              />
-            ) : null}
-          </div>
-          <div className="space-y-3 border-t border-[var(--border-soft)] pt-5 text-sm">
-            <p className="font-[family-name:var(--font-serif-sc)] tracking-[0.12em] text-[var(--pine)]">
-              走完后回填（不自动改模型）
-            </p>
-            <label className="block text-[var(--rock)]">
-              实际总用时（分钟）
-              <input
-                type="number"
-                value={actualMin}
-                onChange={(e) => setActualMin(e.target.value)}
-                className="field-input mt-1"
-              />
-            </label>
-            <label className="block text-[var(--rock)]">
-              主观难度 1–5
-              <input
-                type="number"
-                min={1}
-                max={5}
-                value={perceived}
-                onChange={(e) => setPerceived(e.target.value)}
-                className="field-input mt-1"
-              />
-            </label>
-            <button
-              type="button"
-              className="btn-primary min-h-11 px-4 py-2.5 text-sm"
-              onClick={async () => {
-                trackEvent("feedback", {
-                  actualMin: Number(actualMin) || 0,
-                  perceived: Number(perceived) || 0,
+        <div className="space-y-3 border-t border-[var(--border-soft)] pt-5 text-sm">
+          <p className="font-[family-name:var(--font-serif-sc)] tracking-[0.12em] text-[var(--pine)]">
+            走完后回填（不自动改模型）
+          </p>
+          <label className="block text-[var(--rock)]">
+            实际总用时（分钟）
+            <input
+              type="number"
+              value={actualMin}
+              onChange={(e) => setActualMin(e.target.value)}
+              className="field-input mt-1"
+            />
+          </label>
+          <label className="block text-[var(--rock)]">
+            主观难度 1–5
+            <input
+              type="number"
+              min={1}
+              max={5}
+              value={perceived}
+              onChange={(e) => setPerceived(e.target.value)}
+              className="field-input mt-1"
+            />
+          </label>
+          <button
+            type="button"
+            className="btn-primary min-h-11 px-4 py-2.5 text-sm"
+            onClick={async () => {
+              trackEvent("feedback", {
+                actualMin: Number(actualMin) || 0,
+                perceived: Number(perceived) || 0,
+              });
+              if (analysisId) {
+                const { saveFeedback } = await import("@/lib/history/storage");
+                const result = saveFeedback({
+                  analysisId,
+                  actualTotalMin: Number(actualMin) || undefined,
+                  perceivedDifficulty: Number(perceived) || undefined,
+                  createdAt: new Date().toISOString(),
                 });
-                if (analysisId) {
-                  const { saveFeedback } = await import("@/lib/history/storage");
-                  const result = saveFeedback({
-                    analysisId,
-                    actualTotalMin: Number(actualMin) || undefined,
-                    perceivedDifficulty: Number(perceived) || undefined,
-                    createdAt: new Date().toISOString(),
-                  });
-                  if (!result.ok) {
-                    setFeedbackSaved(false);
-                    return;
-                  }
+                if (!result.ok) {
+                  setFeedbackSaved(false);
+                  return;
                 }
-                setFeedbackSaved(true);
-                onFeedbackSaved?.();
-              }}
-            >
-              保存回填
-            </button>
-            {feedbackSaved ? (
-              <p className="text-xs text-[var(--pine)]">已保存到本地回填记录。</p>
-            ) : null}
-          </div>
-        </>
+              }
+              setFeedbackSaved(true);
+              onFeedbackSaved?.();
+            }}
+          >
+            保存回填
+          </button>
+          {feedbackSaved ? (
+            <p className="text-xs text-[var(--pine)]">已保存到本地回填记录。</p>
+          ) : null}
+        </div>
       ) : null}
 
       <p className="border-t border-[var(--border-soft)] pt-4 text-xs leading-relaxed text-[var(--rock)]">
