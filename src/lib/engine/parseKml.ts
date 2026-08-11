@@ -1,9 +1,13 @@
+import { haversineMeters } from "./geo";
 import type { TrackPoint } from "./types";
 
 /**
  * Parse KML trail geometry into track points.
  * Supports LineString / MultiGeometry coordinates and gx:Track coords.
  * KML order is lon,lat[,ele] — opposite of GPX lat/lon attributes.
+ *
+ * Multiple distant LineStrings are NOT stitched (that invents teleport km).
+ * We keep the longest continuous ring by path length.
  */
 export function parseKml(xml: string): TrackPoint[] {
   const fromLines = parseLineStringCoordinates(xml);
@@ -17,28 +21,49 @@ export function parseKml(xml: string): TrackPoint[] {
 }
 
 function parseLineStringCoordinates(xml: string): TrackPoint[] {
-  const points: TrackPoint[] = [];
-  // Match coordinates blocks that sit under LineString / LinearRing / gx:LatLonQuad-ish trail dumps.
+  const rings: TrackPoint[][] = [];
+  // Match coordinates blocks that sit under LineString / LinearRing.
   const blockRe =
     /<(?:[\w.-]+:)?(?:LineString|LinearRing)\b[^>]*>[\s\S]*?<coordinates\b[^>]*>([\s\S]*?)<\/coordinates>/gi;
   let match: RegExpExecArray | null;
   while ((match = blockRe.exec(xml))) {
-    points.push(...coordsTextToPoints(match[1] ?? ""));
+    const chunk = filterPoints(coordsTextToPoints(match[1] ?? ""));
+    if (chunk.length >= 2) rings.push(chunk);
   }
 
   // Some exporters put bare <coordinates> under Placemark without wrapping we matched.
-  if (points.length < 2) {
+  if (rings.length === 0) {
     const looseRe = /<coordinates\b[^>]*>([\s\S]*?)<\/coordinates>/gi;
     while ((match = looseRe.exec(xml))) {
-      const chunk = coordsTextToPoints(match[1] ?? "");
-      if (chunk.length > points.length) {
-        points.length = 0;
-        points.push(...chunk);
-      }
+      const chunk = filterPoints(coordsTextToPoints(match[1] ?? ""));
+      if (chunk.length >= 2) rings.push(chunk);
     }
   }
 
-  return filterPoints(points);
+  return pickLongestRing(rings);
+}
+
+function pathLengthMeters(points: TrackPoint[]): number {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    total += haversineMeters(points[i - 1], points[i]);
+  }
+  return total;
+}
+
+/** Prefer the longest continuous geometry; never invent a jump between rings. */
+export function pickLongestRing(rings: TrackPoint[][]): TrackPoint[] {
+  if (rings.length === 0) return [];
+  let best = rings[0];
+  let bestLen = pathLengthMeters(best);
+  for (let i = 1; i < rings.length; i++) {
+    const len = pathLengthMeters(rings[i]);
+    if (len > bestLen || (len === bestLen && rings[i].length > best.length)) {
+      best = rings[i];
+      bestLen = len;
+    }
+  }
+  return best;
 }
 
 function parseGxTrack(xml: string): TrackPoint[] {

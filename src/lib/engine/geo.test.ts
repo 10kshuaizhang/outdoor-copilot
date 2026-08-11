@@ -46,4 +46,18 @@ describe("elevationStats hysteresis", () => {
     expect(stats.gainM).toBeGreaterThanOrEqual(1900);
     expect(stats.gainM).toBeLessThanOrEqual(2400);
   });
+
+  it("does not count a single GPS elevation spike into route gain or max", () => {
+    const points: TrackPoint[] = [
+      { lat: 40.0, lon: 116.0, ele: 100 },
+      { lat: 40.001, lon: 116.0, ele: 120 },
+      { lat: 40.0011, lon: 116.0, ele: 520 }, // ~11 m step, +400 m spike
+      { lat: 40.002, lon: 116.0, ele: 140 },
+      { lat: 40.003, lon: 116.0, ele: 160 },
+    ];
+    const stats = elevationStats(points);
+    expect(stats.maxElevM).toBeLessThanOrEqual(170);
+    expect(stats.gainM).toBeLessThanOrEqual(80);
+    expect(stats.gainM).toBeGreaterThanOrEqual(50);
+  });
 });
