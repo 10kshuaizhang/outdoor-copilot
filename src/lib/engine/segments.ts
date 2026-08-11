@@ -1,5 +1,11 @@
 import { enrichSegmentEffort } from "./effort";
-import { accumulateDistances, haversineMeters } from "./geo";
+import {
+  accumulateDistances,
+  haversineMeters,
+  pushElevHysteresis,
+  startElevHysteresis,
+  type ElevHysteresisState,
+} from "./geo";
 import { clampGradePct, isElevationSpike, stepGradePct } from "./grade";
 import type { Segment, TrackPoint } from "./types";
 
@@ -19,6 +25,13 @@ export function buildSegments(points: TrackPoint[]): Segment[] {
 
   let startIdx = 0;
   let segIdx = 0;
+  // One hysteresis chain for the whole route so segment gains align with route stats.
+  let hyst: ElevHysteresisState | null = null;
+  let lastEle: number | undefined =
+    points[0].ele != null && !Number.isNaN(points[0].ele)
+      ? points[0].ele
+      : undefined;
+  if (lastEle != null) hyst = startElevHysteresis(lastEle);
 
   for (let i = 1; i < points.length; i++) {
     const isLast = i === points.length - 1;
@@ -30,18 +43,30 @@ export function buildSegments(points: TrackPoint[]): Segment[] {
     let maxGradePct = 0;
     for (let j = startIdx + 1; j <= i; j++) {
       const dist = haversineMeters(points[j - 1], points[j]);
-      const eleA = points[j - 1].ele ?? 0;
-      const eleB = points[j].ele ?? 0;
-      const delta = eleB - eleA;
-      // Skip gain/loss on spike steps so one bad point cannot invent "hardest".
-      if (!isElevationSpike(delta, dist)) {
-        if (delta > 0) gainM += delta;
-        else lossM += -delta;
-      }
+      const eleA = points[j - 1].ele;
+      const eleB = points[j].ele;
+      const rawA = eleA ?? lastEle ?? 0;
+      const rawB = eleB ?? rawA;
+      const delta = rawB - rawA;
       const grade = stepGradePct(delta, dist);
       if (grade != null) {
         maxGradePct = Math.max(maxGradePct, clampGradePct(grade));
       }
+
+      if (eleB == null || Number.isNaN(eleB)) continue;
+      if (isElevationSpike(delta, dist)) continue;
+
+      if (!hyst) {
+        hyst = startElevHysteresis(eleB);
+        lastEle = eleB;
+        continue;
+      }
+      const beforeGain = hyst.gainM;
+      const beforeLoss = hyst.lossM;
+      pushElevHysteresis(hyst, eleB);
+      gainM += hyst.gainM - beforeGain;
+      lossM += hyst.lossM - beforeLoss;
+      lastEle = eleB;
     }
 
     const distanceM = cum[i] - cum[startIdx];

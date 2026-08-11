@@ -46,4 +46,4 @@ Older Week 1 predictions without these fields are backfilled at display time via
 ## Schema evolution
 
 New algorithm → new `modelVersion` on **new** rows only.
-Base overall formula remains the `v0.1-analyze` lineage; personalization comfort scale bumps use a new `modelVersion` (e.g. `v0.1.1-comfort-scale`) without rewriting historical Predictions.
+Base overall formula remains the `v0.1-analyze` lineage; personalization / elevation denoising bumps use a new `modelVersion` (e.g. `v0.1.2-elev-hysteresis`) without rewriting historical Predictions.

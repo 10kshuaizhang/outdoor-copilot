@@ -2,6 +2,13 @@ import type { TrackPoint } from "./types";
 
 const EARTH_RADIUS_M = 6371000;
 
+/**
+ * Minimum |Δh| from the last committed altitude before counting gain/loss.
+ * Suppresses GPS/barometer micro-jitter that otherwise inflates cumulative climb
+ * on dense tracks (e.g. Xiaowutai raw sum ~3300 m → ~2100 m).
+ */
+export const ELEVATION_HYSTERESIS_M = 5;
+
 function toRad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
@@ -25,34 +32,63 @@ export function accumulateDistances(points: TrackPoint[]): number[] {
   return distances;
 }
 
+export type ElevHysteresisState = {
+  anchorM: number;
+  gainM: number;
+  lossM: number;
+};
+
+export function startElevHysteresis(eleM: number): ElevHysteresisState {
+  return { anchorM: eleM, gainM: 0, lossM: 0 };
+}
+
+/** Commit climb/descent only after moving ≥ threshold from the last anchor. */
+export function pushElevHysteresis(
+  state: ElevHysteresisState,
+  eleM: number,
+  thresholdM: number = ELEVATION_HYSTERESIS_M,
+): void {
+  const delta = eleM - state.anchorM;
+  if (delta >= thresholdM) {
+    state.gainM += delta;
+    state.anchorM = eleM;
+  } else if (delta <= -thresholdM) {
+    state.lossM += -delta;
+    state.anchorM = eleM;
+  }
+}
+
 export function elevationStats(points: TrackPoint[]): {
   gainM: number;
   lossM: number;
   minElevM: number;
   maxElevM: number;
 } {
-  let gainM = 0;
-  let lossM = 0;
   let minElevM = Number.POSITIVE_INFINITY;
   let maxElevM = Number.NEGATIVE_INFINITY;
-  let prev: number | undefined;
+  let hyst: ElevHysteresisState | null = null;
 
   for (const p of points) {
     if (p.ele == null || Number.isNaN(p.ele)) continue;
     minElevM = Math.min(minElevM, p.ele);
     maxElevM = Math.max(maxElevM, p.ele);
-    if (prev != null) {
-      const delta = p.ele - prev;
-      if (delta > 0) gainM += delta;
-      else lossM += -delta;
+
+    if (!hyst) {
+      hyst = startElevHysteresis(p.ele);
+    } else {
+      pushElevHysteresis(hyst, p.ele);
     }
-    prev = p.ele;
   }
 
-  if (!Number.isFinite(minElevM)) {
+  if (!Number.isFinite(minElevM) || !hyst) {
     return { gainM: 0, lossM: 0, minElevM: 0, maxElevM: 0 };
   }
-  return { gainM, lossM, minElevM, maxElevM };
+  return {
+    gainM: hyst.gainM,
+    lossM: hyst.lossM,
+    minElevM,
+    maxElevM,
+  };
 }
 
 export function routeCenter(points: TrackPoint[]): { lat: number; lon: number } {
