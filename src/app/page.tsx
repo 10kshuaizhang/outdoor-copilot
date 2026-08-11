@@ -19,14 +19,14 @@ export default function Home() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(115deg, rgba(12,34,38,0.92) 0%, rgba(12,34,38,0.58) 46%, rgba(12,34,38,0.22) 100%), linear-gradient(to top, rgba(12,34,38,0.82) 0%, transparent 48%)",
+              "linear-gradient(115deg, rgba(26,36,28,0.9) 0%, rgba(26,36,28,0.58) 46%, rgba(26,36,28,0.22) 100%), linear-gradient(to top, rgba(26,36,28,0.78) 0%, transparent 48%)",
           }}
         />
         <div
           className="hero-mist pointer-events-none absolute inset-0 motion-reduce:animate-none"
           style={{
             background:
-              "radial-gradient(ellipse 55% 40% at 78% 28%, rgba(232,213,208,0.28), transparent 70%), radial-gradient(ellipse 40% 35% at 18% 72%, rgba(74,138,136,0.22), transparent 65%)",
+              "radial-gradient(ellipse 55% 40% at 78% 28%, rgba(232,217,192,0.3), transparent 70%), radial-gradient(ellipse 40% 35% at 18% 72%, rgba(63,107,74,0.22), transparent 65%)",
           }}
         />
       </div>

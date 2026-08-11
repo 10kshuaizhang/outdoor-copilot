@@ -231,7 +231,7 @@ export function BaseReport({
           className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full opacity-40"
           style={{
             background:
-              "radial-gradient(circle, rgba(232,213,208,0.55), transparent 70%)",
+              "radial-gradient(circle, rgba(232,217,192,0.55), transparent 70%)",
           }}
         />
         <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--dawn)]">

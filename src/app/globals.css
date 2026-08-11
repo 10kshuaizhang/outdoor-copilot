@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  /* Alpine Dawn Editorial — cool mist teal + dusty rose */
-  --bg-deep: #0c2226;
-  --bg-moss: #163338;
-  --rock: #6a7375;
-  --mist: #d7e4e6;
-  --dawn: #e8d5d0;
-  --pine: #4a8a88;
-  --pine-deep: #1f4f52;
-  --cream: #f0f4f5;
-  --ink: #142428;
-  --ink-soft: rgba(20, 36, 40, 0.68);
-  --cta: #c97b8a;
-  --cta-ink: #ffffff;
+  /* Moss & Dawn — original outdoor palette, refined UI (no pink) */
+  --bg-deep: #1a241c;
+  --bg-moss: #2c3a2e;
+  --rock: #6b6560;
+  --mist: #d9e0d6;
+  --dawn: #e8d9c0;
+  --pine: #3f6b4a;
+  --pine-deep: #2a4a33;
+  --cream: #f3efe6;
+  --ink: #1c1a17;
+  --ink-soft: rgba(28, 26, 23, 0.72);
+  --cta: #c4a574;
+  --cta-ink: #1c1a17;
   --surface: rgba(255, 255, 255, 0.72);
   --surface-solid: #ffffff;
-  --border-soft: rgba(20, 36, 40, 0.1);
-  --shadow-soft: 0 12px 40px rgba(12, 34, 38, 0.08);
-  --shadow-lift: 0 18px 50px rgba(12, 34, 38, 0.12);
+  --border-soft: rgba(28, 26, 23, 0.1);
+  --shadow-soft: 0 12px 40px rgba(26, 36, 28, 0.08);
+  --shadow-lift: 0 18px 50px rgba(26, 36, 28, 0.12);
   --background: var(--cream);
   --foreground: var(--ink);
   --ring: var(--pine-deep);
@@ -46,7 +46,7 @@ body {
 }
 
 ::selection {
-  background: rgba(201, 123, 138, 0.28);
+  background: rgba(196, 165, 116, 0.35);
   color: var(--ink);
 }
 
@@ -55,14 +55,14 @@ body {
   outline-offset: 3px;
 }
 
-/* Atmospheric page wash for light surfaces */
+/* Atmospheric page wash — warm cream + pine, no rose */
 .app-atmosphere {
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(232, 213, 208, 0.55), transparent 55%),
-    radial-gradient(ellipse 70% 45% at 100% 0%, rgba(74, 138, 136, 0.14), transparent 50%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(201, 123, 138, 0.08), transparent 45%),
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(232, 217, 192, 0.45), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 100% 0%, rgba(63, 107, 74, 0.12), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(42, 74, 51, 0.06), transparent 45%),
     var(--cream);
 }
 
@@ -72,7 +72,7 @@ body {
   position: absolute;
   inset: 0;
   z-index: -1;
-  opacity: 0.4;
+  opacity: 0.35;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
@@ -128,7 +128,7 @@ body {
 .btn-accent:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.05);
-  box-shadow: 0 10px 28px rgba(201, 123, 138, 0.35);
+  box-shadow: 0 10px 28px rgba(196, 165, 116, 0.4);
 }
 
 .btn-ghost {
@@ -147,7 +147,7 @@ body {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(31, 79, 82, 0.06);
+  background: rgba(42, 74, 51, 0.06);
 }
 
 .field-input {
@@ -163,12 +163,12 @@ body {
 
 .field-input:focus {
   border-color: var(--pine);
-  box-shadow: 0 0 0 3px rgba(74, 138, 136, 0.18);
+  box-shadow: 0 0 0 3px rgba(63, 107, 74, 0.18);
   outline: none;
 }
 
 .score-hero {
-  background: linear-gradient(135deg, var(--pine-deep) 0%, #2a6366 55%, #3d7874 100%);
+  background: linear-gradient(135deg, var(--pine-deep) 0%, #355c3f 55%, #4a7854 100%);
   color: var(--mist);
   box-shadow: var(--shadow-lift);
 }
@@ -215,10 +215,10 @@ body {
 @keyframes cta-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(201, 123, 138, 0.4);
+    box-shadow: 0 0 0 0 rgba(196, 165, 116, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 14px rgba(201, 123, 138, 0);
+    box-shadow: 0 0 0 14px rgba(196, 165, 116, 0);
   }
 }
 

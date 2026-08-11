@@ -4,8 +4,8 @@
   "description": "上传 GPX，得到对你的个人路线难度与出发建议。",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0c2226",
-  "theme_color": "#0c2226",
+  "background_color": "#1a241c",
+  "theme_color": "#1a241c",
   "lang": "zh-CN",
   "orientation": "portrait-primary"
 }

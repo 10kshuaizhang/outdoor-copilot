@@ -1,12 +1,10 @@
 # Analyze / report page overrides
 
-Follow `MASTER.md` Alpine Dawn Editorial.
+Follow `MASTER.md` Moss & Dawn Refined.
 
 ## Specific rules
 
-- Use `app-atmosphere` wash behind content
-- Sample route pickers and report blocks may use `.panel` (interactive containers)
-- Score presentation uses `.score-hero` cinematic block
-- Share to Xiaohongshu is a first-class panel with `.btn-accent`
-- Forms use `.field-input`; primary actions `.btn-primary`
-- Keep deterministic numbers unchanged — design only
+- `app-atmosphere` with cream + pine washes (no rose)
+- Score hero: pine greens
+- Share CTA: gold accent / pine primary — no pink
+- Share panel sits after score + stats, before long brief

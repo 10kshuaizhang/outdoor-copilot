@@ -16,8 +16,8 @@ export default function OpenGraphImage() {
           justifyContent: "flex-end",
           padding: "64px 72px",
           background:
-            "linear-gradient(135deg, #0c2226 0%, #163338 48%, #1f4f52 78%, #c97b8a 160%)",
-          color: "#f0f4f5",
+            "linear-gradient(135deg, #1a241c 0%, #2c3a2e 55%, #3f6b4a 100%)",
+          color: "#f3efe6",
           fontFamily: "Georgia, serif",
         }}
       >
@@ -29,10 +29,10 @@ export default function OpenGraphImage() {
             width: 480,
             height: 480,
             background:
-              "radial-gradient(circle, rgba(232,213,208,0.28) 0%, transparent 70%)",
+              "radial-gradient(circle, rgba(232,217,192,0.28) 0%, transparent 70%)",
           }}
         />
-        <div style={{ fontSize: 26, letterSpacing: 6, color: "#e8d5d0" }}>
+        <div style={{ fontSize: 26, letterSpacing: 6, color: "#e8d9c0" }}>
           OUTDOOR COPILOT
         </div>
         <div
@@ -49,7 +49,7 @@ export default function OpenGraphImage() {
           style={{
             fontSize: 34,
             marginTop: 28,
-            color: "#d7e4e6",
+            color: "#d9e0d6",
             maxWidth: 820,
           }}
         >

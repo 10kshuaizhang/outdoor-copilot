@@ -15,12 +15,12 @@ Format per entry:
 
 ## Product & Scope
 
-### D-041 — Alpine Dawn Editorial visual system (share-first polish)
+### D-041 — Moss & Dawn Refined（原色调 + 精致版式，无粉色）
 
 - **Date:** 2026-08-11  
-- **Decision:** Adopt **Alpine Dawn Editorial** as the product UI system: cool mist pearl surfaces, deep alpine teal, dusty-rose CTA for share moments, Cormorant + Raleway + Noto Serif SC. Keep existing CSS token names (`--cream`, `--pine`, …) but recolor them. Prioritize Xiaohongshu-worthy report score hero + 3:4 share card.  
-- **Context:** Growth depends on women outdoor users wanting to screenshot and post; previous moss/cream look read as generic outdoor tool, not “精致想转发”. ui-ux-pro-max spa-pink / purple outputs were rejected as off-brand.  
-- **Consequences:** Landing stays full-bleed cinematic; analyze/history/about use atmospheric wash + soft panels; share PNG matches the same palette. No social feed features.  
+- **Decision:** Keep original **moss / cream / gold** tokens. Retain refined UI (atmosphere, panels, score hero, share panel placement, Cormorant + Raleway). **Reject** dusty-rose / pink CTA from the earlier Alpine Dawn experiment.  
+- **Context:** Share-first polish is valuable, but cool-teal + pink drifted from Outdoor Copilot’s outdoor identity; product owner preferred a compromise without pink.  
+- **Consequences:** `--cta` remains `#c4a574`; hero/share/OG use warm moss greens; no pink accents in CSS, share PNG, or marketing surfaces.  
 - **Status:** active  
 
 ### D-040 — Week 1–2 = Prediction skeleton, then Route Intelligence
