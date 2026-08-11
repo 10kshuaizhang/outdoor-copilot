@@ -7,6 +7,11 @@ import type {
   RiskPreference,
   UserProfile,
 } from "@/lib/engine";
+import {
+  COMFORT_BY_EXPERIENCE,
+  COMFORT_DISTANCE_MAX_KM,
+  COMFORT_ELEVATION_MAX_M,
+} from "@/lib/engine";
 
 export type ProfileFormValue = Partial<OutdoorProfile> &
   Partial<UserProfile> & { lastHikeAt?: string };
@@ -17,19 +22,21 @@ type Props = {
   onSkip: () => void;
 };
 
+const BEGINNER = COMFORT_BY_EXPERIENCE.beginner;
+
 export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
   const [experience, setExperience] = useState<ExperienceLevel>(
-    initial?.experience ?? "intermediate",
+    initial?.experience ?? "beginner",
   );
   const [typicalDistanceKm, setDistance] = useState(
     initial?.typicalDistanceKm ??
       initial?.comfortableDistanceKm ??
-      10,
+      BEGINNER.distanceKm,
   );
   const [typicalElevationM, setElevation] = useState(
     initial?.typicalElevationM ??
       initial?.comfortableElevationM ??
-      500,
+      BEGINNER.elevationM,
   );
   const [riskPreference, setRisk] = useState<RiskPreference>(
     initial?.riskPreference ?? "balanced",
@@ -72,7 +79,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
     >
       <p className="text-xs leading-relaxed text-[var(--rock)]">
         这是你告诉系统的档案（OutdoorProfile），不是系统从活动中学到的
-        Personal Model。
+        Personal Model。舒适距离/爬升指「日归可重复」的水平，不是比赛极限。
       </p>
 
       <div>
@@ -80,7 +87,20 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
         <select
           className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
           value={experience}
-          onChange={(e) => setExperience(e.target.value as ExperienceLevel)}
+          onChange={(e) => {
+            const next = e.target.value as ExperienceLevel;
+            const prevPreset = COMFORT_BY_EXPERIENCE[experience];
+            const nextPreset = COMFORT_BY_EXPERIENCE[next];
+            // Auto-shift only when sliders still match the previous level preset.
+            if (
+              typicalDistanceKm === prevPreset.distanceKm &&
+              typicalElevationM === prevPreset.elevationM
+            ) {
+              setDistance(nextPreset.distanceKm);
+              setElevation(nextPreset.elevationM);
+            }
+            setExperience(next);
+          }}
         >
           <option value="beginner">初级</option>
           <option value="intermediate">中级</option>
@@ -96,11 +116,14 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
         <input
           type="range"
           min={3}
-          max={25}
+          max={COMFORT_DISTANCE_MAX_KM}
           value={typicalDistanceKm}
           onChange={(e) => setDistance(Number(e.target.value))}
           className="mt-2 w-full"
         />
+        <p className="mt-1 text-xs text-[var(--rock)]">
+          初级常见约 10 km；资深日归可至 {COMFORT_DISTANCE_MAX_KM} km
+        </p>
       </div>
 
       <div>
@@ -110,12 +133,15 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
         <input
           type="range"
           min={100}
-          max={1500}
+          max={COMFORT_ELEVATION_MAX_M}
           step={50}
           value={typicalElevationM}
           onChange={(e) => setElevation(Number(e.target.value))}
           className="mt-2 w-full"
         />
+        <p className="mt-1 text-xs text-[var(--rock)]">
+          初级常见约 500 m；资深日归可至 {COMFORT_ELEVATION_MAX_M} m
+        </p>
       </div>
 
       <div>

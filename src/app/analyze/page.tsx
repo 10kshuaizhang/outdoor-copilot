@@ -247,7 +247,9 @@ export default function AnalyzePage() {
         setProfile(outdoor);
       } else {
         outdoor = engineProfileToOutdoor(getOrCreateUser().id, {
-          experience: "intermediate",
+          experience: "beginner",
+          comfortableDistanceKm: 10,
+          comfortableElevationM: 500,
         });
       }
       setLoadingId("personal");
@@ -271,7 +273,11 @@ export default function AnalyzePage() {
     setSaveWarning(null);
     const snapshot =
       profile ??
-      engineProfileToOutdoor("local", { experience: "intermediate" });
+      engineProfileToOutdoor("local", {
+        experience: "beginner",
+        comfortableDistanceKm: 10,
+        comfortableElevationM: 500,
+      });
     const result = savePrediction({
       title: activeTitle ?? "路线预测",
       points,

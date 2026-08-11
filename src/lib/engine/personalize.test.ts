@@ -65,4 +65,38 @@ describe("analyzeRoute personalization", () => {
     expect(result.personalDifficulty.overall).toBeLessThan(36);
     expect(result.band).toBe("轻松");
   });
+
+  it("scores a ~10 km / 500 m day hike harder for beginner comfort than intermediate", () => {
+    const points = Array.from({ length: 80 }, (_, i) => ({
+      lat: 40 + i * 0.0011,
+      lon: 116,
+      ele: 100 + (i < 40 ? i * 12 : 480 - (i - 40) * 10),
+    }));
+    const beginner = analyzeRoute({
+      points,
+      profile: {
+        experience: "beginner",
+        comfortableDistanceKm: 10,
+        comfortableElevationM: 500,
+        riskPreference: "balanced",
+      },
+      weather: { source: "fallback", temperatureC: 18 },
+    });
+    const intermediate = analyzeRoute({
+      points,
+      profile: {
+        experience: "intermediate",
+        comfortableDistanceKm: 15,
+        comfortableElevationM: 800,
+        riskPreference: "balanced",
+      },
+      weather: { source: "fallback", temperatureC: 18 },
+    });
+    expect(beginner.route.distanceKm).toBeGreaterThan(8);
+    expect(beginner.route.distanceKm).toBeLessThan(14);
+    expect(beginner.personalDifficulty.overall).toBeGreaterThan(
+      intermediate.personalDifficulty.overall,
+    );
+    expect(beginner.band).not.toBe("轻松");
+  });
 });

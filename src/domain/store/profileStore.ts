@@ -36,7 +36,7 @@ export function saveOutdoorProfile(
   const user = getOrCreateUser();
   const prev = loadOutdoorProfile();
   const fromEngine = engineProfileToOutdoor(user.id, {
-    experience: partial.experience ?? prev?.experience ?? "intermediate",
+    experience: partial.experience ?? prev?.experience ?? "beginner",
     comfortableDistanceKm:
       partial.typicalDistanceKm ??
       partial.comfortableDistanceKm ??

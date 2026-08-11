@@ -1,5 +1,6 @@
 import type {
   DifficultyScores,
+  ExperienceLevel,
   RouteSummary,
   UserProfile,
 } from "./types";
@@ -9,6 +10,28 @@ export type Capability = {
   climbing: number;
   riskTolerance: number;
   completeness: number;
+};
+
+/** UI / form ceiling for declared day-hike comfort (not race max). */
+export const COMFORT_DISTANCE_MAX_KM = 40;
+export const COMFORT_ELEVATION_MAX_M = 2500;
+
+/**
+ * Capability saturates near advanced+ day-hike comfort, not weekend defaults.
+ * Raising these keeps expert 30–40 km / 1800–2500 m differentiated.
+ */
+export const CAPABILITY_DISTANCE_ANCHOR_KM = 30;
+export const CAPABILITY_ELEVATION_ANCHOR_M = 1800;
+
+/** Typical sustainable comfort by experience (日归可重复，非极限). */
+export const COMFORT_BY_EXPERIENCE: Record<
+  ExperienceLevel,
+  { distanceKm: number; elevationM: number }
+> = {
+  beginner: { distanceKm: 10, elevationM: 500 },
+  intermediate: { distanceKm: 15, elevationM: 800 },
+  advanced: { distanceKm: 25, elevationM: 1400 },
+  expert: { distanceKm: 35, elevationM: 2000 },
 };
 
 const EXPERIENCE_SCORE: Record<UserProfile["experience"], number> = {
@@ -26,10 +49,13 @@ export function resolveProfile(
     partial?.comfortableDistanceKm == null &&
     partial?.comfortableElevationM == null;
 
+  const beginner = COMFORT_BY_EXPERIENCE.beginner;
   return {
-    experience: partial?.experience ?? "intermediate",
-    comfortableDistanceKm: partial?.comfortableDistanceKm ?? 10,
-    comfortableElevationM: partial?.comfortableElevationM ?? 500,
+    experience: partial?.experience ?? "beginner",
+    comfortableDistanceKm:
+      partial?.comfortableDistanceKm ?? beginner.distanceKm,
+    comfortableElevationM:
+      partial?.comfortableElevationM ?? beginner.elevationM,
     riskPreference: partial?.riskPreference ?? "balanced",
     age: partial?.age,
     heightCm: partial?.heightCm,
@@ -47,11 +73,15 @@ export function capabilityFromProfile(
   const exp = EXPERIENCE_SCORE[profile.experience];
   const distComfort = Math.min(
     1,
-    (profile.comfortableDistanceKm ?? 10) / 18,
+    (profile.comfortableDistanceKm ??
+      COMFORT_BY_EXPERIENCE.beginner.distanceKm) /
+      CAPABILITY_DISTANCE_ANCHOR_KM,
   );
   const climbComfort = Math.min(
     1,
-    (profile.comfortableElevationM ?? 500) / 1000,
+    (profile.comfortableElevationM ??
+      COMFORT_BY_EXPERIENCE.beginner.elevationM) /
+      CAPABILITY_ELEVATION_ANCHOR_M,
   );
   const riskTolerance =
     profile.riskPreference === "conservative"
@@ -95,8 +125,12 @@ export function personalizeDifficulty(
   const contributions: Array<{ code: string; label: string; delta: number }> =
     [];
 
-  const comfortDist = profile.comfortableDistanceKm ?? 10;
-  const comfortElev = profile.comfortableElevationM ?? 500;
+  const comfortDist =
+    profile.comfortableDistanceKm ??
+    COMFORT_BY_EXPERIENCE.beginner.distanceKm;
+  const comfortElev =
+    profile.comfortableElevationM ??
+    COMFORT_BY_EXPERIENCE.beginner.elevationM;
   const distDelta = route.distanceKm - comfortDist;
   const elevDelta = route.elevationGainM - comfortElev;
 
