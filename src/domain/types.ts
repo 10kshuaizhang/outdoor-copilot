@@ -182,5 +182,5 @@ export function engineProfileToOutdoor(
   };
 }
 
-/** Water carry vs consume split + physical-intensity scoring. */
-export const MODEL_VERSION = "v0.1.5-water-plan";
+/** Weather×route coupling + personalize/physio honesty. */
+export const MODEL_VERSION = "v0.1.6-weather-couple";

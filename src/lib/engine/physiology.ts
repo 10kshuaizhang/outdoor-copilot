@@ -14,12 +14,16 @@ export function estimatePhysiologicalLoad(input: {
 }): {
   reserveHeartbeats: number;
   gradeLabel: string;
+  /** True when height/weight/resting HR were defaulted. */
   usedDefaults: boolean;
+  /** True when the user explicitly set pack weight. */
+  packExplicit: boolean;
   packWeightKg: number;
 } {
   const r = input.profile?.restingHr ?? 70;
   const M = input.profile?.weightKg ?? 65;
   const H = (input.profile?.heightCm ?? 170) / 100;
+  const packExplicit = input.profile?.packWeightKg != null;
   const m = input.profile?.packWeightKg ?? 5;
   const d = input.distanceM;
   const h = input.elevationGainM;
@@ -53,11 +57,16 @@ export function estimatePhysiologicalLoad(input: {
     reserveHeartbeats: Math.round(reserve),
     gradeLabel,
     usedDefaults,
+    packExplicit,
     packWeightKg: m,
   };
 }
 
-/** Map physiological estimate into score adjustments (hybrid layer). */
+/**
+ * Map physiological estimate into score adjustments.
+ * Default body metrics do NOT move scores (avoid pseudo-precision).
+ * Explicit pack weight still nudges climbing/endurance.
+ */
 export function applyPhysiologyToScores(
   scores: DifficultyScores,
   physio: ReturnType<typeof estimatePhysiologicalLoad>,
@@ -68,9 +77,16 @@ export function applyPhysiologyToScores(
   const contributions: Array<{ code: string; label: string; delta: number }> =
     [];
 
-  // Reserve heartbeat magnitude → small endurance/climbing nudges.
-  const loadBump = Math.min(18, Math.round(physio.reserveHeartbeats / 2500));
-  const packBump = Math.min(10, Math.max(0, Math.round((physio.packWeightKg - 5) * 1.6)));
+  const loadBump = physio.usedDefaults
+    ? 0
+    : Math.min(18, Math.round(physio.reserveHeartbeats / 2500));
+  const packBump = physio.packExplicit
+    ? Math.min(10, Math.max(0, Math.round((physio.packWeightKg - 5) * 1.6)))
+    : 0;
+
+  if (loadBump === 0 && packBump === 0) {
+    return { scores, contributions };
+  }
 
   const enduranceDelta = Math.round(loadBump * 0.55 + packBump * 0.5);
   const climbingDelta = Math.round(loadBump * 0.45 + packBump * 0.7);
@@ -78,7 +94,9 @@ export function applyPhysiologyToScores(
   if (enduranceDelta !== 0) {
     contributions.push({
       code: "physio_endurance",
-      label: `生理负荷（${physio.gradeLabel}）影响耐力`,
+      label: physio.usedDefaults
+        ? `负重 ${physio.packWeightKg} kg 影响耐力`
+        : `生理负荷（${physio.gradeLabel}）影响耐力`,
       delta: enduranceDelta,
     });
   }

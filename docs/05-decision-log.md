@@ -91,6 +91,14 @@ Format per entry:
 
 ## Difficulty & Calibration
 
+### D-028 — Weather×route coupling; personalize/physio honesty
+
+- **Date:** 2026-08-11  
+- **Decision:** (1) Weather score bumps are **coupled**: heat×climb effort, rain×steep-descent share, storm→risk (not a blanket endurance dump). Duration multiplier softened and still applied once. (2) Drop experience `expDelta` on overall/risk — experience already shapes capability. (3) Default body metrics no longer move scores; explicit pack weight and complete HR/anthropometrics still can. `MODEL_VERSION` → `v0.1.6-weather-couple`.  
+- **Context:** P1–P3 after physical/intensity scoring: weather was additive/`m` blur; personalize double-counted experience; physio defaults created false precision.  
+- **Consequences:** Hot climb days rise more than hot flat days; wet steep descents raise risk; missing physio fields only affect confidence. No terrain/ridge fake factors.  
+- **Status:** active  
+
 ### D-027 — Water: consume vs trailhead carry
 
 - **Date:** 2026-08-11  

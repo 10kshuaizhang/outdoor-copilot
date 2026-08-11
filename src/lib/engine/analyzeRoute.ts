@@ -119,7 +119,10 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
   const elevationProfile = buildElevationProfile(points);
   const geometricBase = computeBaseDifficulty(route, segments);
 
-  const weatherApplied = applyWeatherToScores(geometricBase, weather);
+  const weatherApplied = applyWeatherToScores(geometricBase, weather, {
+    route,
+    segments,
+  });
   let baseDifficulty = weatherApplied.scores;
 
   // Duration uses dry (pre-weather) personalization × weather multiplier ONCE.

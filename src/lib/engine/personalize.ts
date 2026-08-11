@@ -189,16 +189,8 @@ export function personalizeDifficulty(
     climbingAdj += Math.round(ease * 0.55);
   }
 
-  const expDelta = Math.round((0.5 - EXPERIENCE_SCORE[profile.experience]) * 16);
-  if (expDelta !== 0) {
-    contributions.push({
-      code: "experience",
-      label:
-        expDelta > 0 ? "徒步经验相对有限" : "徒步经验较丰富",
-      delta: expDelta,
-    });
-  }
-
+  // Experience already shapes capability (flatEndurance / climbing).
+  // Do not also add expDelta onto overall + risk (double count).
   const riskAdj = Math.round((0.55 - cap.riskTolerance) * 18);
   if (profile.riskPreference === "conservative") {
     contributions.push({
@@ -218,12 +210,10 @@ export function personalizeDifficulty(
     endurance: clamp(base.endurance + enduranceAdj),
     climbing: clamp(base.climbing + climbingAdj),
     weather: base.weather,
-    risk: clamp(base.risk + riskAdj + Math.round(expDelta * 0.35)),
+    risk: clamp(base.risk + riskAdj),
     overall: 0,
   };
-  personal.overall = clamp(
-    composeOverall(personal, expDelta * 0.25),
-  );
+  personal.overall = clamp(composeOverall(personal));
 
   const confidence = profile.usedDefaults
     ? Math.min(cap.completeness, 0.52)
