@@ -7,6 +7,13 @@ export {
   hardestStretchTemplate,
 } from "./effort";
 export type { HardestStretch } from "./effort";
+export {
+  ELEVATION_HYSTERESIS_M,
+  elevationStats,
+  pushElevHysteresis,
+  startElevHysteresis,
+} from "./geo";
+export type { ElevHysteresisState } from "./geo";
 export { buildHikeBrief } from "./hikeBrief";
 export type { HikeBrief, HikeVerdict } from "./types";
 export { parseGpx, pointsToGpx } from "./parseGpx";

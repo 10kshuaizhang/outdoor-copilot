@@ -182,5 +182,5 @@ export function engineProfileToOutdoor(
   };
 }
 
-/** Personalization comfort scale recalibration (beginner 10/500; pro ceiling). */
-export const MODEL_VERSION = "v0.1.1-comfort-scale";
+/** Elevation hysteresis + comfort-scale personalization lineage. */
+export const MODEL_VERSION = "v0.1.2-elev-hysteresis";

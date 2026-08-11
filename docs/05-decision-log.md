@@ -91,6 +91,14 @@ Format per entry:
 
 ## Difficulty & Calibration
 
+### D-024 — Elevation gain hysteresis (5 m)
+
+- **Date:** 2026-08-11  
+- **Decision:** Route (and segment) cumulative climb uses **5 m hysteresis**: only commit gain/loss after |Δh| from the last committed altitude exceeds the threshold. Segments still skip single-step GPS spikes before hysteresis. `MODEL_VERSION` → `v0.1.2-elev-hysteresis`.  
+- **Context:** Dense tracks (e.g. 小五台东台–北台环线) summed every positive micro-jitter → ~3314 m displayed climb vs ~23.9 km / max 2875 m; ~2.6 km of that was sub-3 m steps.  
+- **Consequences:** Xiaowutai-class loops land ~2.1 km climb; clean synthetic climbs unchanged; historical Predictions keep prior `modelVersion`. Fixture: `src/lib/engine/fixtures/xiaowutai.points.json`.  
+- **Status:** active  
+
 ### D-023 — Comfort scale: beginner 10/500; pro ceiling 40/2500
 
 - **Date:** 2026-08-11  
