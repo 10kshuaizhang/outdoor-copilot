@@ -61,7 +61,9 @@ export function summarizeRainWindow(
   visibilityKm?: number;
 } {
   if (!hourly?.time?.length || !hourly.precipitation?.length) return {};
-  const n = Math.min(hourly.time.length, hourly.precipitation.length);
+  const times = hourly.time;
+  const precip = hourly.precipitation;
+  const n = Math.min(times.length, precip.length);
   const scoped = opts?.startMs != null || opts?.endMs != null;
 
   const indices: number[] = [];
@@ -70,7 +72,7 @@ export function summarizeRainWindow(
       indices.push(i);
       continue;
     }
-    const raw = hourly.time[i];
+    const raw = times[i];
     if (!raw) continue;
     const base = raw.length >= 16 ? raw.slice(0, 16) : raw;
     const ms = /[zZ]|[+-]\d{2}:\d{2}$/.test(raw)
@@ -93,7 +95,7 @@ export function summarizeRainWindow(
   for (let a = 0; a <= indices.length - window; a++) {
     let sum = 0;
     for (let b = 0; b < window; b++) {
-      sum += hourly.precipitation[indices[a + b]!] ?? 0;
+      sum += precip[indices[a + b]!] ?? 0;
     }
     if (sum > bestSum) {
       bestSum = sum;
@@ -101,17 +103,14 @@ export function summarizeRainWindow(
     }
   }
 
-  const peak = Math.max(
-    ...indices.map((i) => hourly.precipitation[i] ?? 0),
-    0,
-  );
-  const start = hourly.time[bestStartIdx]?.slice(11, 16) ?? "";
+  const peak = Math.max(...indices.map((i) => precip[i] ?? 0), 0);
+  const start = times[bestStartIdx]?.slice(11, 16) ?? "";
   const endPos = indices.indexOf(bestStartIdx);
   const endIdx =
     endPos >= 0
       ? indices[Math.min(endPos + Math.max(window - 1, 0), indices.length - 1)]!
       : bestStartIdx;
-  const end = hourly.time[endIdx]?.slice(11, 16) ?? "";
+  const end = times[endIdx]?.slice(11, 16) ?? "";
 
   let meanCloud: number | undefined;
   if (hourly.cloud_cover?.length) {
