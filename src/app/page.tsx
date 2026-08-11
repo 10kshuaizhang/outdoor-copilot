@@ -54,7 +54,7 @@ export default function Home() {
             {/* Hard navigation: more reliable on WeChat / in-app browsers than client Link. */}
             <a
               href="/analyze"
-              className="btn-accent cta-pulse inline-flex min-h-12 items-center justify-center px-8 py-3.5 text-center text-base tracking-wide motion-reduce:animate-none"
+              className="btn-accent inline-flex min-h-12 items-center justify-center px-8 py-3.5 text-center text-base tracking-wide"
             >
               分析我的路线
             </a>

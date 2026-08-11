@@ -11,7 +11,6 @@ import {
   markPredictionHiking,
   type Prediction,
 } from "@/domain";
-import { exportEvents } from "@/lib/analytics/events";
 import { clearAllLocalData } from "@/lib/history/storage";
 import { scoreBand } from "@/lib/engine";
 
@@ -95,34 +94,23 @@ export default function HistoryPage() {
                 >
                   新建分析 →
                 </Link>
-              <button
-                type="button"
-                className="cursor-pointer underline-offset-4 transition hover:underline"
-                onClick={() => {
-                  const blob = new Blob(
-                    [JSON.stringify(exportEvents(), null, 2)],
-                    { type: "application/json" },
-                  );
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "outdoor-copilot-events.json";
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-              >
-                导出漏斗事件
-              </button>
-              <button
-                type="button"
-                className="block cursor-pointer text-red-800 underline-offset-4 transition hover:underline"
-                onClick={() => {
-                  clearAllLocalData();
-                  setItems([]);
-                }}
-              >
-                清除全部本地数据
-              </button>
+                <button
+                  type="button"
+                  className="block min-h-11 cursor-pointer text-[var(--rock)] underline-offset-4 transition hover:underline"
+                  onClick={() => {
+                    if (
+                      !window.confirm(
+                        "确定清除本机全部预测与档案？此操作不可撤销。",
+                      )
+                    ) {
+                      return;
+                    }
+                    clearAllLocalData();
+                    setItems([]);
+                  }}
+                >
+                  清除本机数据
+                </button>
               </div>
             ) : null}
           </>
@@ -150,13 +138,12 @@ export default function HistoryPage() {
                     setMessage("已标记「准备徒步」。");
                   }}
                 />
-                <p className="mt-4 text-xs text-[var(--rock)]">
-                  modelVersion: {active.modelVersion} · predictionId:{" "}
-                  {active.id.slice(0, 8)}…
-                  {activeRoute
-                    ? ` · ${activeRoute.summary.distanceKm.toFixed(1)} km`
-                    : ""}
-                </p>
+                {activeRoute ? (
+                  <p className="mt-4 text-xs text-[var(--rock)]">
+                    {activeRoute.summary.distanceKm.toFixed(1)} km · 爬升 +
+                    {activeRoute.summary.elevationGainM} m
+                  </p>
+                ) : null}
                 <div className="mt-8">
                   <BaseReport
                     analysis={activeAnalysis}

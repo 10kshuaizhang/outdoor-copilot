@@ -144,16 +144,16 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
             className="btn-ghost min-h-11 w-full px-4 py-2.5 text-sm"
           >
             {copyState === "ok"
-              ? "已复制简报"
+              ? "已复制"
               : copyState === "fail"
                 ? "自动复制失败，请手动复制下方文案"
-                : "复制徒步简报（发小红书）"}
+                : "复制简报文案"}
           </button>
           {brief.copySource ? (
             <p className="text-center text-xs text-[var(--rock)]">
               {brief.copySource === "llm"
-                ? "复制稿已 LLM 润色（数字仍来自引擎）"
-                : "复制稿为模板文案"}
+                ? "文案已润色（数字仍来自引擎）"
+                : "模板文案"}
             </p>
           ) : null}
           {showManual ? (

@@ -431,9 +431,9 @@ export default function AnalyzePage() {
             <button
               type="button"
               onClick={() => applyProfile(undefined, true)}
-              className="mt-4 cursor-pointer text-sm text-[var(--rock)] underline-offset-4 transition hover:underline"
+              className="mt-4 inline-flex min-h-11 cursor-pointer items-center self-center text-sm text-[var(--rock)] underline-offset-4 transition hover:underline"
             >
-              跳过，用默认档案生成预测
+              用默认档案继续
             </button>
           </>
         ) : null}
@@ -443,7 +443,7 @@ export default function AnalyzePage() {
             <button
               type="button"
               onClick={() => setStage("base")}
-              className="mb-6 cursor-pointer self-start text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
+              className="mb-6 inline-flex min-h-11 cursor-pointer items-center self-start text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
             >
               ← 返回基础报告
             </button>
@@ -465,7 +465,6 @@ export default function AnalyzePage() {
             <ProfileForm
               initial={profile ?? undefined}
               onSubmit={(p) => applyProfile(p, false)}
-              onSkip={() => applyProfile(undefined, true)}
             />
             {loadingId === "personal" ? (
               <p className="mt-4 text-sm text-[var(--rock)]">正在生成预测…</p>

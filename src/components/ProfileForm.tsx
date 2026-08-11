@@ -19,7 +19,8 @@ export type ProfileFormValue = Partial<OutdoorProfile> &
 type Props = {
   initial?: ProfileFormValue;
   onSubmit: (profile: ProfileFormValue) => void;
-  onSkip: () => void;
+  /** Optional — prefer a single skip entry on the base report page. */
+  onSkip?: () => void;
 };
 
 const BEGINNER = COMFORT_BY_EXPERIENCE.beginner;
@@ -205,13 +206,15 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
         >
           生成个人预测
         </button>
-        <button
-          type="button"
-          onClick={onSkip}
-          className="cursor-pointer text-sm text-[var(--rock)] underline-offset-4 transition hover:underline"
-        >
-          跳过，用默认档案
-        </button>
+        {onSkip ? (
+          <button
+            type="button"
+            onClick={onSkip}
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center text-sm text-[var(--rock)] underline-offset-4 transition hover:underline"
+          >
+            用默认档案继续
+          </button>
+        ) : null}
       </div>
     </form>
   );

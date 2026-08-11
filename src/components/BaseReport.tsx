@@ -161,7 +161,7 @@ export function BaseReport({
         分享到小红书
       </p>
       <p className="text-sm text-[var(--rock)]">
-        生成精致 3:4 海报图。保存后发笔记，再复制配文——让人一眼想点开。
+        生成 3:4 海报，再复制配文发笔记。
       </p>
       <button
         type="button"
@@ -264,7 +264,7 @@ export function BaseReport({
         </div>
       ) : null}
 
-      {showPersonal ? (
+      {showPersonal && !hideScoreHero ? (
         <div className="grid grid-cols-2 gap-4 border-y border-[var(--border-soft)] py-4">
           <div>
             <p className="text-sm text-[var(--rock)]">路线基础</p>
@@ -279,6 +279,20 @@ export function BaseReport({
             </p>
           </div>
         </div>
+      ) : null}
+
+      {showPersonal && hideScoreHero ? (
+        <p className="text-sm text-[var(--rock)]">
+          路线基础负荷{" "}
+          <span className="font-semibold tabular-nums text-[var(--ink)]">
+            {baseDifficulty.overall}
+          </span>
+          <span className="mx-2 text-[var(--border-soft)]">·</span>
+          对你{" "}
+          <span className="font-semibold tabular-nums text-[var(--ink)]">
+            {personalDifficulty.overall}
+          </span>
+        </p>
       ) : null}
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-5 text-sm sm:grid-cols-4">
@@ -308,7 +322,7 @@ export function BaseReport({
       </dl>
 
       {analysis.hikeBrief ? (
-        <RouteBriefCard brief={analysis.hikeBrief} />
+        <RouteBriefCard brief={analysis.hikeBrief} enableCopy={!showPersonal} />
       ) : null}
 
       <div>
