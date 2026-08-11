@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { BaseReport } from "@/components/BaseReport";
 import { PredictionCard } from "@/components/PredictionCard";
 import {
+  MODEL_VERSION,
   getAnalysis,
   getRoute,
   listPredictions,
@@ -47,7 +48,7 @@ export default function HistoryPage() {
             </h1>
             <p className="mt-3 text-sm text-[var(--ink-soft)]">
               Prediction 独立、不可变（
-              <code className="text-xs">modelVersion: v0.1-analyze</code>
+              <code className="text-xs">modelVersion: {MODEL_VERSION}</code>
               ）。算法升级不会改写这里的数字。
             </p>
             <ul className="mt-8 space-y-4">

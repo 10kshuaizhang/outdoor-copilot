@@ -169,9 +169,9 @@ export function engineProfileToOutdoor(
   return {
     userId,
     updatedAt: new Date().toISOString(),
-    experience: profile?.experience ?? "intermediate",
-    typicalDistanceKm: profile?.comfortableDistanceKm,
-    typicalElevationM: profile?.comfortableElevationM,
+    experience: profile?.experience ?? "beginner",
+    typicalDistanceKm: profile?.comfortableDistanceKm ?? 10,
+    typicalElevationM: profile?.comfortableElevationM ?? 500,
     riskPreference: profile?.riskPreference,
     age: profile?.age,
     heightCm: profile?.heightCm,
@@ -182,4 +182,5 @@ export function engineProfileToOutdoor(
   };
 }
 
-export const MODEL_VERSION = "v0.1-analyze";
+/** Personalization comfort scale recalibration (beginner 10/500; pro ceiling). */
+export const MODEL_VERSION = "v0.1.1-comfort-scale";

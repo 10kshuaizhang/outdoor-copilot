@@ -83,6 +83,14 @@ Format per entry:
 
 ## Difficulty & Calibration
 
+### D-023 — Comfort scale: beginner 10/500; pro ceiling 40/2500
+
+- **Date:** 2026-08-11  
+- **Decision:** Treat **10 km / 500 m as standard beginner comfort** (default experience = beginner). Raise UI ceiling to **40 km / 2500 m** for strong day-hikers; capability anchors **30 km / 1800 m**. Experience presets: beginner 10/500 · intermediate 15/800 · advanced 25/1400 · expert 35/2000. `MODEL_VERSION` → `v0.1.1-comfort-scale`.  
+- **Context:** Previous UI capped at 25/1500 and capability saturated at 18/1000; product incorrectly framed 10/500 as intermediate.  
+- **Consequences:** Skip/default profile is beginner; historical Predictions keep old `modelVersion`; new analyses need re-save for comparison. See [DIFFICULTY.md](./DIFFICULTY.md).  
+- **Status:** active  
+
 ### D-020 — Hybrid Personal Difficulty with physiology as secondary layer
 
 - **Date:** 2026-08-08  
@@ -95,7 +103,7 @@ Format per entry:
 - **Decision:** Reduce continuous-climb coefficient / cap run length; widen mid bands so Beijing day-hikes (~8–12 km, 500–800 m) land 适中–偏吃力 for intermediate profiles.  
 - **Context:** Users reported “还好的线” labeled too hard; climbing often hit 100.  
 - **Consequences:** Documented in `docs/DIFFICULTY.md`; historical local scores need re-analyze.  
-- **Status:** active  
+- **Status:** superseded by D-023 (calibration target now beginner 10/500 → 适中～吃力)  
 
 ### D-022 — Persist LLM explanation into history
 
