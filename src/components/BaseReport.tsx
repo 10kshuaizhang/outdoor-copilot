@@ -453,7 +453,8 @@ export function BaseReport({
             行动建议
           </p>
           <p>
-            建议出发：{formatClock(analysis.recommendation.suggestedStart)}
+            {onStartChange ? "试算出发：" : "建议出发："}
+            {formatClock(analysis.recommendation.suggestedStart)}
           </p>
           <p>预计完成：{analysis.recommendation.finishWindow ?? "—"}</p>
           <p>

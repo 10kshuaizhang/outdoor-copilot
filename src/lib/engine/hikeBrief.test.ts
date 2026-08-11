@@ -194,4 +194,62 @@ describe("buildHikeBrief unit", () => {
     expect(brief.copyText).not.toContain("GFS");
     expect(brief.copyText).toContain("降雨");
   });
+
+  it("rewrites night-hike weather copy and respects user-chosen start", () => {
+    const brief = buildHikeBrief({
+      title: "夜行线",
+      route: {
+        distanceKm: 10,
+        elevationGainM: 600,
+        elevationLossM: 600,
+        minElevM: 400,
+        maxElevM: 1000,
+        center: { lat: 40, lon: 115 },
+      },
+      segments: [
+        {
+          idx: 0,
+          startKm: 0,
+          endKm: 10,
+          distanceM: 10000,
+          gainM: 600,
+          lossM: 600,
+          avgGradePct: 6,
+          maxGradePct: 18,
+          estimatedEffort: 2,
+          effortLabel: "moderate",
+        },
+      ],
+      weather: {
+        source: "open-meteo",
+        temperatureC: 14,
+        temperatureMinC: 9,
+        precipMm: 1,
+        thunderstormRisk: "low",
+        humidity: 90,
+        uvIndexMax: 7,
+      },
+      focus: {
+        overall: 55,
+        endurance: 50,
+        climbing: 55,
+        weather: 40,
+        risk: 45,
+      },
+      duration: { lowMin: 260, highMin: 330 },
+      mainRisk: "夜间行进（需头灯）",
+      suggestedStartLabel: "23:30",
+      finishWindow: "03:50–05:02",
+      userChoseStart: true,
+      nightHiking: true,
+    });
+
+    const uv = brief.weatherBlocks.find((b) => b.label === "紫外线");
+    expect(uv?.detail).toMatch(/夜间|凌晨/);
+    expect(brief.gear.some((g) => g.includes("主照明"))).toBe(true);
+    expect(brief.actions.some((a) => a.includes("按你选择的 23:30"))).toBe(
+      true,
+    );
+    expect(brief.actions.some((a) => a.includes("夜间行进"))).toBe(true);
+  });
 });

@@ -31,12 +31,68 @@ describe("challenges", () => {
         source: "fallback",
         date: "2026-08-08",
         temperatureC: 18,
+        sunrise: "2026-08-08T05:20",
         sunset: "2026-08-08T19:05",
       },
     });
     expect(formatShanghaiClock(rec.suggestedStart)).toBe("07:30");
     expect(rec.finishWindow).toMatch(/^10:\d{2}–11:\d{2}$/);
     expect(rec.mainRisk).not.toBe("可能天黑前无法结束");
+  });
+
+  it("flags daytime starts that finish after sunset as darkness overrun", () => {
+    const rec = buildRecommendation({
+      durationMin: 360,
+      personalOverall: 40,
+      plannedStart: "2026-08-08T08:00:00.000Z", // 16:00 Shanghai
+      weather: {
+        source: "fallback",
+        date: "2026-08-08",
+        temperatureC: 18,
+        sunrise: "2026-08-08T05:20",
+        sunset: "2026-08-08T19:05",
+        thunderstormRisk: "low",
+      },
+    });
+    expect(rec.mainRisk).toBe("可能天黑前无法结束");
+  });
+
+  it("treats late-night planned starts as night hiking, not sunset overrun", () => {
+    const rec = buildRecommendation({
+      durationMin: 280,
+      personalOverall: 50,
+      plannedStart: "2026-08-08T15:30:00.000Z", // 23:30 Shanghai
+      weather: {
+        source: "fallback",
+        date: "2026-08-08",
+        temperatureC: 12,
+        sunrise: "2026-08-08T05:20",
+        sunset: "2026-08-08T19:05",
+        thunderstormRisk: "low",
+      },
+    });
+    expect(formatShanghaiClock(rec.suggestedStart)).toBe("23:30");
+    expect(rec.mainRisk).toBe("夜间行进（需头灯）");
+    expect(rec.mainRisk).not.toBe("可能天黑前无法结束");
+    expect(rec.paceNote).toMatch(/夜行/);
+  });
+
+  it("labels pre-dawn starts without calling them sunset overrun", () => {
+    const rec = buildRecommendation({
+      durationMin: 180,
+      personalOverall: 40,
+      plannedStart: "2026-08-07T20:00:00.000Z", // 04:00 Shanghai
+      weather: {
+        source: "fallback",
+        date: "2026-08-08",
+        temperatureC: 10,
+        sunrise: "2026-08-08T05:20",
+        sunset: "2026-08-08T19:05",
+        thunderstormRisk: "low",
+      },
+    });
+    expect(formatShanghaiClock(rec.suggestedStart)).toBe("04:00");
+    expect(rec.mainRisk).toBe("凌晨出发，前段需头灯");
   });
 
   it("splits water consume vs carry and caps trailhead load", () => {

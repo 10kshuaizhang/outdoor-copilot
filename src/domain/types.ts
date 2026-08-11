@@ -183,4 +183,4 @@ export function engineProfileToOutdoor(
 }
 
 /** Altitude/descent honesty + extreme clamps + UI axis labels. */
-export const MODEL_VERSION = "v0.1.7-elev-descent";
+export const MODEL_VERSION = "v0.1.8-start-window";

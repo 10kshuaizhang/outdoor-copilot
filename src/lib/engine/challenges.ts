@@ -105,6 +105,41 @@ export function detectChallenges(
   return challenges.slice(0, 3);
 }
 
+/**
+ * Daylight vs night risk relative to planned start / finish.
+ * "天黑前无法结束" only applies to daytime starts that overrun sunset.
+ * Night / pre-dawn starts are intentional darkness — different wording.
+ */
+export function daylightRiskLabel(input: {
+  start: Date;
+  finishHigh: Date;
+  sunrise: Date | null;
+  sunset: Date | null;
+}): string | null {
+  const startMs = input.start.getTime();
+  const finishMs = input.finishHigh.getTime();
+  const sunriseMs = input.sunrise?.getTime() ?? null;
+  const sunsetMs = input.sunset?.getTime() ?? null;
+
+  // After sunset on the weather day → night / overnight hike.
+  if (sunsetMs != null && startMs >= sunsetMs) {
+    return "夜间行进（需头灯）";
+  }
+
+  // Before sunrise → early / all-night start on that calendar morning.
+  if (sunriseMs != null && startMs < sunriseMs) {
+    if (finishMs <= sunriseMs) return "全程夜间行进（需头灯）";
+    return "凌晨出发，前段需头灯";
+  }
+
+  // Daytime start: finishing after sunset is the classic overrun risk.
+  if (sunsetMs != null && finishMs > sunsetMs) {
+    return "可能天黑前无法结束";
+  }
+
+  return null;
+}
+
 export function buildRecommendation(input: {
   durationMin: number;
   weather: WeatherSnapshot;
@@ -114,6 +149,7 @@ export function buildRecommendation(input: {
   elevationGainM?: number;
 }): RouteAnalysis["recommendation"] {
   const sunset = parseChinaDayTime(input.weather.sunset);
+  const sunrise = parseChinaDayTime(input.weather.sunrise);
   const day = input.weather.date ?? shanghaiToday();
 
   let suggested = input.plannedStart;
@@ -147,9 +183,18 @@ export function buildRecommendation(input: {
   let mainRisk = "后程疲劳";
   if (input.weather.thunderstormRisk === "high") mainRisk = "雷暴风险";
   else if (temp >= 30) mainRisk = "热应激与脱水";
-  else if (sunset && finishHigh.getTime() > sunset.getTime()) {
-    mainRisk = "可能天黑前无法结束";
+  else {
+    const lightRisk = daylightRiskLabel({
+      start,
+      finishHigh,
+      sunrise,
+      sunset,
+    });
+    if (lightRisk) mainRisk = lightRisk;
   }
+
+  const nightPace =
+    mainRisk.includes("夜间") || mainRisk.includes("凌晨");
 
   return {
     suggestedStart: suggested,
@@ -159,8 +204,9 @@ export function buildRecommendation(input: {
     waterConsumeLiters: water.consumeLiters,
     waterNote: water.note,
     mainRisk,
-    paceNote:
-      input.personalOverall >= 65
+    paceNote: nightPace
+      ? "夜行节奏宜稳，关键节点预留辨路时间。预估为行进向时长；含长时间观景/用餐会明显更久。"
+      : input.personalOverall >= 65
         ? "建议前半段保守配速，把余力留给连续爬升。预估为行进向时长；含长时间观景/用餐会明显更久。"
         : "保持均匀配速，爬升段主动减速。预估为行进向时长；含长时间观景/用餐会明显更久。",
   };

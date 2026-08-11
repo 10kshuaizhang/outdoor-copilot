@@ -51,7 +51,10 @@ export function kmhToMs(kmh: number | undefined): number | undefined {
 }
 
 /** Find the wettest consecutive window and label it in China local clock. */
-export function summarizeRainWindow(hourly?: OpenMeteoHourly): {
+export function summarizeRainWindow(
+  hourly?: OpenMeteoHourly,
+  opts?: { startMs?: number; endMs?: number },
+): {
   rainWindow?: string;
   peakHourPrecipMm?: number;
   meanCloudCover?: number;
@@ -59,26 +62,61 @@ export function summarizeRainWindow(hourly?: OpenMeteoHourly): {
 } {
   if (!hourly?.time?.length || !hourly.precipitation?.length) return {};
   const n = Math.min(hourly.time.length, hourly.precipitation.length);
-  let bestStart = 0;
+  const scoped = opts?.startMs != null || opts?.endMs != null;
+
+  const indices: number[] = [];
+  for (let i = 0; i < n; i++) {
+    if (!scoped) {
+      indices.push(i);
+      continue;
+    }
+    const raw = hourly.time[i];
+    if (!raw) continue;
+    const base = raw.length >= 16 ? raw.slice(0, 16) : raw;
+    const ms = /[zZ]|[+-]\d{2}:\d{2}$/.test(raw)
+      ? Date.parse(raw)
+      : Date.parse(`${base}:00+08:00`);
+    if (!Number.isFinite(ms)) continue;
+    if (opts?.startMs != null && ms + 60 * 60 * 1000 <= opts.startMs) continue;
+    if (opts?.endMs != null && ms >= opts.endMs) continue;
+    indices.push(i);
+  }
+
+  if (!indices.length) {
+    // Fall back to full series if the hike window missed all hours.
+    for (let i = 0; i < n; i++) indices.push(i);
+  }
+
+  let bestStartIdx = indices[0]!;
   let bestSum = -1;
-  const window = 3; // 3-hour block
-  for (let i = 0; i <= n - window; i++) {
+  const window = Math.min(3, indices.length);
+  for (let a = 0; a <= indices.length - window; a++) {
     let sum = 0;
-    for (let j = 0; j < window; j++) sum += hourly.precipitation[i + j] ?? 0;
+    for (let b = 0; b < window; b++) {
+      sum += hourly.precipitation[indices[a + b]!] ?? 0;
+    }
     if (sum > bestSum) {
       bestSum = sum;
-      bestStart = i;
+      bestStartIdx = indices[a]!;
     }
   }
-  const peak = Math.max(...hourly.precipitation.slice(0, n).map((x) => x ?? 0));
-  const start = hourly.time[bestStart]?.slice(11, 16) ?? "";
-  const end =
-    hourly.time[Math.min(bestStart + window, n - 1)]?.slice(11, 16) ?? "";
+
+  const peak = Math.max(
+    ...indices.map((i) => hourly.precipitation[i] ?? 0),
+    0,
+  );
+  const start = hourly.time[bestStartIdx]?.slice(11, 16) ?? "";
+  const endPos = indices.indexOf(bestStartIdx);
+  const endIdx =
+    endPos >= 0
+      ? indices[Math.min(endPos + Math.max(window - 1, 0), indices.length - 1)]!
+      : bestStartIdx;
+  const end = hourly.time[endIdx]?.slice(11, 16) ?? "";
 
   let meanCloud: number | undefined;
   if (hourly.cloud_cover?.length) {
-    const vals = hourly.cloud_cover
-      .slice(0, n)
+    const vals = indices
+      .map((i) => hourly.cloud_cover?.[i])
       .filter((v): v is number => typeof v === "number");
     if (vals.length) {
       meanCloud = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
@@ -87,8 +125,8 @@ export function summarizeRainWindow(hourly?: OpenMeteoHourly): {
 
   let visibilityKm: number | undefined;
   if (hourly.visibility?.length) {
-    const vals = hourly.visibility
-      .slice(0, n)
+    const vals = indices
+      .map((i) => hourly.visibility?.[i])
       .filter((v): v is number => typeof v === "number" && v > 0);
     if (vals.length) {
       const meanM = vals.reduce((a, b) => a + b, 0) / vals.length;
@@ -99,10 +137,14 @@ export function summarizeRainWindow(hourly?: OpenMeteoHourly): {
   return {
     rainWindow:
       bestSum >= 0.5 && start && end
-        ? `相对较湿时段大约 ${start}–${end}（3小时窗，单点粗估）`
+        ? `${scoped ? "你这段行程内" : ""}相对较湿时段大约 ${start}–${end}（3小时窗，单点粗估）`.trim()
         : bestSum > 0
-          ? "降水偏零散，无明显连续强降雨时段"
-          : undefined,
+          ? scoped
+            ? "行程时段内降水偏零散，无明显连续强降雨"
+            : "降水偏零散，无明显连续强降雨时段"
+          : scoped
+            ? "行程时段内无明显降水峰值"
+            : undefined,
     peakHourPrecipMm: peak > 0 ? Number(peak.toFixed(1)) : undefined,
     meanCloudCover: meanCloud,
     visibilityKm,
@@ -217,6 +259,12 @@ export function mapOpenMeteoDaily(input: {
     peakHourPrecipMm: rain.peakHourPrecipMm,
     cloudCoverPct: rain.meanCloudCover,
     visibilityKm: rain.visibilityKm,
+    hourlyTimes: input.hourly?.time?.length
+      ? [...input.hourly.time]
+      : undefined,
+    hourlyPrecipMm: input.hourly?.precipitation?.length
+      ? [...input.hourly.precipitation]
+      : undefined,
     modelAgreement,
     source: "open-meteo",
   };
@@ -245,6 +293,8 @@ export function openMeteoForecastUrl(input: {
   lat: number;
   lon: number;
   date: string;
+  /** Inclusive end date (defaults to `date`). Use next day for overnight hikes. */
+  endDate?: string;
   model?: string;
   includeHourly?: boolean;
 }): string {
@@ -260,7 +310,7 @@ export function openMeteoForecastUrl(input: {
   }
   url.searchParams.set("timezone", "Asia/Shanghai");
   url.searchParams.set("start_date", input.date);
-  url.searchParams.set("end_date", input.date);
+  url.searchParams.set("end_date", input.endDate ?? input.date);
   return url.toString();
 }
 
@@ -276,12 +326,18 @@ export async function fetchOpenMeteoSnapshot(input: {
   lat: number;
   lon: number;
   date: string;
+  /** Inclusive end date for overnight coverage. */
+  endDate?: string;
   fetchImpl?: typeof fetch;
 }): Promise<WeatherSnapshot> {
   const fetchFn = input.fetchImpl ?? fetch;
+  const endDate = input.endDate ?? input.date;
 
   const primaryUrl = openMeteoForecastUrl({
-    ...input,
+    lat: input.lat,
+    lon: input.lon,
+    date: input.date,
+    endDate,
     includeHourly: true,
   });
   const primaryRes = await fetchFn(primaryUrl, { next: { revalidate: 1800 } });
@@ -299,6 +355,7 @@ export async function fetchOpenMeteoSnapshot(input: {
           lat: input.lat,
           lon: input.lon,
           date: input.date,
+          endDate,
           model: m.id === "best_match" ? undefined : m.id,
         });
         const res = await fetchFn(url, { next: { revalidate: 1800 } });

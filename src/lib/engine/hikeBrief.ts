@@ -117,6 +117,7 @@ function buildPhases(
 function buildWeatherBlocks(input: {
   weather: WeatherSnapshot;
   route: RouteSummary;
+  nightHiking?: boolean;
 }): HikeBriefPhase[] {
   const temp = input.weather.temperatureC ?? 18;
   const tempMin = input.weather.temperatureMinC;
@@ -131,6 +132,7 @@ function buildWeatherBlocks(input: {
   const ridgeApprox = Math.round(temp - (elevSpan / 100) * 0.55);
   const valleyHigh = Math.round(temp);
   const valleyLow = Math.round(tempMin ?? temp - 6);
+  const night = Boolean(input.nightHiking);
 
   let rainDetail =
     precip < 0.2
@@ -144,6 +146,9 @@ function buildWeatherBlocks(input: {
   if (input.weather.peakHourPrecipMm != null && input.weather.peakHourPrecipMm >= 1) {
     rainDetail += ` 小时峰值约 ${input.weather.peakHourPrecipMm} mm。`;
   }
+  if (night && precip >= 0.2) {
+    rainDetail += " 夜行遇雨辨路更难，节奏再留余量。";
+  }
 
   const windBeaufortish =
     wind < 3
@@ -155,8 +160,9 @@ function buildWeatherBlocks(input: {
           : "偏大，垭口/山脊阵风需小心";
 
   const uvIdx = input.weather.uvIndexMax;
-  const uv =
-    precip >= 5 || input.weather.thunderstormRisk === "high"
+  const uv = night
+    ? "夜间/凌晨行进，紫外线不是主矛盾；天亮后若仍在暴露山脊再补防晒。"
+    : precip >= 5 || input.weather.thunderstormRisk === "high"
       ? "云雨为主，晒感不强，但仍建议常规防晒"
       : uvIdx != null
         ? `紫外线指数约 ${uvIdx}，${uvIdx >= 7 ? "偏强，山脊缺遮挡务必防晒" : "中等，建议常规防晒"}`
@@ -164,16 +170,22 @@ function buildWeatherBlocks(input: {
           ? "紫外偏强，山脊缺遮挡，帽子墨镜防晒霜都要"
           : "紫外中等偏强，云天也建议防晒";
 
+  const tempDetail = night
+    ? `夜间体感更接近日最低温一侧：大约 ${valleyLow}–${Math.round((valleyLow + valleyHigh) / 2)}℃；山脊再低一些（粗估）。`
+    : `谷地/低段约 ${valleyLow}–${valleyHigh}℃；高差较大时山脊大约 ${Math.min(ridgeApprox, valleyHigh) - 2}–${Math.max(ridgeApprox, valleyLow) + 2}℃（粗估）。`;
+
   const blocks: HikeBriefPhase[] = [
     { label: "降雨", detail: rainDetail },
     { label: "对流/雷暴", detail: `${storm.level}。${storm.detail}` },
     {
       label: "风力",
-      detail: `平均风${windBeaufortish}（约 ${wind.toFixed(1)} m/s）；雷雨云靠近时山脊阵风可能突然增强。`,
+      detail: night
+        ? `夜间风${windBeaufortish}（约 ${wind.toFixed(1)} m/s）；山脊停歇更冷，防风层别省。`
+        : `平均风${windBeaufortish}（约 ${wind.toFixed(1)} m/s）；雷雨云靠近时山脊阵风可能突然增强。`,
     },
     {
       label: "温度",
-      detail: `谷地/低段约 ${valleyLow}–${valleyHigh}℃；高差较大时山脊大约 ${Math.min(ridgeApprox, valleyHigh) - 2}–${Math.max(ridgeApprox, valleyLow) + 2}℃（粗估）。`,
+      detail: tempDetail,
     },
     {
       label: "闷热与湿度",
@@ -226,16 +238,25 @@ function buildClothing(weather: WeatherSnapshot, route: RouteSummary): string[] 
   return items.slice(0, 4);
 }
 
-function buildGear(weather: WeatherSnapshot, focusOverall: number): string[] {
+function buildGear(
+  weather: WeatherSnapshot,
+  focusOverall: number,
+  nightHiking = false,
+): string[] {
   const precip = weather.precipMm ?? 0;
   const storm = weather.thunderstormRisk ?? "unknown";
   const temp = weather.temperatureC ?? 18;
-  const gear: string[] = ["足够饮水", "能量食物", "导航/离线地图", "头灯（防拖延）"];
+  const gear: string[] = [
+    "足够饮水",
+    "能量食物",
+    "导航/离线地图",
+    nightHiking ? "头灯（主照明，备电）" : "头灯（防拖延）",
+  ];
 
   if (precip >= 0.5 || storm === "medium" || storm === "high") {
     gear.push("雨衣或硬壳", "背包防雨罩", "防水袋保护手机");
   }
-  if (temp >= 28 || (weather.uvIndexMax ?? 0) >= 7) {
+  if (!nightHiking && (temp >= 28 || (weather.uvIndexMax ?? 0) >= 7)) {
     gear.push("防晒霜", "帽檐帽", "墨镜");
   }
   if (focusOverall >= 65 || precip >= 5) {
@@ -248,13 +269,18 @@ function buildGear(weather: WeatherSnapshot, focusOverall: number): string[] {
   return [...new Set(gear)].slice(0, 8);
 }
 
-function buildPhotoTips(weather: WeatherSnapshot): string[] {
+function buildPhotoTips(
+  weather: WeatherSnapshot,
+  nightHiking = false,
+): string[] {
   const precip = weather.precipMm ?? 0;
   const cloud = weather.cloudCoverPct;
   const vis = weather.visibilityKm;
   const tips: string[] = [];
 
-  if (precip >= 8 || weather.thunderstormRisk === "high") {
+  if (nightHiking) {
+    tips.push("夜行主体不是出片；若赶黎明下山，日出前后 30–60 分钟侧光最好用。");
+  } else if (precip >= 8 || weather.thunderstormRisk === "high") {
     tips.push("强降水/对流日：远景出片差，优先拍局部雨雾、云瀑；注意设备防水。");
   } else if (precip >= 1) {
     tips.push("阵雨间隙常有云雾翻山，短窗出片；雨停后1–2小时植被颜色更饱和。");
@@ -276,15 +302,20 @@ function buildPhotoTips(weather: WeatherSnapshot): string[] {
     tips.push("能见度数据不足；雨后更通透，沙尘/高湿日远景易发雾。");
   }
 
-  tips.push("经验窗口：上午云雾、傍晚侧光；正午多留给赶路。");
+  tips.push(
+    nightHiking
+      ? "经验窗口：天亮后的软光；夜间少停、少开强光干扰自己夜视。"
+      : "经验窗口：上午云雾、傍晚侧光；正午多留给赶路。",
+  );
   return tips.slice(0, 4);
 }
 
 function buildFeel(
   weather: WeatherSnapshot,
   route: RouteSummary,
+  nightHiking = false,
 ): HikeBriefFeel {
-  const blocks = buildWeatherBlocks({ weather, route });
+  const blocks = buildWeatherBlocks({ weather, route, nightHiking });
   const by = Object.fromEntries(blocks.map((b) => [b.label, b.detail]));
   return {
     sun: by["紫外线"] ?? "常规防晒",
@@ -377,6 +408,10 @@ export function buildHikeBrief(input: {
   mainRisk?: string;
   suggestedStartLabel?: string;
   finishWindow?: string;
+  /** True when the user picked a start time (vs engine default). */
+  userChoseStart?: boolean;
+  /** Night / pre-dawn hiking — softens day-centric weather copy. */
+  nightHiking?: boolean;
 }): HikeBrief {
   const hardest = findHardestStretch(input.segments);
   const decided = decideVerdict({
@@ -390,16 +425,18 @@ export function buildHikeBrief(input: {
   const storm = input.weather.thunderstormRisk ?? "unknown";
   const name = input.title?.trim() || "这条线";
   const day = input.weather.date ?? "";
+  const nightHiking = Boolean(input.nightHiking);
 
   const weatherBlocks = buildWeatherBlocks({
     weather: input.weather,
     route: input.route,
+    nightHiking,
   });
-  const feel = buildFeel(input.weather, input.route);
+  const feel = buildFeel(input.weather, input.route, nightHiking);
   const phases = buildPhases(input.segments, hardest);
   const clothing = buildClothing(input.weather, input.route);
-  const gear = buildGear(input.weather, input.focus.overall);
-  const photoTips = buildPhotoTips(input.weather);
+  const gear = buildGear(input.weather, input.focus.overall, nightHiking);
+  const photoTips = buildPhotoTips(input.weather, nightHiking);
 
   /** Lead without multi-model — used for share/copy text. */
   const leadCore: string[] = [];
@@ -441,13 +478,18 @@ export function buildHikeBrief(input: {
   actions.push(`结论：${decided.novice}`);
   actions.push(`老驴视角：${decided.experienced}`);
   if (input.suggestedStartLabel && input.suggestedStartLabel !== "—") {
+    const startPhrase = input.userChoseStart
+      ? `按你选择的 ${input.suggestedStartLabel} 出发`
+      : `建议 ${input.suggestedStartLabel} 出发`;
     actions.push(
-      `若仍出发：建议 ${input.suggestedStartLabel} 走，完成窗口 ${input.finishWindow ?? "见报告"}；预估 ${formatDuration(input.duration.lowMin)}–${formatDuration(input.duration.highMin)}（行进向）。`,
+      `${startPhrase}，完成窗口 ${input.finishWindow ?? "见报告"}；预估 ${formatDuration(input.duration.lowMin)}–${formatDuration(input.duration.highMin)}（行进向）。`,
     );
   }
   if (hardest) {
     actions.push(
-      `阵雨后 ${hardest.startKm.toFixed(1)}–${hardest.endKm.toFixed(1)} km 及后段下山可能明显变难，预期拉低。`,
+      nightHiking
+        ? `湿滑/陡段 ${hardest.startKm.toFixed(1)}–${hardest.endKm.toFixed(1)} km 夜行更难辨路，预期拉低，留足余量。`
+        : `阵雨后 ${hardest.startKm.toFixed(1)}–${hardest.endKm.toFixed(1)} km 及后段下山可能明显变难，预期拉低。`,
     );
   }
   if (input.mainRisk) actions.push(`主风险：${input.mainRisk}。`);

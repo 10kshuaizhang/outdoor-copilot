@@ -94,6 +94,26 @@ describe("openMeteo mapping", () => {
     expect(rain.rainWindow).toMatch(/12:00/);
     expect(rain.peakHourPrecipMm).toBe(4);
 
+    const scoped = summarizeRainWindow(
+      {
+        time: [
+          "2026-08-09T10:00",
+          "2026-08-09T11:00",
+          "2026-08-09T12:00",
+          "2026-08-09T13:00",
+          "2026-08-09T14:00",
+          "2026-08-09T23:00",
+        ],
+        precipitation: [0, 0.2, 3, 4, 0.5, 2],
+      },
+      {
+        startMs: Date.parse("2026-08-09T22:30:00+08:00"),
+        endMs: Date.parse("2026-08-10T04:00:00+08:00"),
+      },
+    );
+    expect(scoped.rainWindow).toMatch(/行程/);
+    expect(scoped.peakHourPrecipMm).toBe(2);
+
     const agree = summarizeModelAgreement([
       { model: "a", label: "ECMWF", precipMm: 1 },
       { model: "b", label: "GFS", precipMm: 1.5 },

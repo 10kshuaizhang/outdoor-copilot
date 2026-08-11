@@ -11,6 +11,7 @@ import {
   routeCenter,
 } from "./geo";
 import { formatShanghaiClock } from "@/lib/time/china";
+import { summarizeRainWindow } from "@/lib/weather/openMeteo";
 import { personalizeDifficulty } from "./personalize";
 import {
   applyPhysiologyToScores,
@@ -195,18 +196,51 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     elevationGainM: route.elevationGainM,
   });
 
+  const userChoseStart = Boolean(input.plannedStart);
+  const nightHiking =
+    Boolean(recommendation.mainRisk?.includes("夜间")) ||
+    Boolean(recommendation.mainRisk?.includes("凌晨"));
+
+  // Re-window rain advice to the actual start→finishHigh window when hourly exists.
+  let weatherForBrief = weather;
+  if (
+    recommendation.suggestedStart &&
+    weather.hourlyTimes?.length &&
+    weather.hourlyPrecipMm?.length
+  ) {
+    const startMs = new Date(recommendation.suggestedStart).getTime();
+    const finishHighMs =
+      startMs + duration.totalMin * 1.15 * 60 * 1000;
+    if (Number.isFinite(startMs)) {
+      const rain = summarizeRainWindow(
+        {
+          time: weather.hourlyTimes,
+          precipitation: weather.hourlyPrecipMm,
+        },
+        { startMs, endMs: finishHighMs },
+      );
+      weatherForBrief = {
+        ...weather,
+        rainWindow: rain.rainWindow ?? weather.rainWindow,
+        peakHourPrecipMm: rain.peakHourPrecipMm ?? weather.peakHourPrecipMm,
+      };
+    }
+  }
+
   const focusScores = hasProfile ? personalized.personal : baseDifficulty;
   const focusOverall = focusScores.overall;
   const hikeBrief = buildHikeBrief({
     title: input.title,
     route,
     segments,
-    weather,
+    weather: weatherForBrief,
     focus: focusScores,
     duration,
     mainRisk: recommendation.mainRisk,
     suggestedStartLabel: formatShanghaiClock(recommendation.suggestedStart),
     finishWindow: recommendation.finishWindow,
+    userChoseStart,
+    nightHiking,
   });
 
   return {
@@ -227,7 +261,7 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
       text: hikeBrief.copyText,
       source: "template",
     },
-    weather,
+    weather: weatherForBrief,
     physiological: {
       gradeLabel: physio.gradeLabel,
       reserveHeartbeats: physio.reserveHeartbeats,

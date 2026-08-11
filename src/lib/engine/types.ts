@@ -89,6 +89,12 @@ export type WeatherSnapshot = {
   peakHourPrecipMm?: number;
   cloudCoverPct?: number;
   visibilityKm?: number;
+  /**
+   * Hourly precip (China-local `YYYY-MM-DDTHH:mm` strings) for re-windowing
+   * when the user changes planned start.
+   */
+  hourlyTimes?: string[];
+  hourlyPrecipMm?: number[];
   modelAgreement?: {
     models: string[];
     precipMm: number[];

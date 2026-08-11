@@ -107,7 +107,9 @@ export default function AnalyzePage() {
 
       const center =
         nextPoints[Math.floor(nextPoints.length / 2)] ?? nextPoints[0];
-      const weather = await fetchWeather(center.lat, center.lon, date);
+      const weather = await fetchWeather(center.lat, center.lon, date, {
+        startIso,
+      });
       const engineProfile = outdoorProfileToEngine(nextProfile);
 
       const result = analyzeRoute({
@@ -142,10 +144,13 @@ export default function AnalyzePage() {
 
       // High-priority LLM: polish XHS brief (base + personal). Numbers stay in engine.
       if (result.hikeBrief) {
+        const startKey = result.recommendation.suggestedStart;
         void fetchBriefPolish(result).then((polished) => {
           if (!polished?.text) return;
           setAnalysis((prev) => {
             if (!prev?.hikeBrief) return prev;
+            // Drop stale polish if the user changed start while the request was in flight.
+            if (prev.recommendation.suggestedStart !== startKey) return prev;
             return {
               ...prev,
               hikeBrief: {
