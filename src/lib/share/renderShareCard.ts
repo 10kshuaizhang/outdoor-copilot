@@ -1,7 +1,16 @@
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
+import {
+  SHARE_CARD_HEIGHT,
+  SHARE_CARD_WIDTH,
+  SHARE_FONTS,
+  drawBrandHeader,
+  drawMossAtmosphere,
+  roundRect,
+  waitForShareFonts,
+  wrapText,
+} from "./shareCardCanvas";
 
-export const SHARE_CARD_WIDTH = 1080;
-export const SHARE_CARD_HEIGHT = 1440;
+export { SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT };
 
 export type ShareCardInput = {
   analysis: RouteAnalysis;
@@ -13,38 +22,6 @@ function formatDuration(min: number): string {
   const m = Math.round(min % 60);
   if (h <= 0) return `${m} 分钟`;
   return `${h} h ${m} m`;
-}
-
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-) {
-  const radius = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + w, y, x + w, y + h, radius);
-  ctx.arcTo(x + w, y + h, x, y + h, radius);
-  ctx.arcTo(x, y + h, x, y, radius);
-  ctx.arcTo(x, y, x + w, y, radius);
-  ctx.closePath();
-}
-
-async function waitForFonts(): Promise<void> {
-  if (typeof document === "undefined" || !document.fonts?.ready) return;
-  try {
-    await document.fonts.ready;
-    await Promise.all([
-      document.fonts.load('600 64px "Noto Serif SC"'),
-      document.fonts.load("700 120px Cormorant"),
-      document.fonts.load("500 36px Raleway"),
-    ]);
-  } catch {
-    // System fallbacks are fine on mobile.
-  }
 }
 
 function drawElevation(
@@ -103,7 +80,7 @@ function drawElevation(
 export async function renderShareCardPng(
   input: ShareCardInput,
 ): Promise<Blob> {
-  await waitForFonts();
+  await waitForShareFonts();
 
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_CARD_WIDTH;
@@ -116,42 +93,10 @@ export async function renderShareCardPng(
   const base = analysis.baseDifficulty.overall;
   const band = scoreBand(personal);
   const { route, duration, recommendation, elevationProfile } = analysis;
+  const { display, serifSc, sans } = SHARE_FONTS;
 
-  // Moss & Dawn atmosphere (no pink)
-  const bg = ctx.createLinearGradient(0, 0, 0, SHARE_CARD_HEIGHT);
-  bg.addColorStop(0, "#1a241c");
-  bg.addColorStop(0.36, "#2c3a2e");
-  bg.addColorStop(0.36, "#f3efe6");
-  bg.addColorStop(1, "#ebe4d6");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT);
-
-  // Soft dawn wash
-  const wash = ctx.createRadialGradient(920, 100, 30, 800, 160, 520);
-  wash.addColorStop(0, "rgba(232, 217, 192, 0.35)");
-  wash.addColorStop(1, "rgba(232, 217, 192, 0)");
-  ctx.fillStyle = wash;
-  ctx.fillRect(0, 0, SHARE_CARD_WIDTH, 560);
-
-  const pineWash = ctx.createRadialGradient(180, 420, 20, 220, 380, 280);
-  pineWash.addColorStop(0, "rgba(63, 107, 74, 0.18)");
-  pineWash.addColorStop(1, "rgba(63, 107, 74, 0)");
-  ctx.fillStyle = pineWash;
-  ctx.fillRect(0, 200, 520, 360);
-
-  const display =
-    'Cormorant, "Iowan Old Style", "Palatino Linotype", Georgia, serif';
-  const serifSc =
-    '"Noto Serif SC", "Songti SC", "PingFang SC", "Hiragino Sans GB", serif';
-  const sans =
-    'Raleway, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif';
-
-  ctx.fillStyle = "#f3efe6";
-  ctx.font = `600 28px ${sans}`;
-  ctx.fillText("OUTDOOR COPILOT", 72, 88);
-  ctx.font = `600 44px ${serifSc}`;
-  ctx.fillStyle = "#e8d9c0";
-  ctx.fillText("个人户外智能", 72, 150);
+  drawMossAtmosphere(ctx);
+  drawBrandHeader(ctx);
 
   ctx.fillStyle = "#ffffff";
   ctx.font = `700 64px ${display}`;
@@ -160,7 +105,6 @@ export async function renderShareCardPng(
     ctx.fillText(line, 72, 250 + i * 74);
   });
 
-  // Cream panel
   const panelY = 420;
   roundRect(ctx, 48, panelY, 984, 920, 28);
   ctx.fillStyle = "#f7f3ea";
@@ -170,9 +114,6 @@ export async function renderShareCardPng(
   ctx.font = `600 30px ${serifSc}`;
   ctx.fillText("对你的吃力程度", 96, panelY + 64);
 
-  // Score block: large number on the left; "/100" + band stacked to its right.
-  // Never place the band under the digits — display fonts (esp. "9"/"0") have
-  // deep descenders that collide with 56px 宋体 labels like「不建议」.
   const scoreBaseline = panelY + 248;
   ctx.fillStyle = "#1c1a17";
   ctx.font = `700 168px ${display}`;
@@ -192,16 +133,13 @@ export async function renderShareCardPng(
 
   ctx.fillStyle = "#2a4a33";
   ctx.font = `700 52px ${serifSc}`;
-  // Keep band vertically aligned to the lower half of the score, still to the right.
   ctx.fillText(band, metaX, scoreBaseline - 12);
 
-  // Clearance below the score glyph before the next row.
   const afterScoreY = scoreBaseline + Math.ceil(scoreDescent) + 36;
   ctx.fillStyle = "#6b6560";
   ctx.font = `500 28px ${sans}`;
   ctx.fillText(`路线基础负荷 ${base}`, 96, afterScoreY);
 
-  // Stats — start below base-load line with consistent gap
   const statsY = afterScoreY + 64;
   const stats = [
     ["距离", `${route.distanceKm.toFixed(1)} km`],
@@ -217,7 +155,6 @@ export async function renderShareCardPng(
     ctx.font = `500 24px ${sans}`;
     ctx.fillText(label, sx, statsY);
     ctx.fillStyle = "#1c1a17";
-    // Slightly smaller so long duration ranges don't collide across columns.
     ctx.font = `700 32px ${display}`;
     const valueLines = wrapText(ctx, value, 280, 2);
     valueLines.forEach((line, li) => {
@@ -256,33 +193,4 @@ export async function renderShareCardPng(
       0.95,
     );
   });
-}
-
-function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  maxLines: number,
-): string[] {
-  const chars = [...text];
-  const lines: string[] = [];
-  let current = "";
-  for (const ch of chars) {
-    const next = current + ch;
-    if (ctx.measureText(next).width > maxWidth && current) {
-      lines.push(current);
-      current = ch;
-      if (lines.length >= maxLines) break;
-    } else {
-      current = next;
-    }
-  }
-  if (lines.length < maxLines && current) lines.push(current);
-  if (lines.length === maxLines) {
-    const last = lines[maxLines - 1];
-    if (ctx.measureText(last).width > maxWidth - 20) {
-      lines[maxLines - 1] = `${last.slice(0, Math.max(1, last.length - 1))}…`;
-    }
-  }
-  return lines;
 }

@@ -266,6 +266,16 @@ export default function AdminPage() {
         <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">
           增删改查分析页展示的示例轨迹。上传 GPX / KML，简介会显示在选线列表。
         </p>
+        {authed ? (
+          <p className="mt-3 text-sm">
+            <Link
+              href="/admin/xhs"
+              className="text-[var(--pine-deep)] underline-offset-4 hover:underline"
+            >
+              小红书封面制图 →
+            </Link>
+          </p>
+        ) : null}
 
         {!configured ? (
           <p className="mt-8 border border-amber-800/30 bg-amber-50 px-4 py-3 text-sm text-amber-950">

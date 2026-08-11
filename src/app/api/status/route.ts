@@ -38,6 +38,7 @@ export async function GET() {
     admin: {
       configured: isAdminConfigured(),
       path: "/admin",
+      xhsStudio: "/admin/xhs",
     },
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? null,
   });
