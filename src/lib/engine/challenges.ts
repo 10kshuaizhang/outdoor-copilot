@@ -1,21 +1,26 @@
 import {
   formatShanghaiClock,
+  shanghaiDate,
+  shanghaiHourMinute,
   shanghaiToday,
   shanghaiWallIso,
 } from "@/lib/time/china";
 import type { RouteAnalysis, Segment, WeatherSnapshot } from "./types";
 
-/** Parse Open-Meteo / ISO sunrise-sunset into an absolute instant. */
-function parseChinaDayTime(raw?: string): Date | null {
+/**
+ * Parse Open-Meteo sunrise/sunset as China wall-clock.
+ * We always request timezone=Asia/Shanghai, so HH:mm digits are China local —
+ * even if a layer incorrectly appended Z / an offset.
+ */
+export function parseChinaDayTime(raw?: string): Date | null {
   if (!raw) return null;
-  // Already offset or Z
-  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(raw)) {
-    const d = new Date(raw);
+  const m = raw.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  if (m) {
+    const d = new Date(`${m[1]}T${m[2]}:${m[3]}:00+08:00`);
     return Number.isNaN(d.getTime()) ? null : d;
   }
-  // "2026-08-08T19:05" from Open-Meteo with timezone=Asia/Shanghai
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) {
-    const d = new Date(`${raw.slice(0, 16)}:00+08:00`);
+  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(raw)) {
+    const d = new Date(raw);
     return Number.isNaN(d.getTime()) ? null : d;
   }
   const d = new Date(raw);
@@ -106,6 +111,29 @@ export function detectChallenges(
 }
 
 /**
+ * Pin sunrise/sunset clock times onto the start's Shanghai calendar day.
+ * Avoids false "night hike" when weather sunrise ISO falls on another date
+ * (e.g. overnight fetch) or was mis-tagged as UTC.
+ */
+function lightBoundsForStart(
+  start: Date,
+  sunrise: Date | null,
+  sunset: Date | null,
+): { sunrise: Date | null; sunset: Date | null } {
+  const day = shanghaiDate(start);
+  const riseHm = sunrise ? shanghaiHourMinute(sunrise) : null;
+  const setHm = sunset ? shanghaiHourMinute(sunset) : null;
+  return {
+    sunrise: riseHm
+      ? new Date(shanghaiWallIso(day, riseHm.hour, riseHm.minute))
+      : null,
+    sunset: setHm
+      ? new Date(shanghaiWallIso(day, setHm.hour, setHm.minute))
+      : null,
+  };
+}
+
+/**
  * Daylight vs night risk relative to planned start / finish.
  * "天黑前无法结束" only applies to daytime starts that overrun sunset.
  * Night / pre-dawn starts are intentional darkness — different wording.
@@ -116,23 +144,24 @@ export function daylightRiskLabel(input: {
   sunrise: Date | null;
   sunset: Date | null;
 }): string | null {
+  const bounds = lightBoundsForStart(input.start, input.sunrise, input.sunset);
   const startMs = input.start.getTime();
   const finishMs = input.finishHigh.getTime();
-  const sunriseMs = input.sunrise?.getTime() ?? null;
-  const sunsetMs = input.sunset?.getTime() ?? null;
+  const sunriseMs = bounds.sunrise?.getTime() ?? null;
+  const sunsetMs = bounds.sunset?.getTime() ?? null;
 
-  // After sunset on the weather day → night / overnight hike.
+  // After sunset on the start calendar day → night / overnight hike.
   if (sunsetMs != null && startMs >= sunsetMs) {
     return "夜间行进（需头灯）";
   }
 
-  // Before sunrise → early / all-night start on that calendar morning.
+  // Before sunrise on the start calendar day.
   if (sunriseMs != null && startMs < sunriseMs) {
     if (finishMs <= sunriseMs) return "全程夜间行进（需头灯）";
     return "凌晨出发，前段需头灯";
   }
 
-  // Daytime start: finishing after sunset is the classic overrun risk.
+  // Daytime start: finishing after that day's sunset.
   if (sunsetMs != null && finishMs > sunsetMs) {
     return "可能天黑前无法结束";
   }

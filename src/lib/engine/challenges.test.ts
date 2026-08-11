@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatShanghaiClock } from "@/lib/time/china";
+import { formatShanghaiClock, shanghaiWallIso } from "@/lib/time/china";
 import { analyzeRoute } from "./analyzeRoute";
-import { buildRecommendation, estimateWaterPlan } from "./challenges";
+import {
+  buildRecommendation,
+  estimateWaterPlan,
+  parseChinaDayTime,
+} from "./challenges";
 import { parseGpx } from "./parseGpx";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -93,6 +97,39 @@ describe("challenges", () => {
     });
     expect(formatShanghaiClock(rec.suggestedStart)).toBe("04:00");
     expect(rec.mainRisk).toBe("凌晨出发，前段需头灯");
+  });
+
+  it("does not call a 07:30–10:30 hike overnight even if sunrise ISO is skewed", () => {
+    const planned = shanghaiWallIso("2026-08-11", 7, 30);
+    const cases = [
+      "2026-08-11T05:23",
+      "2026-08-11T05:23:00.000Z", // wall digits mis-tagged as UTC
+      "2026-08-12T05:23", // next-day sunrise from overnight fetch
+    ];
+    for (const sunrise of cases) {
+      const rec = buildRecommendation({
+        durationMin: 160,
+        personalOverall: 35,
+        plannedStart: planned,
+        weather: {
+          source: "open-meteo",
+          date: "2026-08-11",
+          temperatureC: 18,
+          sunrise,
+          sunset: "2026-08-11T19:20",
+          thunderstormRisk: "low",
+        },
+      });
+      expect(formatShanghaiClock(rec.suggestedStart)).toBe("07:30");
+      expect(rec.mainRisk).not.toMatch(/夜间|凌晨|天黑/);
+      expect(rec.mainRisk).toBe("后程疲劳");
+    }
+  });
+
+  it("parses sunrise wall-clock digits as China local even with a trailing Z", () => {
+    const rise = parseChinaDayTime("2026-08-11T05:23:00.000Z");
+    expect(rise).not.toBeNull();
+    expect(formatShanghaiClock(rise!.toISOString())).toBe("05:23");
   });
 
   it("splits water consume vs carry and caps trailhead load", () => {

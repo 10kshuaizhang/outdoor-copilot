@@ -37,3 +37,23 @@ export function formatShanghaiClock(iso?: string | null): string {
 export function shanghaiToday(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: CHINA_TZ });
 }
+
+/** YYYY-MM-DD in Asia/Shanghai for an instant. */
+export function shanghaiDate(isoOrDate: string | Date): string {
+  const d = typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
+  if (Number.isNaN(d.getTime())) return shanghaiToday();
+  return d.toLocaleDateString("en-CA", { timeZone: CHINA_TZ });
+}
+
+/** Hour/minute in Asia/Shanghai for an instant. */
+export function shanghaiHourMinute(
+  isoOrDate: string | Date,
+): { hour: number; minute: number } | null {
+  const iso =
+    typeof isoOrDate === "string" ? isoOrDate : isoOrDate.toISOString();
+  const clock = formatShanghaiClock(iso);
+  if (clock === "—") return null;
+  const [hour, minute] = clock.split(":").map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+  return { hour, minute };
+}
