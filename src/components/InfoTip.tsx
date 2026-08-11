@@ -112,7 +112,7 @@ export function LabelWithTip({
       <button
         ref={triggerRef}
         type="button"
-        className="info-tip-trigger inline border-0 bg-transparent p-0 text-inherit cursor-help decoration-from-font underline decoration-dashed decoration-[var(--rock)]/45 underline-offset-[0.22em] transition hover:decoration-[var(--pine)] hover:decoration-solid focus-visible:rounded-sm"
+        className="info-tip-trigger inline border-0 bg-transparent p-0 text-inherit cursor-help underline decoration-dashed decoration-current/40 underline-offset-[0.22em] transition hover:decoration-solid hover:decoration-current/70 focus-visible:rounded-sm"
         aria-label={a11y}
         aria-expanded={open}
         aria-controls={open ? tipId : undefined}
