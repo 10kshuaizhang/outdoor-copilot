@@ -1,3 +1,4 @@
+import { composeOverall } from "./baseDifficulty";
 import type {
   DifficultyScores,
   ExperienceLevel,
@@ -221,13 +222,7 @@ export function personalizeDifficulty(
     overall: 0,
   };
   personal.overall = clamp(
-    Math.round(
-      personal.endurance * 0.34 +
-        personal.climbing * 0.38 +
-        personal.weather * 0.12 +
-        personal.risk * 0.16 +
-        expDelta * 0.25,
-    ),
+    composeOverall(personal, expDelta * 0.25),
   );
 
   const confidence = profile.usedDefaults

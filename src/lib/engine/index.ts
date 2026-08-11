@@ -1,5 +1,5 @@
 export { analyzeRoute } from "./analyzeRoute";
-export { scoreBand } from "./baseDifficulty";
+export { composeOverall, scoreBand } from "./baseDifficulty";
 export {
   effortLabelZh,
   ensureSegmentEffort,

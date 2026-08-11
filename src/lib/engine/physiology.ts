@@ -1,3 +1,4 @@
+import { composeOverall } from "./baseDifficulty";
 import type { DifficultyScores, UserProfile } from "./types";
 
 /**
@@ -98,12 +99,7 @@ export function applyPhysiologyToScores(
     climbing: Math.min(100, scores.climbing + climbingDelta),
     overall: 0,
   };
-  next.overall = Math.round(
-    next.endurance * 0.34 +
-      next.climbing * 0.38 +
-      next.weather * 0.12 +
-      next.risk * 0.16,
-  );
+  next.overall = composeOverall(next);
 
   return { scores: next, contributions };
 }

@@ -1,3 +1,4 @@
+import { composeOverall } from "./baseDifficulty";
 import type { DifficultyScores, WeatherSnapshot } from "./types";
 
 export function fallbackWeather(
@@ -91,12 +92,7 @@ export function applyWeatherToScores(
     risk: Math.min(100, scores.risk + riskBump),
     overall: 0,
   };
-  next.overall = Math.round(
-    next.endurance * 0.34 +
-      next.climbing * 0.38 +
-      next.weather * 0.12 +
-      next.risk * 0.16,
-  );
+  next.overall = composeOverall(next);
 
   return { scores: next, contributions, durationFactor: m };
 }

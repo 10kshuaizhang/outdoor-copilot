@@ -182,5 +182,5 @@ export function engineProfileToOutdoor(
   };
 }
 
-/** Calc guards: elev spike skip + weather duration once + KML longest-ring. */
-export const MODEL_VERSION = "v0.1.3-calc-guards";
+/** Physical+intensity scoring: structure in main score, physical floor (D-026). */
+export const MODEL_VERSION = "v0.1.4-physical-intensity";

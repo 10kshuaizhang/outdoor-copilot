@@ -46,4 +46,4 @@ Older Week 1 predictions without these fields are backfilled at display time via
 ## Schema evolution
 
 New algorithm → new `modelVersion` on **new** rows only.
-Base overall formula remains the `v0.1-analyze` lineage; personalization / elevation denoising / calc-guard bumps use a new `modelVersion` (e.g. `v0.1.3-calc-guards`) without rewriting historical Predictions.
+Base overall formula remains the `v0.1-analyze` lineage; personalization / elevation denoising / calc-guard / physical-intensity bumps use a new `modelVersion` (e.g. `v0.1.4-physical-intensity`) without rewriting historical Predictions.

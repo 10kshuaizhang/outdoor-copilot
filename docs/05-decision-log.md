@@ -91,6 +91,14 @@ Format per entry:
 
 ## Difficulty & Calibration
 
+### D-026 — Physical + intensity in main score
+
+- **Date:** 2026-08-11  
+- **Decision:** Redefine Base axes for outdoor honesty while keeping field names: `endurance` = Physical (`0.7×dist + gain/100 + loss/180`), `climbing` = Intensity (density, continuous climb, steep/hard share, rolling, late-climb), `risk` = light operational flags (not a second dist+gain copy). Overall via `composeOverall` with a **physical floor** (`max(blend, endurance×0.78)`), shared by weather / physio / personalize layers. `MODEL_VERSION` → `v0.1.4-physical-intensity`.  
+- **Context:** Audit found short-steep (~6 km / 900 m) reading ~轻松 while long-flat (~30 km / 400 m) scored harder — opposite of leader intuition. Segment structure existed but only fed brief copy.  
+- **Consequences:** Ranking of Easy / Steep / Long / Xiaowutai-class routes aligns with day-hike experience; historical Predictions keep prior `modelVersion`. Terrain/technical/nav still unknown (no fake precision).  
+- **Status:** active  
+
 ### D-025 — Calc guards: weather duration once, KML longest-ring, elev spikes
 
 - **Date:** 2026-08-11  
