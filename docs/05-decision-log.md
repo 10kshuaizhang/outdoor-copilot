@@ -15,6 +15,14 @@ Format per entry:
 
 ## Product & Scope
 
+### D-041 — Moss & Dawn Refined（原色调 + 精致版式，无粉色）
+
+- **Date:** 2026-08-11  
+- **Decision:** Keep original **moss / cream / gold** tokens. Retain refined UI (atmosphere, panels, score hero, share panel placement, Cormorant + Raleway). **Reject** dusty-rose / pink CTA from the earlier Alpine Dawn experiment.  
+- **Context:** Share-first polish is valuable, but cool-teal + pink drifted from Outdoor Copilot’s outdoor identity; product owner preferred a compromise without pink.  
+- **Consequences:** `--cta` remains `#c4a574`; hero/share/OG use warm moss greens; no pink accents in CSS, share PNG, or marketing surfaces.  
+- **Status:** active  
+
 ### D-040 — Week 1–2 = Prediction skeleton, then Route Intelligence
 
 - **Date:** 2026-08-08  

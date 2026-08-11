@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Noto_Serif_SC, Source_Sans_3 } from "next/font/google";
+import { Cormorant, Noto_Serif_SC, Raleway } from "next/font/google";
 import "./globals.css";
 
-const display = Fraunces({
+const display = Cormorant({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
 });
 
-const body = Source_Sans_3({
+const body = Raleway({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],

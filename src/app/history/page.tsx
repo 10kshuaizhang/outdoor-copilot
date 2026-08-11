@@ -32,11 +32,11 @@ export default function HistoryPage() {
   }, [active]);
 
   return (
-    <main className="min-h-dvh bg-[var(--cream)] text-[var(--ink)]">
+    <main className="app-atmosphere min-h-dvh text-[var(--ink)]">
       <div className="mx-auto w-full max-w-lg px-5 py-8">
         <Link
           href="/"
-          className="mb-8 inline-block text-sm text-[var(--pine-deep)] underline-offset-4 hover:underline"
+          className="mb-8 inline-block cursor-pointer text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
         >
           ← Outdoor Copilot
         </Link>
@@ -51,9 +51,9 @@ export default function HistoryPage() {
               <code className="text-xs">modelVersion: {MODEL_VERSION}</code>
               ）。算法升级不会改写这里的数字。
             </p>
-            <ul className="mt-8 space-y-4">
+            <ul className="mt-8 space-y-3">
               {items.length === 0 ? (
-                <li className="text-sm text-[var(--rock)]">
+                <li className="panel px-4 py-5 text-sm text-[var(--rock)]">
                   还没有保存的预测。去分析页生成并点「保存这次预测」。
                 </li>
               ) : (
@@ -65,7 +65,7 @@ export default function HistoryPage() {
                         setActive(item);
                         setMessage(null);
                       }}
-                      className="w-full border-b border-black/10 pb-3 text-left"
+                      className="panel w-full cursor-pointer px-4 py-4 text-left transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]"
                     >
                       <p className="font-[family-name:var(--font-display)] text-xl">
                         {item.title}
@@ -85,13 +85,13 @@ export default function HistoryPage() {
             <div className="mt-10 space-y-3 text-sm">
               <Link
                 href="/analyze"
-                className="block font-semibold text-[var(--pine-deep)] underline-offset-4 hover:underline"
+                className="block cursor-pointer font-semibold text-[var(--cta)] underline-offset-4 transition hover:underline"
               >
                 新建分析 →
               </Link>
               <button
                 type="button"
-                className="underline-offset-4 hover:underline"
+                className="cursor-pointer underline-offset-4 transition hover:underline"
                 onClick={() => {
                   const blob = new Blob(
                     [JSON.stringify(exportEvents(), null, 2)],
@@ -109,7 +109,7 @@ export default function HistoryPage() {
               </button>
               <button
                 type="button"
-                className="block text-red-800 underline-offset-4 hover:underline"
+                className="block cursor-pointer text-red-800 underline-offset-4 transition hover:underline"
                 onClick={() => {
                   clearAllLocalData();
                   setItems([]);
@@ -124,7 +124,7 @@ export default function HistoryPage() {
             <button
               type="button"
               onClick={() => setActive(null)}
-              className="mb-4 text-sm text-[var(--pine-deep)] underline-offset-4 hover:underline"
+              className="mb-4 cursor-pointer text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
             >
               ← 返回列表
             </button>

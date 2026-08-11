@@ -39,8 +39,8 @@ async function waitForFonts(): Promise<void> {
     await document.fonts.ready;
     await Promise.all([
       document.fonts.load('600 64px "Noto Serif SC"'),
-      document.fonts.load('700 120px Fraunces'),
-      document.fonts.load('500 36px "Source Sans 3"'),
+      document.fonts.load("700 120px Cormorant"),
+      document.fonts.load("500 36px Raleway"),
     ]);
   } catch {
     // System fallbacks are fine on mobile.
@@ -117,28 +117,34 @@ export async function renderShareCardPng(
   const band = scoreBand(personal);
   const { route, duration, recommendation, elevationProfile } = analysis;
 
-  // Atmosphere
+  // Moss & Dawn atmosphere (no pink)
   const bg = ctx.createLinearGradient(0, 0, 0, SHARE_CARD_HEIGHT);
   bg.addColorStop(0, "#1a241c");
-  bg.addColorStop(0.38, "#2c3a2e");
-  bg.addColorStop(0.38, "#f3efe6");
+  bg.addColorStop(0.36, "#2c3a2e");
+  bg.addColorStop(0.36, "#f3efe6");
   bg.addColorStop(1, "#ebe4d6");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT);
 
   // Soft dawn wash
-  const wash = ctx.createRadialGradient(900, 120, 40, 780, 180, 520);
+  const wash = ctx.createRadialGradient(920, 100, 30, 800, 160, 520);
   wash.addColorStop(0, "rgba(232, 217, 192, 0.35)");
   wash.addColorStop(1, "rgba(232, 217, 192, 0)");
   ctx.fillStyle = wash;
   ctx.fillRect(0, 0, SHARE_CARD_WIDTH, 560);
 
+  const pineWash = ctx.createRadialGradient(180, 420, 20, 220, 380, 280);
+  pineWash.addColorStop(0, "rgba(63, 107, 74, 0.18)");
+  pineWash.addColorStop(1, "rgba(63, 107, 74, 0)");
+  ctx.fillStyle = pineWash;
+  ctx.fillRect(0, 200, 520, 360);
+
   const display =
-    'Fraunces, "Iowan Old Style", "Palatino Linotype", Georgia, serif';
+    'Cormorant, "Iowan Old Style", "Palatino Linotype", Georgia, serif';
   const serifSc =
     '"Noto Serif SC", "Songti SC", "PingFang SC", "Hiragino Sans GB", serif';
   const sans =
-    '"Source Sans 3", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif';
+    'Raleway, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif';
 
   ctx.fillStyle = "#f3efe6";
   ctx.font = `600 28px ${sans}`;
@@ -186,7 +192,10 @@ export async function renderShareCardPng(
   const stats = [
     ["距离", `${route.distanceKm.toFixed(1)} km`],
     ["爬升", `+${route.elevationGainM} m`],
-    ["预估", `${formatDuration(duration.lowMin)}–${formatDuration(duration.highMin)}`],
+    [
+      "预估",
+      `${formatDuration(duration.lowMin)}–${formatDuration(duration.highMin)}`,
+    ],
   ] as const;
   stats.forEach(([label, value], i) => {
     const sx = 96 + i * 300;

@@ -38,7 +38,7 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
   };
 
   return (
-    <section className="space-y-4 border border-[var(--pine-deep)]/20 bg-white/70 px-4 py-5">
+    <section className="panel space-y-4 px-4 py-5">
       <div>
         <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--pine)]">
           徒步简报
@@ -116,7 +116,7 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
           {brief.phases.map((p) => (
             <li
               key={p.label}
-              className="border-b border-black/5 pb-2 last:border-0"
+              className="border-b border-[var(--border-soft)] pb-2 last:border-0"
             >
               <span className="font-semibold text-[var(--pine-deep)]">
                 {p.label}
@@ -141,7 +141,7 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
           <button
             type="button"
             onClick={() => void onCopy()}
-            className="w-full border border-[var(--pine-deep)] px-4 py-2.5 text-sm font-semibold text-[var(--pine-deep)]"
+            className="btn-ghost min-h-11 w-full px-4 py-2.5 text-sm"
           >
             {copyState === "ok"
               ? "已复制简报"
@@ -161,7 +161,7 @@ export function RouteBriefCard({ brief, enableCopy = true }: Props) {
               readOnly
               value={shareText}
               rows={8}
-              className="w-full resize-y border border-black/15 bg-white px-3 py-2 text-sm text-[var(--ink)]"
+              className="field-input resize-y text-sm"
               onFocus={(e) => e.currentTarget.select()}
             />
           ) : null}

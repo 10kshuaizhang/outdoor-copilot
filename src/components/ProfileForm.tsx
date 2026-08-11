@@ -85,7 +85,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
       <div>
         <label className="text-sm text-[var(--rock)]">徒步经验</label>
         <select
-          className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
+          className="field-input mt-1"
           value={experience}
           onChange={(e) => {
             const next = e.target.value as ExperienceLevel;
@@ -150,14 +150,14 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
           type="date"
           value={lastHikeAt}
           onChange={(e) => setLastHikeAt(e.target.value)}
-          className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+          className="field-input mt-1"
         />
       </div>
 
       <div>
         <label className="text-sm text-[var(--rock)]">风险偏好</label>
         <select
-          className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
+          className="field-input mt-1"
           value={riskPreference}
           onChange={(e) => setRisk(e.target.value as RiskPreference)}
         >
@@ -169,7 +169,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
 
       <button
         type="button"
-        className="text-sm text-[var(--pine-deep)] underline-offset-4 hover:underline"
+        className="cursor-pointer text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
         onClick={() => setShowMore((v) => !v)}
       >
         {showMore ? "收起身体数据" : "可选：身高 / 体重 / 年龄 / 心率"}
@@ -192,7 +192,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
                 type="number"
                 value={value}
                 onChange={(e) => setter(e.target.value)}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+                className="field-input mt-1"
               />
             </label>
           ))}
@@ -202,14 +202,14 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
       <div className="flex flex-col gap-3 pt-2">
         <button
           type="submit"
-          className="bg-[var(--pine-deep)] px-5 py-3 text-sm font-semibold text-[var(--cream)]"
+          className="btn-primary min-h-12 px-5 py-3 text-sm"
         >
           生成个人预测
         </button>
         <button
           type="button"
           onClick={onSkip}
-          className="text-sm text-[var(--rock)] underline-offset-4 hover:underline"
+          className="cursor-pointer text-sm text-[var(--rock)] underline-offset-4 transition hover:underline"
         >
           跳过，用默认档案
         </button>
