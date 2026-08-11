@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { HikeBrief } from "@/lib/engine";
 import { copyToClipboard } from "@/lib/share/exportSummary";
+import { stripMultimodelFromShareText } from "@/lib/share/stripMultimodel";
 
 type Props = {
   brief: HikeBrief;
@@ -16,7 +17,7 @@ function verdictClass(verdict: HikeBrief["verdict"]): string {
 }
 
 function buildShareText(body: string): string {
-  return `${body}\n\n#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot`;
+  return `${stripMultimodelFromShareText(body)}\n\n#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot`;
 }
 
 export function RouteBriefCard({ brief, enableCopy = true }: Props) {

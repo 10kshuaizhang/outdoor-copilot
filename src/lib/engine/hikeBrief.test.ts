@@ -139,4 +139,59 @@ describe("buildHikeBrief unit", () => {
     expect(brief.phases.map((p) => p.label).join("|")).toMatch(/最难/);
     expect(brief.audience.novice.length).toBeGreaterThan(0);
   });
+
+  it("keeps multi-model in report fields but omits it from copyText", () => {
+    const brief = buildHikeBrief({
+      title: "东灵山",
+      route: {
+        distanceKm: 12,
+        elevationGainM: 800,
+        elevationLossM: 800,
+        minElevM: 400,
+        maxElevM: 1200,
+        center: { lat: 40, lon: 115 },
+      },
+      segments: [
+        {
+          idx: 0,
+          startKm: 0,
+          endKm: 12,
+          distanceM: 12000,
+          gainM: 800,
+          lossM: 800,
+          avgGradePct: 5,
+          maxGradePct: 18,
+          estimatedEffort: 2,
+          effortLabel: "moderate",
+        },
+      ],
+      weather: {
+        source: "open-meteo",
+        temperatureC: 24,
+        precipMm: 0,
+        thunderstormRisk: "low",
+        humidity: 50,
+        modelAgreement: {
+          models: ["ecmwf", "gfs"],
+          precipMm: [0.2, 1.5],
+          level: "mixed",
+          summary: "多模型略有差别（EC 偏干、GFS 偏湿）。",
+        },
+      },
+      focus: {
+        overall: 48,
+        endurance: 45,
+        climbing: 55,
+        weather: 40,
+        risk: 35,
+      },
+      duration: { lowMin: 280, highMin: 360 },
+    });
+
+    expect(brief.weatherBlocks.some((b) => b.label === "多模型")).toBe(true);
+    expect(brief.lead).toContain("多模型略有差别");
+    expect(brief.copyText).not.toContain("多模型");
+    expect(brief.copyText).not.toContain("GFS");
+    expect(brief.copyText).toContain("降雨");
+  });
 });

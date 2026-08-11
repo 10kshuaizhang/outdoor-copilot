@@ -31,4 +31,32 @@ describe("buildBriefPolishPayload", () => {
     const without = { ...analysis, hikeBrief: undefined };
     expect(buildBriefPolishPayload(without)).toBeNull();
   });
+
+  it("omits multi-model from polish brief payload", () => {
+    const analysis = analyzeRoute({
+      points: SHORT_CLIMB_POINTS,
+      weather: {
+        source: "open-meteo",
+        temperatureC: 22,
+        precipMm: 1,
+        thunderstormRisk: "low",
+        modelAgreement: {
+          models: ["ecmwf", "gfs"],
+          precipMm: [0.5, 2],
+          level: "mixed",
+          summary: "多模型略有差别（EC 偏干、GFS 偏湿）。",
+        },
+      },
+    });
+    const payload = buildBriefPolishPayload(analysis);
+    expect(payload).toBeTruthy();
+    expect(analysis.hikeBrief!.weatherBlocks.some((b) => b.label === "多模型")).toBe(
+      true,
+    );
+    expect(payload!.brief.weatherBlocks.some((b) => b.label === "多模型")).toBe(
+      false,
+    );
+    expect(payload!.brief.lead).not.toContain("多模型");
+    expect(payload!.copyText).not.toContain("多模型");
+  });
 });

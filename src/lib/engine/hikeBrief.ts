@@ -397,24 +397,26 @@ export function buildHikeBrief(input: {
   const gear = buildGear(input.weather, input.focus.overall);
   const photoTips = buildPhotoTips(input.weather);
 
-  const leadParts: string[] = [];
-  if (input.weather.modelAgreement?.summary) {
-    leadParts.push(input.weather.modelAgreement.summary);
-  }
+  /** Lead without multi-model — used for share/copy text. */
+  const leadCore: string[] = [];
   if (storm === "high" || precip >= 10) {
-    leadParts.push(
+    leadCore.push(
       `今天这条线对应点预报：${precipLabel(precip)}，对流${stormLabel(storm).level}。`,
     );
   } else if (precip >= 1 || storm === "medium") {
-    leadParts.push(
+    leadCore.push(
       `预报有阵雨/对流扰动（约 ${precip.toFixed(1)} mm），差异往往在开始时间；不是一定下整天，但会把路打湿。`,
     );
   } else {
-    leadParts.push("系统性降水不明显，体感主要看晒、热和路线本身负荷。");
+    leadCore.push("系统性降水不明显，体感主要看晒、热和路线本身负荷。");
   }
-  leadParts.push(
+  leadCore.push(
     `${name}约 ${input.route.distanceKm.toFixed(1)} km / +${input.route.elevationGainM} m，对你约 ${input.focus.overall}/100（${band}）。`,
   );
+
+  const modelSummary = input.weather.modelAgreement?.summary?.trim();
+  /** Full lead for on-screen report (keeps multi-model). */
+  const leadParts = modelSummary ? [modelSummary, ...leadCore] : leadCore;
 
   const whyBits: string[] = [
     precipLabel(precip),
@@ -446,11 +448,13 @@ export function buildHikeBrief(input: {
   }
   if (input.mainRisk) actions.push(`主风险：${input.mainRisk}。`);
 
+  // Share/copy omits multi-model; report UI still shows it via weatherBlocks + lead.
+  const copyWeatherBlocks = weatherBlocks.filter((b) => b.label !== "多模型");
   const copyLines = [
     headline,
-    leadParts.join(""),
+    leadCore.join(""),
     "",
-    ...weatherBlocks.flatMap((b) => [b.label, b.detail, ""]),
+    ...copyWeatherBlocks.flatMap((b) => [b.label, b.detail, ""]),
     "穿衣",
     ...clothing.map((c) => `· ${c}`),
     "",

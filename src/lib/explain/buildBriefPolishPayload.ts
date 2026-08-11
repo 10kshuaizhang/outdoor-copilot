@@ -1,4 +1,5 @@
 import type { HikeBrief, RouteAnalysis } from "@/lib/engine";
+import { stripMultimodelFromShareText } from "@/lib/share/stripMultimodel";
 
 /** Facts-only payload for XHS brief polish; copyText is the number source of truth. */
 export function buildBriefPolishPayload(analysis: RouteAnalysis) {
@@ -9,7 +10,7 @@ export function buildBriefPolishPayload(analysis: RouteAnalysis) {
     locale: "zh-CN",
     title: brief.headline,
     copyText: brief.copyText,
-    brief: slimBrief(brief),
+    brief: slimBriefForShare(brief),
     route: {
       distanceKm: analysis.route.distanceKm,
       elevationGainM: analysis.route.elevationGainM,
@@ -18,14 +19,15 @@ export function buildBriefPolishPayload(analysis: RouteAnalysis) {
   };
 }
 
-function slimBrief(brief: HikeBrief) {
+/** Slim brief for polish/share — omit multi-model (report UI keeps it). */
+function slimBriefForShare(brief: HikeBrief) {
   return {
     verdict: brief.verdict,
     verdictLabel: brief.verdictLabel,
     headline: brief.headline,
-    lead: brief.lead,
+    lead: stripMultimodelFromShareText(brief.lead),
     why: brief.why,
-    weatherBlocks: brief.weatherBlocks,
+    weatherBlocks: brief.weatherBlocks.filter((b) => b.label !== "多模型"),
     audience: brief.audience,
     clothing: brief.clothing,
     gear: brief.gear,

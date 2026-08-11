@@ -1,4 +1,5 @@
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
+import { stripMultimodelFromShareText } from "./stripMultimodel";
 
 function formatDuration(min: number): string {
   const h = Math.floor(min / 60);
@@ -14,8 +15,9 @@ export function buildShareCaption(
   title = "路线分析",
 ): string {
   if (analysis.hikeBrief) {
-    const body =
-      analysis.hikeBrief.polishedCopy?.trim() || analysis.hikeBrief.copyText;
+    const body = stripMultimodelFromShareText(
+      analysis.hikeBrief.polishedCopy?.trim() || analysis.hikeBrief.copyText,
+    );
     return [
       `【${title}】${analysis.hikeBrief.verdictLabel}`,
       body,
