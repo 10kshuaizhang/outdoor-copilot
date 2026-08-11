@@ -49,3 +49,5 @@ next-env.d.ts
 # local agent skill caches
 .agents/
 skills-lock.json
+**/__pycache__/
+*.py[cod]
