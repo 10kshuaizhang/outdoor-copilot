@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { HikeBrief } from "@/lib/engine";
 import { copyToClipboard } from "@/lib/share/exportSummary";
+import { assembleXhsBriefCopy } from "@/lib/share/xhsLimit";
 
 type Props = {
   brief: HikeBrief;
@@ -15,15 +16,11 @@ function verdictClass(verdict: HikeBrief["verdict"]): string {
   return "text-[var(--pine-deep)]";
 }
 
-function buildShareText(body: string): string {
-  return `${body}\n\n#户外徒步 #徒步天气预报 #徒步路线推荐 #OutdoorCopilot`;
-}
-
 export function RouteBriefCard({ brief, enableCopy = true }: Props) {
   const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
   const [showManual, setShowManual] = useState(false);
   const shareBody = brief.polishedCopy?.trim() || brief.copyText;
-  const shareText = buildShareText(shareBody);
+  const shareText = assembleXhsBriefCopy(shareBody);
 
   const onCopy = async () => {
     const ok = await copyToClipboard(shareText);
