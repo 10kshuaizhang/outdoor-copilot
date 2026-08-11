@@ -416,8 +416,16 @@ export function BaseReport({
                 key={`${c.code}-${c.label}`}
                 className="flex items-baseline justify-between gap-3 border-b border-[var(--border-soft)] pb-2"
               >
-                <span>{c.label}</span>
-                <span className="font-semibold tabular-nums">
+                <span className="min-w-0">
+                  {c.code.startsWith("physio") ? (
+                    <LabelWithTip tip={TIPS.physioGrade} tipLabel="生理负荷说明">
+                      {c.label}
+                    </LabelWithTip>
+                  ) : (
+                    c.label
+                  )}
+                </span>
+                <span className="shrink-0 font-semibold tabular-nums">
                   {c.delta > 0 ? `+${c.delta}` : c.delta}
                 </span>
               </li>
@@ -502,11 +510,12 @@ export function BaseReport({
           ) : null}
           {analysis.physiological ? (
             <p className="pt-2 text-xs text-[var(--rock)]">
-              <LabelWithTip tip={TIPS.physioGrade} tipLabel="生理强度说明">
-                估算生理强度等级（参考学术模型）：
+              <LabelWithTip tip={TIPS.physioGrade} tipLabel="生理负荷说明">
+                生理负荷
               </LabelWithTip>
-              {analysis.physiological.gradeLabel}
-              {analysis.physiological.usedDefaults ? " · 使用默认生理参数" : ""}
+              {" · "}
+              估算等级 {analysis.physiological.gradeLabel}
+              {analysis.physiological.usedDefaults ? "（默认身体参数，未改分数）" : ""}
             </p>
           ) : null}
         </div>

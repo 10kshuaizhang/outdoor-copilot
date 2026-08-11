@@ -4,36 +4,95 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
-type Props = {
-  /** Plain-language explanation for ordinary hikers. */
-  text: string;
-  /** Accessible name; defaults to “说明”. */
-  label?: string;
+type LabelWithTipProps = {
+  children: ReactNode;
+  tip: string;
+  tipLabel?: string;
   className?: string;
 };
 
 /**
- * Mobile-first tip: tap to toggle. Desktop also supports hover via CSS,
- * but click remains the reliable path on touch devices.
+ * Low-chrome glossary: dashed underline on the words themselves.
+ * Click opens a viewport-clamped portal panel (never clipped by overflow).
  */
-export function InfoTip({ text, label = "说明", className = "" }: Props) {
+export function LabelWithTip({
+  children,
+  tip,
+  tipLabel,
+  className = "",
+}: LabelWithTipProps) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLSpanElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState<CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLSpanElement>(null);
   const tipId = useId();
+  const a11y = tipLabel ?? "说明";
 
   const close = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const place = useCallback(() => {
+    const trigger = triggerRef.current;
+    const panel = panelRef.current;
+    if (!trigger || !panel) return;
+
+    const gap = 8;
+    const margin = 10;
+    const tr = trigger.getBoundingClientRect();
+    const width = Math.min(300, window.innerWidth - margin * 2);
+    const height = panel.offsetHeight || 72;
+
+    let left = tr.left + tr.width / 2 - width / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+
+    const spaceBelow = window.innerHeight - tr.bottom - margin;
+    const spaceAbove = tr.top - margin;
+    const placeAbove = spaceBelow < height + gap && spaceAbove > spaceBelow;
+
+    let top = placeAbove ? tr.top - height - gap : tr.bottom + gap;
+    top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
+
+    setPos({
+      position: "fixed",
+      top,
+      left,
+      width,
+      zIndex: 80,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    place();
+    const onWin = () => place();
+    window.addEventListener("resize", onWin);
+    window.addEventListener("scroll", onWin, true);
+    return () => {
+      window.removeEventListener("resize", onWin);
+      window.removeEventListener("scroll", onWin, true);
+    };
+  }, [open, tip, place]);
+
+  useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent | TouchEvent) => {
-      const el = rootRef.current;
-      if (!el) return;
-      if (e.target instanceof Node && !el.contains(e.target)) close();
+      const t = e.target;
+      if (!(t instanceof Node)) return;
+      if (triggerRef.current?.contains(t)) return;
+      if (panelRef.current?.contains(t)) return;
+      close();
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
@@ -49,53 +108,52 @@ export function InfoTip({ text, label = "说明", className = "" }: Props) {
   }, [open, close]);
 
   return (
-    <span
-      ref={rootRef}
-      className={`info-tip relative inline-flex align-middle ${className}`}
-    >
+    <span className={`inline max-w-full ${className}`}>
       <button
+        ref={triggerRef}
         type="button"
-        className="info-tip-btn ml-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--border-soft)] bg-white/70 text-[10px] font-semibold leading-none text-[var(--rock)] transition hover:border-[var(--pine)] hover:text-[var(--pine-deep)]"
-        aria-label={label}
+        className="info-tip-trigger inline border-0 bg-transparent p-0 text-inherit cursor-help decoration-from-font underline decoration-dashed decoration-[var(--rock)]/45 underline-offset-[0.22em] transition hover:decoration-[var(--pine)] hover:decoration-solid focus-visible:rounded-sm"
+        aria-label={a11y}
         aria-expanded={open}
-        aria-controls={tipId}
+        aria-controls={open ? tipId : undefined}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           setOpen((v) => !v);
         }}
       >
-        ?
+        {children}
       </button>
-      {open ? (
-        <span
-          id={tipId}
-          role="tooltip"
-          className="info-tip-panel absolute left-1/2 top-[calc(100%+6px)] z-40 w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md border border-[var(--border-soft)] bg-[var(--surface-solid)] px-3 py-2 text-left text-xs leading-relaxed text-[var(--ink-soft)] shadow-[var(--shadow-soft)]"
-        >
-          {text}
-        </span>
-      ) : null}
+      {mounted && open
+        ? createPortal(
+            <span
+              ref={panelRef}
+              id={tipId}
+              role="tooltip"
+              style={pos}
+              className="rounded-md border border-[var(--border-soft)] bg-[var(--surface-solid)] px-3 py-2.5 text-left text-xs leading-relaxed text-[var(--ink-soft)] shadow-[var(--shadow-lift)]"
+            >
+              {tip}
+            </span>,
+            document.body,
+          )
+        : null}
     </span>
   );
 }
 
-/** Label row with an optional tip — keeps dt/p layouts tidy. */
-export function LabelWithTip({
-  children,
-  tip,
-  tipLabel,
-  className = "",
+/** @deprecated Use LabelWithTip — kept so older imports don't break. */
+export function InfoTip({
+  text,
+  label,
 }: {
-  children: ReactNode;
-  tip: string;
-  tipLabel?: string;
+  text: string;
+  label?: string;
   className?: string;
 }) {
   return (
-    <span className={`inline-flex max-w-full items-center ${className}`}>
-      <span>{children}</span>
-      <InfoTip text={tip} label={tipLabel ?? `${String(children)}说明`} />
-    </span>
+    <LabelWithTip tip={text} tipLabel={label}>
+      说明
+    </LabelWithTip>
   );
 }
