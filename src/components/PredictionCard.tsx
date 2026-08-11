@@ -38,7 +38,7 @@ export function PredictionCard({
   const { duration } = analysis;
 
   return (
-    <section className="space-y-5 border border-[var(--pine-deep)]/25 bg-white/60 px-5 py-6">
+    <section className="panel space-y-5 px-5 py-6">
       <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.16em] text-[var(--pine)]">
         Your Prediction · 这次预测
       </p>
@@ -46,12 +46,12 @@ export function PredictionCard({
       <div>
         <p className="text-sm text-[var(--rock)]">Personal Difficulty</p>
         <div className="mt-1 flex items-end gap-3">
-          <p className="font-[family-name:var(--font-display)] text-5xl leading-none tracking-[-0.03em]">
+          <p className="font-[family-name:var(--font-display)] text-5xl leading-none tracking-[-0.03em] text-[var(--pine-deep)]">
             {personal}
           </p>
           <div className="pb-1">
             <p className="text-sm text-[var(--rock)]">/ 100</p>
-            <p className="font-[family-name:var(--font-serif-sc)] text-xl text-[var(--pine-deep)]">
+            <p className="font-[family-name:var(--font-serif-sc)] text-xl text-[var(--cta)]">
               {band}
             </p>
           </div>
@@ -89,7 +89,7 @@ export function PredictionCard({
           type="button"
           disabled={saving || saved}
           onClick={onSave}
-          className="w-full bg-[var(--pine-deep)] px-5 py-3.5 text-sm font-semibold text-[var(--cream)] disabled:opacity-60"
+          className="btn-primary min-h-12 w-full px-5 py-3.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saved
             ? "已保存这次预测"
@@ -99,12 +99,12 @@ export function PredictionCard({
         </button>
       ) : null}
 
-      <div className="space-y-2 border-t border-black/10 pt-4">
+      <div className="space-y-2 border-t border-[var(--border-soft)] pt-4">
         <button
           type="button"
           disabled={!saved}
           onClick={onMarkHiking}
-          className="w-full border border-[var(--pine-deep)] px-5 py-3 text-sm font-semibold text-[var(--pine-deep)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn-ghost min-h-12 w-full px-5 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-40"
         >
           我要去走这条线
         </button>

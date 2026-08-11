@@ -306,17 +306,17 @@ export default function AnalyzePage() {
   ]);
 
   return (
-    <main className="min-h-dvh bg-[var(--cream)] text-[var(--ink)]">
+    <main className="app-atmosphere min-h-dvh text-[var(--ink)]">
       <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-5 py-8">
         <Link
           href="/"
-          className="mb-8 text-sm text-[var(--pine-deep)] underline-offset-4 hover:underline"
+          className="mb-8 cursor-pointer text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
         >
           ← Outdoor Copilot
         </Link>
 
         {stage === "pick" ? (
-          <>
+          <div className="reveal-up space-y-0">
             <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.16em] text-[var(--pine)]">
               分析入口
             </p>
@@ -339,7 +339,7 @@ export default function AnalyzePage() {
               />
               <label
                 htmlFor="track-upload"
-                className="inline-flex cursor-pointer items-center justify-center bg-[var(--pine-deep)] px-6 py-3.5 text-sm font-semibold text-[var(--cream)]"
+                className="btn-primary min-h-12 px-6 py-3.5 text-sm"
               >
                 {loadingId === "upload" ? "正在分析…" : "上传 GPX / KML"}
               </label>
@@ -351,14 +351,18 @@ export default function AnalyzePage() {
             <p className="mt-10 font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--pine)]">
               或使用示例
             </p>
-            <ul className="mt-4 space-y-4">
-              {samples.map((sample) => (
-                <li key={sample.id}>
+            <ul className="mt-4 space-y-3">
+              {samples.map((sample, index) => (
+                <li
+                  key={sample.id}
+                  className="reveal-up-delay"
+                  style={{ animationDelay: `${80 + index * 60}ms` }}
+                >
                   <button
                     type="button"
                     onClick={() => runSample(sample)}
                     disabled={loadingId === sample.id}
-                    className="w-full border-b border-black/10 pb-4 text-left transition hover:border-[var(--pine)] disabled:opacity-60"
+                    className="panel w-full cursor-pointer px-4 py-4 text-left transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <p className="text-xs tracking-[0.14em] text-[var(--pine)]">
                       {sample.region}
@@ -374,7 +378,7 @@ export default function AnalyzePage() {
                         {sample.stats}
                       </p>
                     ) : null}
-                    <p className="mt-3 text-sm font-semibold text-[var(--pine-deep)]">
+                    <p className="mt-3 text-sm font-semibold text-[var(--cta)]">
                       {loadingId === sample.id ? "分析中…" : "一键分析 →"}
                     </p>
                   </button>
@@ -387,7 +391,7 @@ export default function AnalyzePage() {
                 {error}
               </p>
             ) : null}
-          </>
+          </div>
         ) : null}
 
         {stage === "base" && analysis ? (
@@ -400,7 +404,7 @@ export default function AnalyzePage() {
                 setStage("pick");
                 setActiveTitle(undefined);
               }}
-              className="mb-6 self-start text-sm text-[var(--pine-deep)] underline-offset-4 hover:underline"
+              className="mb-6 cursor-pointer self-start text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
             >
               ← 换一条路线
             </button>
@@ -413,7 +417,7 @@ export default function AnalyzePage() {
             <button
               type="button"
               onClick={() => applyProfile(undefined, true)}
-              className="mt-4 text-sm text-[var(--rock)] underline-offset-4 hover:underline"
+              className="mt-4 cursor-pointer text-sm text-[var(--rock)] underline-offset-4 transition hover:underline"
             >
               跳过，用默认档案生成预测
             </button>
@@ -425,7 +429,7 @@ export default function AnalyzePage() {
             <button
               type="button"
               onClick={() => setStage("base")}
-              className="mb-6 self-start text-sm text-[var(--pine-deep)] underline-offset-4 hover:underline"
+              className="mb-6 cursor-pointer self-start text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
             >
               ← 返回基础报告
             </button>
@@ -441,7 +445,7 @@ export default function AnalyzePage() {
                 type="date"
                 value={hikeDate}
                 onChange={(e) => setHikeDate(e.target.value)}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+                className="field-input mt-1"
               />
             </label>
             <ProfileForm
@@ -460,7 +464,7 @@ export default function AnalyzePage() {
             <button
               type="button"
               onClick={() => setStage("profile")}
-              className="mb-6 self-start text-sm text-[var(--pine-deep)] underline-offset-4 hover:underline"
+              className="mb-6 cursor-pointer self-start text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
             >
               ← 调整档案
             </button>

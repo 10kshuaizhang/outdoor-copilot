@@ -15,6 +15,14 @@ Format per entry:
 
 ## Product & Scope
 
+### D-041 — Alpine Dawn Editorial visual system (share-first polish)
+
+- **Date:** 2026-08-11  
+- **Decision:** Adopt **Alpine Dawn Editorial** as the product UI system: cool mist pearl surfaces, deep alpine teal, dusty-rose CTA for share moments, Cormorant + Raleway + Noto Serif SC. Keep existing CSS token names (`--cream`, `--pine`, …) but recolor them. Prioritize Xiaohongshu-worthy report score hero + 3:4 share card.  
+- **Context:** Growth depends on women outdoor users wanting to screenshot and post; previous moss/cream look read as generic outdoor tool, not “精致想转发”. ui-ux-pro-max spa-pink / purple outputs were rejected as off-brand.  
+- **Consequences:** Landing stays full-bleed cinematic; analyze/history/about use atmospheric wash + soft panels; share PNG matches the same palette. No social feed features.  
+- **Status:** active  
+
 ### D-040 — Week 1–2 = Prediction skeleton, then Route Intelligence
 
 - **Date:** 2026-08-08  

@@ -39,8 +39,8 @@ async function waitForFonts(): Promise<void> {
     await document.fonts.ready;
     await Promise.all([
       document.fonts.load('600 64px "Noto Serif SC"'),
-      document.fonts.load('700 120px Fraunces'),
-      document.fonts.load('500 36px "Source Sans 3"'),
+      document.fonts.load("700 120px Cormorant"),
+      document.fonts.load("500 36px Raleway"),
     ]);
   } catch {
     // System fallbacks are fine on mobile.
@@ -64,7 +64,7 @@ function drawElevation(
   ctx.save();
   roundRect(ctx, x, y, w, h, 18);
   ctx.clip();
-  ctx.fillStyle = "rgba(42, 74, 51, 0.08)";
+  ctx.fillStyle = "rgba(31, 79, 82, 0.08)";
   ctx.fillRect(x, y, w, h);
 
   const points = samples.map((s) => ({
@@ -73,8 +73,8 @@ function drawElevation(
   }));
 
   const grad = ctx.createLinearGradient(0, y, 0, y + h);
-  grad.addColorStop(0, "rgba(63, 107, 74, 0.28)");
-  grad.addColorStop(1, "rgba(63, 107, 74, 0.02)");
+  grad.addColorStop(0, "rgba(74, 138, 136, 0.32)");
+  grad.addColorStop(1, "rgba(201, 123, 138, 0.04)");
   ctx.beginPath();
   points.forEach((p, i) => {
     if (i === 0) ctx.moveTo(p.px, p.py);
@@ -91,7 +91,7 @@ function drawElevation(
     if (i === 0) ctx.moveTo(p.px, p.py);
     else ctx.lineTo(p.px, p.py);
   });
-  ctx.strokeStyle = "#2a4a33";
+  ctx.strokeStyle = "#1f4f52";
   ctx.lineWidth = 4;
   ctx.stroke();
   ctx.restore();
@@ -117,34 +117,40 @@ export async function renderShareCardPng(
   const band = scoreBand(personal);
   const { route, duration, recommendation, elevationProfile } = analysis;
 
-  // Atmosphere
+  // Alpine Dawn atmosphere
   const bg = ctx.createLinearGradient(0, 0, 0, SHARE_CARD_HEIGHT);
-  bg.addColorStop(0, "#1a241c");
-  bg.addColorStop(0.38, "#2c3a2e");
-  bg.addColorStop(0.38, "#f3efe6");
-  bg.addColorStop(1, "#ebe4d6");
+  bg.addColorStop(0, "#0c2226");
+  bg.addColorStop(0.36, "#163338");
+  bg.addColorStop(0.36, "#f0f4f5");
+  bg.addColorStop(1, "#e8eef0");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT);
 
-  // Soft dawn wash
-  const wash = ctx.createRadialGradient(900, 120, 40, 780, 180, 520);
-  wash.addColorStop(0, "rgba(232, 217, 192, 0.35)");
-  wash.addColorStop(1, "rgba(232, 217, 192, 0)");
+  // Soft blush wash
+  const wash = ctx.createRadialGradient(920, 100, 30, 800, 160, 520);
+  wash.addColorStop(0, "rgba(232, 213, 208, 0.42)");
+  wash.addColorStop(1, "rgba(232, 213, 208, 0)");
   ctx.fillStyle = wash;
   ctx.fillRect(0, 0, SHARE_CARD_WIDTH, 560);
 
+  const rose = ctx.createRadialGradient(180, 420, 20, 220, 380, 280);
+  rose.addColorStop(0, "rgba(201, 123, 138, 0.22)");
+  rose.addColorStop(1, "rgba(201, 123, 138, 0)");
+  ctx.fillStyle = rose;
+  ctx.fillRect(0, 200, 520, 360);
+
   const display =
-    'Fraunces, "Iowan Old Style", "Palatino Linotype", Georgia, serif';
+    'Cormorant, "Iowan Old Style", "Palatino Linotype", Georgia, serif';
   const serifSc =
     '"Noto Serif SC", "Songti SC", "PingFang SC", "Hiragino Sans GB", serif';
   const sans =
-    '"Source Sans 3", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif';
+    'Raleway, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif';
 
-  ctx.fillStyle = "#f3efe6";
+  ctx.fillStyle = "#f0f4f5";
   ctx.font = `600 28px ${sans}`;
   ctx.fillText("OUTDOOR COPILOT", 72, 88);
   ctx.font = `600 44px ${serifSc}`;
-  ctx.fillStyle = "#e8d9c0";
+  ctx.fillStyle = "#e8d5d0";
   ctx.fillText("个人户外智能", 72, 150);
 
   ctx.fillStyle = "#ffffff";
@@ -154,30 +160,30 @@ export async function renderShareCardPng(
     ctx.fillText(line, 72, 250 + i * 74);
   });
 
-  // Cream panel
+  // Pearl panel
   const panelY = 420;
   roundRect(ctx, 48, panelY, 984, 920, 28);
-  ctx.fillStyle = "#f7f3ea";
+  ctx.fillStyle = "#f7fafb";
   ctx.fill();
 
-  ctx.fillStyle = "#3f6b4a";
+  ctx.fillStyle = "#4a8a88";
   ctx.font = `600 30px ${serifSc}`;
   ctx.fillText("对你的吃力程度", 96, panelY + 64);
 
-  ctx.fillStyle = "#1c1a17";
+  ctx.fillStyle = "#142428";
   ctx.font = `700 168px ${display}`;
   const scoreText = String(personal);
   ctx.fillText(scoreText, 96, panelY + 230);
   const scoreWidth = ctx.measureText(scoreText).width;
   ctx.font = `600 34px ${sans}`;
-  ctx.fillStyle = "#6b6560";
+  ctx.fillStyle = "#6a7375";
   ctx.fillText("/ 100", 96 + scoreWidth + 28, panelY + 150);
 
-  ctx.fillStyle = "#2a4a33";
+  ctx.fillStyle = "#c97b8a";
   ctx.font = `700 56px ${serifSc}`;
   ctx.fillText(band, 96, panelY + 300);
 
-  ctx.fillStyle = "#6b6560";
+  ctx.fillStyle = "#6a7375";
   ctx.font = `500 28px ${sans}`;
   ctx.fillText(`路线基础负荷 ${base}`, 96, panelY + 350);
 
@@ -186,21 +192,24 @@ export async function renderShareCardPng(
   const stats = [
     ["距离", `${route.distanceKm.toFixed(1)} km`],
     ["爬升", `+${route.elevationGainM} m`],
-    ["预估", `${formatDuration(duration.lowMin)}–${formatDuration(duration.highMin)}`],
+    [
+      "预估",
+      `${formatDuration(duration.lowMin)}–${formatDuration(duration.highMin)}`,
+    ],
   ] as const;
   stats.forEach(([label, value], i) => {
     const sx = 96 + i * 300;
-    ctx.fillStyle = "#6b6560";
+    ctx.fillStyle = "#6a7375";
     ctx.font = `500 24px ${sans}`;
     ctx.fillText(label, sx, statsY);
-    ctx.fillStyle = "#1c1a17";
+    ctx.fillStyle = "#142428";
     ctx.font = `700 36px ${display}`;
     ctx.fillText(value, sx, statsY + 48);
   });
 
   drawElevation(ctx, elevationProfile, 96, panelY + 520, 888, 160);
 
-  ctx.fillStyle = "#1c1a17";
+  ctx.fillStyle = "#142428";
   ctx.font = `500 28px ${serifSc}`;
   const risk = recommendation.mainRisk
     ? `主风险：${recommendation.mainRisk}`
@@ -210,7 +219,7 @@ export async function renderShareCardPng(
     ctx.fillText(line, 96, panelY + 740 + i * 40);
   });
 
-  ctx.fillStyle = "#6b6560";
+  ctx.fillStyle = "#6a7375";
   ctx.font = `500 24px ${sans}`;
   ctx.fillText("Know the trail. Know yourself. Go smarter.", 96, panelY + 860);
 

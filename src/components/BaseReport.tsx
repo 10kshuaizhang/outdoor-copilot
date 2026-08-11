@@ -153,29 +153,36 @@ export function BaseReport({
   };
 
   return (
-    <article className="space-y-8">
+    <article className="reveal-up space-y-8">
       {title ? (
         <h2 className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]">
           {title}
         </h2>
       ) : null}
 
-      <div>
-        <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--pine)]">
+      <div className="score-hero relative overflow-hidden px-5 py-7">
+        <div
+          className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full opacity-40"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(232,213,208,0.55), transparent 70%)",
+          }}
+        />
+        <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--dawn)]">
           {showPersonal ? "对你的吃力程度" : "路线基础负荷"}
         </p>
-        <div className="mt-2 flex items-end gap-3">
-          <p className="font-[family-name:var(--font-display)] text-6xl leading-none tracking-[-0.04em]">
+        <div className="mt-3 flex items-end gap-3">
+          <p className="score-number font-[family-name:var(--font-display)] text-7xl leading-none tracking-[-0.04em]">
             {focus.overall}
           </p>
           <div className="pb-1">
-            <p className="text-sm text-[var(--rock)]">/ 100</p>
-            <p className="font-[family-name:var(--font-serif-sc)] text-xl text-[var(--pine-deep)]">
+            <p className="text-sm text-[var(--mist)]/80">/ 100</p>
+            <p className="score-band font-[family-name:var(--font-serif-sc)] text-xl">
               {band}
             </p>
           </div>
         </div>
-        <p className="mt-2 text-sm text-[var(--rock)]">
+        <p className="mt-3 text-sm text-[var(--mist)]/85">
           置信度 {Math.round(analysis.confidence * 100)}%
           {analysis.weather.source === "fallback"
             ? " · 天气为假设值"
@@ -191,7 +198,7 @@ export function BaseReport({
       ) : null}
 
       {showPersonal ? (
-        <div className="grid grid-cols-2 gap-4 border-y border-black/10 py-4">
+        <div className="grid grid-cols-2 gap-4 border-y border-[var(--border-soft)] py-4">
           <div>
             <p className="text-sm text-[var(--rock)]">路线基础</p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-3xl">
@@ -200,7 +207,7 @@ export function BaseReport({
           </div>
           <div>
             <p className="text-sm text-[var(--rock)]">对你而言</p>
-            <p className="mt-1 font-[family-name:var(--font-display)] text-3xl text-[var(--pine-deep)]">
+            <p className="mt-1 font-[family-name:var(--font-display)] text-3xl text-[var(--cta)]">
               {personalDifficulty.overall}
             </p>
           </div>
@@ -259,7 +266,7 @@ export function BaseReport({
             ["风险", focus.risk],
           ] as const
         ).map(([label, value]) => (
-          <div key={label} className="border-t border-black/10 pt-2">
+          <div key={label} className="border-t border-[var(--border-soft)] pt-2">
             <p className="text-[var(--rock)]">{label}</p>
             <p className="mt-1 text-xl font-semibold">{value}</p>
           </div>
@@ -275,7 +282,7 @@ export function BaseReport({
             {analysis.contributions.map((c) => (
               <li
                 key={`${c.code}-${c.label}`}
-                className="flex items-baseline justify-between gap-3 border-b border-black/5 pb-2"
+                className="flex items-baseline justify-between gap-3 border-b border-[var(--border-soft)] pb-2"
               >
                 <span>{c.label}</span>
                 <span className="font-semibold tabular-nums">
@@ -301,7 +308,7 @@ export function BaseReport({
       ) : null}
 
       {showPersonal ? (
-        <div className="space-y-3 border-t border-black/10 pt-5 text-sm">
+        <div className="space-y-3 border-t border-[var(--border-soft)] pt-5 text-sm">
           <p className="font-[family-name:var(--font-serif-sc)] tracking-[0.12em] text-[var(--pine)]">
             行动建议
           </p>
@@ -321,7 +328,7 @@ export function BaseReport({
               改出发时刻（what-if）
               <input
                 type="time"
-                className="mt-1 block w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+                className="field-input mt-1"
                 value={
                   analysis.recommendation.suggestedStart
                     ? formatClock(analysis.recommendation.suggestedStart)
@@ -367,7 +374,7 @@ export function BaseReport({
         <button
           type="button"
           onClick={onPersonalize}
-          className="w-full bg-[var(--cta)] px-5 py-3.5 text-sm font-semibold text-[var(--cta-ink)]"
+          className="btn-accent min-h-12 w-full px-5 py-3.5 text-sm"
         >
           告诉我你的水平，算出对你的难度
         </button>
@@ -375,18 +382,18 @@ export function BaseReport({
 
       {showPersonal ? (
         <>
-          <div className="space-y-3">
+          <div className="panel space-y-3 px-4 py-5">
             <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
               分享到小红书
             </p>
             <p className="text-sm text-[var(--rock)]">
-              生成 3:4 海报图（不是纯文字）。保存后发笔记，再复制配文。
+              生成精致 3:4 海报图。保存后发笔记，再复制配文——让人一眼想点开。
             </p>
             <button
               type="button"
               disabled={cardBusy}
               onClick={() => void makeShareCard()}
-              className="w-full bg-[var(--pine-deep)] px-5 py-3.5 text-sm font-semibold text-[var(--cream)] disabled:opacity-60"
+              className="btn-accent min-h-12 w-full px-5 py-3.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
             >
               {cardBusy ? "生成中…" : "生成小红书分享图"}
             </button>
@@ -395,7 +402,7 @@ export function BaseReport({
                 type="button"
                 disabled={cardBusy}
                 onClick={() => void saveCardOnly()}
-                className="border border-[var(--pine-deep)] px-3 py-2.5 text-sm font-semibold text-[var(--pine-deep)] disabled:opacity-60"
+                className="btn-ghost min-h-11 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
               >
                 仅保存图片
               </button>
@@ -403,7 +410,7 @@ export function BaseReport({
                 type="button"
                 disabled={cardBusy}
                 onClick={() => void copyCaption()}
-                className="border border-[var(--pine-deep)] px-3 py-2.5 text-sm font-semibold text-[var(--pine-deep)] disabled:opacity-60"
+                className="btn-ghost min-h-11 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
               >
                 复制文案
               </button>
@@ -413,14 +420,14 @@ export function BaseReport({
               <img
                 src={cardPreviewUrl}
                 alt="小红书分享预览"
-                className="mx-auto w-full max-w-xs border border-black/10"
+                className="mx-auto w-full max-w-xs border border-[var(--border-soft)] shadow-[var(--shadow-soft)]"
               />
             ) : null}
             {cardCaption ? (
               <textarea
                 readOnly
                 value={cardCaption}
-                className="min-h-28 w-full border border-black/15 bg-white p-3 text-sm text-[var(--ink)]"
+                className="field-input min-h-28 p-3 text-sm"
                 onFocus={(e) => e.currentTarget.select()}
               />
             ) : null}
@@ -433,12 +440,12 @@ export function BaseReport({
               <textarea
                 readOnly
                 value={cardCaption ?? summaryText}
-                className="min-h-32 w-full border border-black/15 bg-white p-3 text-sm text-[var(--ink)]"
+                className="field-input min-h-32 p-3 text-sm"
                 onFocus={(e) => e.currentTarget.select()}
               />
             ) : null}
           </div>
-          <div className="space-y-3 border-t border-black/10 pt-5 text-sm">
+          <div className="space-y-3 border-t border-[var(--border-soft)] pt-5 text-sm">
             <p className="font-[family-name:var(--font-serif-sc)] tracking-[0.12em] text-[var(--pine)]">
               走完后回填（不自动改模型）
             </p>
@@ -448,7 +455,7 @@ export function BaseReport({
                 type="number"
                 value={actualMin}
                 onChange={(e) => setActualMin(e.target.value)}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+                className="field-input mt-1"
               />
             </label>
             <label className="block text-[var(--rock)]">
@@ -459,12 +466,12 @@ export function BaseReport({
                 max={5}
                 value={perceived}
                 onChange={(e) => setPerceived(e.target.value)}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2 text-[var(--ink)]"
+                className="field-input mt-1"
               />
             </label>
             <button
               type="button"
-              className="bg-[var(--pine-deep)] px-4 py-2.5 text-[var(--cream)]"
+              className="btn-primary min-h-11 px-4 py-2.5 text-sm"
               onClick={async () => {
                 trackEvent("feedback", {
                   actualMin: Number(actualMin) || 0,
@@ -496,7 +503,7 @@ export function BaseReport({
         </>
       ) : null}
 
-      <p className="border-t border-black/10 pt-4 text-xs leading-relaxed text-[var(--rock)]">
+      <p className="border-t border-[var(--border-soft)] pt-4 text-xs leading-relaxed text-[var(--rock)]">
         本工具仅提供辅助判断，不能替代你的经验、向导建议或现场决策。
         {showPersonal
           ? " 分数表示对你的吃力程度，不是路线的绝对标签。"

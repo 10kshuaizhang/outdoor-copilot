@@ -230,14 +230,14 @@ export default function AdminPage() {
 
   if (bootstrapping) {
     return (
-      <main className="min-h-dvh bg-[var(--cream)] px-5 py-10 text-[var(--ink)]">
+      <main className="app-atmosphere min-h-dvh px-5 py-10 text-[var(--ink)]">
         <p className="text-sm text-[var(--rock)]">加载管理后台…</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-dvh bg-[var(--cream)] text-[var(--ink)]">
+    <main className="app-atmosphere min-h-dvh text-[var(--ink)]">
       <div className="mx-auto w-full max-w-lg px-5 py-8">
         <div className="mb-8 flex items-center justify-between gap-4">
           <Link
