@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clampXhsText, xhsPolishTargetChars } from "@/lib/share/xhsLimit";
 
 type HardestPayload = {
   startKm?: number;
@@ -25,7 +24,6 @@ type HardestPayload = {
 type BriefPolishPayload = {
   copyText?: string;
   title?: string;
-  maxChars?: number;
   brief?: Record<string, unknown>;
   route?: { distanceKm?: number; elevationGainM?: number };
   band?: string;
@@ -46,8 +44,7 @@ const BRIEF_POLISH_SYSTEM = `你是 Outdoor Copilot 的小红书文案润色器�
 2. copyText 是数字与结论的唯一真相来源；结构化 brief 用于组织章节。
 3. 输出一篇可直接发小红书的「天气决策帖」：结论开头 → 天气分项 → 新手/老驴 → 穿衣/装备/出片 → 分段 → 行动。
 4. 简洁中文，可用换行与「1. 2. 3.」。不要 Markdown（不要 **、#、\`\`\`、HTML）。不要话题标签（客户端会追加）。
-5. 语气像户外决策博主：先给能不能去，再讲为什么；少废话。
-6. 【字数硬限制】正文总字数（含标点与换行）必须 ≤ maxChars（见用户 JSON）。宁可删减穿衣/出片/分段细节，也禁止超限。写完自行默数；超了就压缩后再输出。`;
+5. 语气像户外决策博主：先给能不能去，再讲为什么；少废话。`;
 
 const OVERVIEW_SYSTEM = `你是 Outdoor Copilot 的解释器，面向中国大陆徒步用户。
 
@@ -275,19 +272,7 @@ async function explainHardest(hardest: HardestPayload) {
 }
 
 async function polishBrief(brief: BriefPolishPayload) {
-  const maxChars =
-    typeof brief.maxChars === "number" && brief.maxChars > 0
-      ? brief.maxChars
-      : xhsPolishTargetChars({
-          title: brief.title,
-          verdictLabel:
-            brief.brief && typeof brief.brief === "object"
-              ? String(
-                  (brief.brief as { verdictLabel?: string }).verdictLabel ?? "",
-                )
-              : undefined,
-        });
-  const fallback = clampXhsText(brief.copyText ?? "", maxChars);
+  const fallback = brief.copyText ?? "";
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   const baseURL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
   const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
@@ -314,10 +299,7 @@ async function polishBrief(brief: BriefPolishPayload) {
         temperature: 0.4,
         messages: [
           { role: "system", content: BRIEF_POLISH_SYSTEM },
-          {
-            role: "user",
-            content: JSON.stringify({ ...brief, maxChars }),
-          },
+          { role: "user", content: JSON.stringify(brief) },
         ],
       }),
       signal: controller.signal,
@@ -329,12 +311,7 @@ async function polishBrief(brief: BriefPolishPayload) {
     };
     const text = data.choices?.[0]?.message?.content?.trim();
     if (!text) throw new Error("empty");
-    // Server-side hard clamp — never trust the model on length.
-    return NextResponse.json({
-      text: clampXhsText(text, maxChars),
-      model,
-      source: "llm",
-    });
+    return NextResponse.json({ text, model, source: "llm" });
   } catch {
     return NextResponse.json({
       text: fallback,

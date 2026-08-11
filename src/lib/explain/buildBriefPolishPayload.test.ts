@@ -21,8 +21,6 @@ describe("buildBriefPolishPayload", () => {
     expect(payload!.brief.verdict).toBeTruthy();
     expect(payload!.brief.clothing.length).toBeGreaterThan(0);
     expect(payload!.route.distanceKm).toBeGreaterThan(0);
-    expect(payload!.maxChars).toBeGreaterThan(200);
-    expect(payload!.maxChars).toBeLessThan(1000);
   });
 
   it("returns null when hikeBrief missing", () => {
