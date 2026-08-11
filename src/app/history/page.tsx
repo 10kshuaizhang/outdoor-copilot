@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { BaseReport } from "@/components/BaseReport";
 import { PredictionCard } from "@/components/PredictionCard";
 import {
-  MODEL_VERSION,
   getAnalysis,
   getRoute,
   listPredictions,
@@ -36,7 +35,7 @@ export default function HistoryPage() {
       <div className="mx-auto w-full max-w-lg px-5 py-8">
         <Link
           href="/"
-          className="mb-8 inline-block cursor-pointer text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
+          className="mb-8 inline-flex min-h-11 cursor-pointer items-center text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
         >
           ← Outdoor Copilot
         </Link>
@@ -47,14 +46,20 @@ export default function HistoryPage() {
               已保存的预测
             </h1>
             <p className="mt-3 text-sm text-[var(--ink-soft)]">
-              Prediction 独立、不可变（
-              <code className="text-xs">modelVersion: {MODEL_VERSION}</code>
-              ）。算法升级不会改写这里的数字。
+              已保存的预测不会被算法升级改写。
             </p>
             <ul className="mt-8 space-y-3">
               {items.length === 0 ? (
-                <li className="panel px-4 py-5 text-sm text-[var(--rock)]">
-                  还没有保存的预测。去分析页生成并点「保存这次预测」。
+                <li className="space-y-4 py-2">
+                  <p className="font-[family-name:var(--font-serif-sc)] text-base text-[var(--ink-soft)]">
+                    还没有保存的预测。
+                  </p>
+                  <Link
+                    href="/analyze"
+                    className="btn-accent inline-flex min-h-12 px-6 py-3.5 text-sm"
+                  >
+                    去分析一条路线
+                  </Link>
                 </li>
               ) : (
                 items.map((item) => (
@@ -82,13 +87,14 @@ export default function HistoryPage() {
               )}
             </ul>
 
-            <div className="mt-10 space-y-3 text-sm">
-              <Link
-                href="/analyze"
-                className="block cursor-pointer font-semibold text-[var(--cta)] underline-offset-4 transition hover:underline"
-              >
-                新建分析 →
-              </Link>
+            {items.length > 0 ? (
+              <div className="mt-10 space-y-3 text-sm">
+                <Link
+                  href="/analyze"
+                  className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-[var(--cta)] underline-offset-4 transition hover:underline"
+                >
+                  新建分析 →
+                </Link>
               <button
                 type="button"
                 className="cursor-pointer underline-offset-4 transition hover:underline"
@@ -117,14 +123,15 @@ export default function HistoryPage() {
               >
                 清除全部本地数据
               </button>
-            </div>
+              </div>
+            ) : null}
           </>
         ) : (
           <>
             <button
               type="button"
               onClick={() => setActive(null)}
-              className="mb-4 cursor-pointer text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
+              className="mb-4 inline-flex min-h-11 cursor-pointer items-center text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
             >
               ← 返回列表
             </button>
@@ -155,6 +162,7 @@ export default function HistoryPage() {
                     analysis={activeAnalysis}
                     title={active.title}
                     mode="personal"
+                    hideScoreHero
                   />
                 </div>
               </>

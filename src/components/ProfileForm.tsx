@@ -78,8 +78,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
       }}
     >
       <p className="text-xs leading-relaxed text-[var(--rock)]">
-        这是你告诉系统的档案（OutdoorProfile），不是系统从活动中学到的
-        Personal Model。舒适距离/爬升指「日归可重复」的水平，不是比赛极限。
+        舒适距离与爬升指「日归可重复」的水平，不是比赛极限。选好经验后，滑块会给出常见起点，可再微调。
       </p>
 
       <div>
@@ -119,7 +118,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
           max={COMFORT_DISTANCE_MAX_KM}
           value={typicalDistanceKm}
           onChange={(e) => setDistance(Number(e.target.value))}
-          className="mt-2 w-full"
+          className="field-range mt-2 w-full"
         />
         <p className="mt-1 text-xs text-[var(--rock)]">
           初级常见约 10 km；资深日归可至 {COMFORT_DISTANCE_MAX_KM} km
@@ -137,7 +136,7 @@ export function ProfileForm({ initial, onSubmit, onSkip }: Props) {
           step={50}
           value={typicalElevationM}
           onChange={(e) => setElevation(Number(e.target.value))}
-          className="mt-2 w-full"
+          className="field-range mt-2 w-full"
         />
         <p className="mt-1 text-xs text-[var(--rock)]">
           初级常见约 500 m；资深日归可至 {COMFORT_ELEVATION_MAX_M} m

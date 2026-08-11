@@ -40,11 +40,11 @@ export function PredictionCard({
   return (
     <section className="panel space-y-5 px-5 py-6">
       <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.16em] text-[var(--pine)]">
-        Your Prediction · 这次预测
+        这次预测
       </p>
 
       <div>
-        <p className="text-sm text-[var(--rock)]">Personal Difficulty</p>
+        <p className="text-sm text-[var(--rock)]">个人难度</p>
         <div className="mt-1 flex items-end gap-4">
           <p className="font-[family-name:var(--font-display)] text-5xl leading-none tracking-[-0.03em] text-[var(--pine-deep)]">
             {personal}
@@ -68,13 +68,13 @@ export function PredictionCard({
 
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="text-[var(--rock)]">Estimated time</p>
+          <p className="text-[var(--rock)]">预估时长</p>
           <p className="mt-1 text-lg font-semibold tabular-nums">
             {formatDuration(duration.lowMin)} – {formatDuration(duration.highMin)}
           </p>
         </div>
         <div>
-          <p className="text-[var(--rock)]">Confidence</p>
+          <p className="text-[var(--rock)]">置信度</p>
           <p className="mt-1 text-lg font-semibold">
             {confidenceLabel(analysis.confidence)}
             <span className="ml-1 text-sm font-normal text-[var(--rock)]">
@@ -109,7 +109,7 @@ export function PredictionCard({
           我要去走这条线
         </button>
         <p className="text-xs leading-relaxed text-[var(--rock)]">
-          徒步结束后可回来对比预测与实际（Week 3–4）。请先保存预测。
+          走完后可回来对比预测与实际。请先保存预测。
         </p>
       </div>
     </section>

@@ -43,6 +43,7 @@ type RouteSource = "sample" | "upload";
 
 export default function AnalyzePage() {
   const [samples, setSamples] = useState<SampleMeta[]>([]);
+  const [samplesLoading, setSamplesLoading] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<RouteAnalysis | null>(null);
@@ -65,6 +66,7 @@ export default function AnalyzePage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setSamplesLoading(true);
     fetch("/api/samples")
       .then(async (r) => {
         if (!r.ok) throw new Error("api");
@@ -77,7 +79,8 @@ export default function AnalyzePage() {
           .then((r) => r.json())
           .then((data: SampleMeta[]) => setSamples(data))
           .catch(() => setError("无法加载示例路线列表。"));
-      });
+      })
+      .finally(() => setSamplesLoading(false));
   }, []);
 
   const runFromPoints = useCallback(
@@ -310,7 +313,7 @@ export default function AnalyzePage() {
       <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-5 py-8">
         <Link
           href="/"
-          className="mb-8 cursor-pointer text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
+          className="mb-8 inline-flex min-h-11 cursor-pointer items-center text-sm text-[var(--pine-deep)] underline-offset-4 transition hover:underline"
         >
           ← Outdoor Copilot
         </Link>
@@ -352,6 +355,14 @@ export default function AnalyzePage() {
               或使用示例
             </p>
             <ul className="mt-4 space-y-3">
+              {samplesLoading ? (
+                <li className="py-4 text-sm text-[var(--rock)]">加载示例路线…</li>
+              ) : null}
+              {!samplesLoading && samples.length === 0 ? (
+                <li className="py-2 text-sm text-[var(--rock)]">
+                  暂无示例，请上传自己的轨迹。
+                </li>
+              ) : null}
               {samples.map((sample, index) => (
                 <li
                   key={sample.id}
@@ -387,7 +398,10 @@ export default function AnalyzePage() {
             </ul>
 
             {error ? (
-              <p className="mt-6 text-sm text-red-800" role="alert">
+              <p
+                className="mt-6 border border-amber-800/30 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+                role="alert"
+              >
                 {error}
               </p>
             ) : null}
@@ -437,7 +451,7 @@ export default function AnalyzePage() {
               你的户外档案
             </h2>
             <p className="mt-3 mb-4 text-sm text-[var(--ink-soft)]">
-              声明式 Profile，用于生成本次 Prediction。选出行日期以纳入天气。
+              填写你的经验与舒适水平，生成这次对你的预测。选择出行日期以纳入天气。
             </p>
             <label className="mb-6 block text-sm text-[var(--rock)]">
               计划出行日期
@@ -498,6 +512,7 @@ export default function AnalyzePage() {
                 analysis={analysis}
                 title={activeTitle}
                 mode="personal"
+                hideScoreHero
                 onStartChange={async (iso) => {
                   setPlannedStart(iso);
                   setPredictionSaved(false);

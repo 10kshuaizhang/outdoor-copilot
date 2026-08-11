@@ -60,7 +60,7 @@ export function DifficultyProfile({ segments, className }: Props) {
               ((hardest.endKm - hardest.startKm) / endKm) * chartW,
             )}
             height={chartH + 8}
-            fill="rgba(196, 92, 54, 0.12)"
+            fill="rgba(63, 107, 74, 0.14)"
           />
         ) : null}
         {enriched.map((seg) => {

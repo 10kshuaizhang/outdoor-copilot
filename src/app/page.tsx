@@ -61,13 +61,13 @@ export default function Home() {
             <div className="flex gap-5 text-sm text-[var(--mist)]">
               <a
                 href="/about"
-                className="cursor-pointer underline-offset-4 transition hover:text-white hover:underline"
+                className="inline-flex min-h-11 cursor-pointer items-center underline-offset-4 transition hover:text-white hover:underline"
               >
                 如何使用
               </a>
               <a
                 href="/history"
-                className="cursor-pointer underline-offset-4 transition hover:text-white hover:underline"
+                className="inline-flex min-h-11 cursor-pointer items-center underline-offset-4 transition hover:text-white hover:underline"
               >
                 已保存预测
               </a>

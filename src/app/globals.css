@@ -167,6 +167,52 @@ body {
   outline: none;
 }
 
+.field-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 1.75rem;
+  cursor: pointer;
+  background: transparent;
+  accent-color: var(--pine-deep);
+}
+
+.field-range:focus-visible {
+  outline: none;
+}
+
+.field-range::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(42, 74, 51, 0.18);
+}
+
+.field-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: -0.575rem;
+  border-radius: 999px;
+  border: 2px solid var(--cream);
+  background: var(--pine-deep);
+  box-shadow: 0 4px 12px rgba(26, 36, 28, 0.22);
+}
+
+.field-range::-moz-range-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(42, 74, 51, 0.18);
+}
+
+.field-range::-moz-range-thumb {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 2px solid var(--cream);
+  background: var(--pine-deep);
+  box-shadow: 0 4px 12px rgba(26, 36, 28, 0.22);
+}
+
 .score-hero {
   background: linear-gradient(135deg, var(--pine-deep) 0%, #355c3f 55%, #4a7854 100%);
   color: var(--mist);

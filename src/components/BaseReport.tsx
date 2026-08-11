@@ -31,6 +31,8 @@ type Props = {
   analysis: RouteAnalysis;
   title?: string;
   mode?: "base" | "personal";
+  /** Hide the big score hero when PredictionCard already shows it. */
+  hideScoreHero?: boolean;
   onPersonalize?: () => void;
   onStartChange?: (iso: string) => void;
   analysisId?: string;
@@ -41,6 +43,7 @@ export function BaseReport({
   analysis,
   title,
   mode = "base",
+  hideScoreHero = false,
   onPersonalize,
   onStartChange,
   analysisId,
@@ -220,44 +223,46 @@ export function BaseReport({
 
   return (
     <article className="reveal-up space-y-8">
-      {title ? (
+      {title && !hideScoreHero ? (
         <h2 className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]">
           {title}
         </h2>
       ) : null}
 
-      <div className="score-hero relative overflow-hidden px-5 py-7">
-        <div
-          className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full opacity-40"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(232,217,192,0.55), transparent 70%)",
-          }}
-        />
-        <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--dawn)]">
-          {showPersonal ? "对你的吃力程度" : "路线基础负荷"}
-        </p>
-        <div className="mt-3 flex items-end gap-4">
-          <p className="score-number font-[family-name:var(--font-display)] text-7xl leading-none tracking-[-0.04em]">
-            {focus.overall}
+      {!hideScoreHero ? (
+        <div className="score-hero relative overflow-hidden px-5 py-7">
+          <div
+            className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full opacity-40"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(232,217,192,0.55), transparent 70%)",
+            }}
+          />
+          <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.14em] text-[var(--dawn)]">
+            {showPersonal ? "对你的吃力程度" : "路线基础负荷"}
           </p>
-          <div className="flex flex-col justify-end gap-1 pb-1">
-            <p className="text-sm leading-none text-[var(--mist)]/80">/ 100</p>
-            <p className="score-band font-[family-name:var(--font-serif-sc)] text-xl leading-tight">
-              {band}
+          <div className="mt-3 flex items-end gap-4">
+            <p className="score-number font-[family-name:var(--font-display)] text-7xl leading-none tracking-[-0.04em]">
+              {focus.overall}
             </p>
+            <div className="flex flex-col justify-end gap-1 pb-1">
+              <p className="text-sm leading-none text-[var(--mist)]/80">/ 100</p>
+              <p className="score-band font-[family-name:var(--font-serif-sc)] text-xl leading-tight">
+                {band}
+              </p>
+            </div>
           </div>
+          <p className="mt-3 text-sm text-[var(--mist)]/85">
+            置信度 {Math.round(analysis.confidence * 100)}%
+            {analysis.weather.source === "fallback"
+              ? " · 天气为假设值"
+              : " · 天气来自 Open-Meteo"}
+            {analysis.weather.temperatureC != null
+              ? ` · ${Math.round(analysis.weather.temperatureC)}°C`
+              : ""}
+          </p>
         </div>
-        <p className="mt-3 text-sm text-[var(--mist)]/85">
-          置信度 {Math.round(analysis.confidence * 100)}%
-          {analysis.weather.source === "fallback"
-            ? " · 天气为假设值"
-            : " · 天气来自 Open-Meteo"}
-          {analysis.weather.temperatureC != null
-            ? ` · ${Math.round(analysis.weather.temperatureC)}°C`
-            : ""}
-        </p>
-      </div>
+      ) : null}
 
       {showPersonal ? (
         <div className="grid grid-cols-2 gap-4 border-y border-[var(--border-soft)] py-4">
@@ -301,8 +306,6 @@ export function BaseReport({
           <dd className="mt-1 text-lg font-semibold">{route.maxElevM} m</dd>
         </div>
       </dl>
-
-      {sharePanel}
 
       {analysis.hikeBrief ? (
         <RouteBriefCard brief={analysis.hikeBrief} />
@@ -393,7 +396,7 @@ export function BaseReport({
           ) : null}
           {onStartChange ? (
             <label className="block pt-2 text-[var(--rock)]">
-              改出发时刻（what-if）
+              改出发时刻（试算）
               <input
                 type="time"
                 className="field-input mt-1"
@@ -423,6 +426,8 @@ export function BaseReport({
           ) : null}
         </div>
       ) : null}
+
+      {sharePanel}
 
       <div>
         <p className="mb-2 font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
