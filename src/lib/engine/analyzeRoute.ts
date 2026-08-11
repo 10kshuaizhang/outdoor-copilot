@@ -117,17 +117,40 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
 
   const segments = buildSegments(points);
   const elevationProfile = buildElevationProfile(points);
-  let baseDifficulty = computeBaseDifficulty(route, segments);
+  const geometricBase = computeBaseDifficulty(route, segments);
 
-  const weatherApplied = applyWeatherToScores(baseDifficulty, weather);
-  baseDifficulty = weatherApplied.scores;
+  const weatherApplied = applyWeatherToScores(geometricBase, weather);
+  let baseDifficulty = weatherApplied.scores;
 
-  // Duration seed for physiology uses base first, then personalization.
-  let durationSeed = estimateDurationMinutes(route, baseDifficulty);
-  durationSeed = {
-    ...durationSeed,
-    totalMin: Math.round(durationSeed.totalMin * weatherApplied.durationFactor),
-  };
+  // Duration uses dry (pre-weather) personalization × weather multiplier ONCE.
+  // Weather still raises displayed difficulty via baseDifficulty / personalDifficulty.
+  const dryPersonal = personalizeDifficulty(
+    geometricBase,
+    route,
+    input.profile,
+  );
+  const scaleDuration = <
+    T extends {
+      movingMin: number;
+      totalMin: number;
+      lowMin: number;
+      highMin: number;
+    },
+  >(
+    d: T,
+    factor: number,
+  ): T => ({
+    ...d,
+    movingMin: Math.round(d.movingMin * factor),
+    totalMin: Math.round(d.totalMin * factor),
+    lowMin: Math.round(d.lowMin * factor),
+    highMin: Math.round(d.highMin * factor),
+  });
+
+  let durationSeed = scaleDuration(
+    estimateDurationMinutes(route, dryPersonal.personal),
+    weatherApplied.durationFactor,
+  );
 
   const physio = estimatePhysiologicalLoad({
     distanceM: route.distanceKm * 1000,
@@ -144,14 +167,10 @@ export function analyzeRoute(input: AnalyzeRouteInput): RouteAnalysis {
     input.profile,
   );
 
-  let duration = estimateDurationMinutes(route, personalized.personal);
-  duration = {
-    ...duration,
-    movingMin: Math.round(duration.movingMin * weatherApplied.durationFactor),
-    totalMin: Math.round(duration.totalMin * weatherApplied.durationFactor),
-    lowMin: Math.round(duration.lowMin * weatherApplied.durationFactor),
-    highMin: Math.round(duration.highMin * weatherApplied.durationFactor),
-  };
+  const duration = scaleDuration(
+    estimateDurationMinutes(route, dryPersonal.personal),
+    weatherApplied.durationFactor,
+  );
 
   const contributions = [
     ...physioApplied.contributions,

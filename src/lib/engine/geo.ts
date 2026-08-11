@@ -1,3 +1,4 @@
+import { isElevationSpike } from "./grade";
 import type { TrackPoint } from "./types";
 
 const EARTH_RADIUS_M = 6371000;
@@ -67,9 +68,20 @@ export function elevationStats(points: TrackPoint[]): {
   let minElevM = Number.POSITIVE_INFINITY;
   let maxElevM = Number.NEGATIVE_INFINITY;
   let hyst: ElevHysteresisState | null = null;
+  let prevWithEle: TrackPoint | undefined;
 
   for (const p of points) {
     if (p.ele == null || Number.isNaN(p.ele)) continue;
+
+    if (prevWithEle?.ele != null) {
+      const dist = haversineMeters(prevWithEle, p);
+      const stepDelta = p.ele - prevWithEle.ele;
+      if (isElevationSpike(stepDelta, dist)) {
+        // Drop the spike sample entirely; keep previous elev as the chain tip.
+        continue;
+      }
+    }
+
     minElevM = Math.min(minElevM, p.ele);
     maxElevM = Math.max(maxElevM, p.ele);
 
@@ -78,6 +90,7 @@ export function elevationStats(points: TrackPoint[]): {
     } else {
       pushElevHysteresis(hyst, p.ele);
     }
+    prevWithEle = p;
   }
 
   if (!Number.isFinite(minElevM) || !hyst) {

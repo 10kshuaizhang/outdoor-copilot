@@ -91,6 +91,14 @@ Format per entry:
 
 ## Difficulty & Calibration
 
+### D-025 — Calc guards: weather duration once, KML longest-ring, elev spikes
+
+- **Date:** 2026-08-11  
+- **Decision:** (1) Duration = dry personalization × `weatherMultiplier` **once** — weather still raises difficulty scores, but no longer also inflates Naismith via weather-weighted `overall`. (2) Multi-`LineString` KML keeps the **longest continuous ring** (no teleport stitch). (3) Route `elevationStats` skips `isElevationSpike` samples before hysteresis / min-max. `MODEL_VERSION` → `v0.1.3-calc-guards`.  
+- **Context:** Audit after Xiaowutai climb fix: harsh weather duration ~3.5× from double count; distant KML rings joined into tens of km; single elev spikes still entered route gain while segments filtered them.  
+- **Consequences:** Completing-window / water / dusk risk less exaggerated in storms; multi-placemark KML may drop short spurs; spike peaks no longer set `maxElevM`.  
+- **Status:** active  
+
 ### D-024 — Elevation gain hysteresis (5 m)
 
 - **Date:** 2026-08-11  

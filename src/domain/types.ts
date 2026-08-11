@@ -182,5 +182,5 @@ export function engineProfileToOutdoor(
   };
 }
 
-/** Elevation hysteresis + comfort-scale personalization lineage. */
-export const MODEL_VERSION = "v0.1.2-elev-hysteresis";
+/** Calc guards: elev spike skip + weather duration once + KML longest-ring. */
+export const MODEL_VERSION = "v0.1.3-calc-guards";
