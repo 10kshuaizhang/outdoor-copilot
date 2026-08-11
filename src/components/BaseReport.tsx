@@ -14,7 +14,7 @@ import {
   generateShareCard,
   shareOrDownloadCard,
 } from "@/lib/share/exportShareCard";
-import { exportSummaryText } from "@/lib/share/exportSummary";
+import { copyToClipboard } from "@/lib/share/exportSummary";
 
 function formatDuration(min: number): string {
   const h = Math.floor(min / 60);
@@ -141,17 +141,14 @@ export function BaseReport({
         caption = summaryText;
       }
     }
-    const result = await exportSummaryText(caption);
-    if (result.ok) {
-      trackEvent("copy_share", { method: result.method });
-      setShareStatus(
-        result.method === "share"
-          ? "已打开系统分享文案。"
-          : "小红书文案已复制，粘贴到配文即可。",
-      );
+    const ok = await copyToClipboard(caption);
+    if (ok) {
+      trackEvent("copy_share", { method: "clipboard" });
+      setShareStatus("文案已复制到剪贴板，粘贴到配文即可。");
+      setShowManualCopy(false);
       return;
     }
-    setShareStatus(result.message);
+    setShareStatus("无法自动复制，请长按下方文案手动复制。");
     setShowManualCopy(true);
   };
 
