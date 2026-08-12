@@ -218,17 +218,21 @@ function drawSectionTitle(
 ) {
   const { serifSc, sans } = SHARE_FONTS;
   drawHairline(ctx, CONTENT_TOP);
-  const titleY = CONTENT_TOP + 42;
+  const titleY = CONTENT_TOP + 40;
   ctx.fillStyle = "#3f6b4a";
   ctx.font = `600 26px ${serifSc}`;
   ctx.fillText(title, INSET_X, titleY);
+
+  // Hint on its own line — avoids cramming into the cards below.
+  let bottom = titleY;
   if (hint) {
+    const hintY = titleY + 34;
     ctx.fillStyle = "#6b6560";
     ctx.font = `500 20px ${sans}`;
-    const tw = ctx.measureText(title).width;
-    ctx.fillText(hint, INSET_X + tw + 20, titleY);
+    ctx.fillText(hint, INSET_X, hintY);
+    bottom = hintY;
   }
-  return titleY + 36;
+  return bottom + 32;
 }
 
 function renderAiryBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) {
@@ -236,8 +240,7 @@ function renderAiryBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) 
 
   const segments = ensureSegmentEffort(analysis.segments);
   const hardest = findHardestStretch(segments);
-  // Stretch elevation into the full mid slot down to the fixed footer.
-  const chartTop = bodyTop + 12;
+  const chartTop = bodyTop + 8;
   const chartH = Math.max(220, FOOTER_Y - chartTop - 28);
   drawElevation(
     ctx,
@@ -262,9 +265,8 @@ function renderBalancedBody(
   );
 
   const phases = buildShareRhythm(analysis, "balanced");
-  const cardTop = bodyTop + 12;
+  const cardTop = bodyTop + 8;
   const cardW = 292;
-  // Fill mid slot: cards grow to meet the fixed footer hairline.
   const cardH = Math.max(220, FOOTER_Y - cardTop - 28);
   const gap = 18;
 
@@ -286,12 +288,12 @@ function renderBalancedBody(
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Vertical rhythm scales with card height so tall cards don't look empty.
-    const feelY = cardTop + Math.round(cardH * 0.16);
-    const kmY = cardTop + Math.round(cardH * 0.34);
-    const line1Y = cardTop + Math.round(cardH * 0.52);
-    const line2Y = cardTop + Math.round(cardH * 0.62);
-    const badgeY = cardTop + Math.round(cardH * 0.78);
+    // Fixed internal stack with clear gaps (not percentage-cramped).
+    const feelY = cardTop + 44;
+    const kmY = cardTop + 92;
+    const line1Y = cardTop + 148;
+    const line2Y = cardTop + 180;
+    const badgeY = cardTop + Math.min(cardH - 48, 232);
 
     ctx.fillStyle = p.tone;
     ctx.font = `600 22px ${serifSc}`;
@@ -301,14 +303,15 @@ function renderBalancedBody(
     ctx.font = `600 24px ${sans}`;
     const kmLines = wrapText(ctx, kmRange(p), cardW - 36, 2);
     kmLines.forEach((line, li) => {
-      ctx.fillText(line, x + 18, kmY + li * 28);
+      ctx.fillText(line, x + 18, kmY + li * 30);
     });
 
+    const shift = kmLines.length > 1 ? 28 : 0;
     ctx.fillStyle = "#6b6560";
     ctx.font = `500 18px ${serifSc}`;
-    ctx.fillText(p.line1, x + 18, line1Y + (kmLines.length > 1 ? 16 : 0));
+    ctx.fillText(p.line1, x + 18, line1Y + shift);
     const line2 = wrapText(ctx, p.line2, cardW - 36, 1)[0] ?? p.line2;
-    ctx.fillText(line2, x + 18, line2Y + (kmLines.length > 1 ? 16 : 0));
+    ctx.fillText(line2, x + 18, line2Y + shift);
 
     if (p.peak) {
       roundRect(ctx, x + 18, badgeY, 100, 28, 8);
@@ -330,41 +333,47 @@ function renderRichBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) 
   );
 
   const phases = buildShareRhythm(analysis, "rich");
-  const rowStart = bodyTop + 28;
+  const rowStart = bodyTop + 20;
   const avail = FOOTER_Y - rowStart - 20;
+  // Enough room for km + detail + bar without collision.
   const rowH = Math.max(
-    88,
+    108,
     Math.floor(avail / Math.max(1, phases.length)),
   );
-  let y = rowStart;
+  let rowTop = rowStart;
 
   phases.forEach((r) => {
+    // Anchor text from the top of each row cell with fixed clearances.
+    const kmY = rowTop + 28;
+    const detailY = kmY + 42;
+    const barY = detailY + 28;
+
     if (r.peak) {
-      roundRect(ctx, 88, y - 30, 904, Math.min(rowH - 16, 100), 14);
+      roundRect(ctx, 88, rowTop, 904, rowH - 12, 14);
       ctx.fillStyle = "rgba(139, 105, 20, 0.09)";
       ctx.fill();
     }
+
     ctx.fillStyle = "#1c1a17";
     ctx.font = `600 26px ${sans}`;
-    ctx.fillText(kmRange(r), 104, y);
+    ctx.fillText(kmRange(r), 104, kmY);
 
     ctx.font = `600 22px ${serifSc}`;
     const fw = ctx.measureText(r.feel).width;
     const chipX = 960 - fw - 36;
-    roundRect(ctx, chipX - 12, y - 26, fw + 24, 34, 10);
+    roundRect(ctx, chipX - 12, kmY - 26, fw + 24, 34, 10);
     ctx.fillStyle = r.peak
       ? "rgba(139, 105, 20, 0.15)"
       : "rgba(42, 74, 51, 0.09)";
     ctx.fill();
     ctx.fillStyle = r.tone;
-    ctx.fillText(r.feel, chipX, y);
+    ctx.fillText(r.feel, chipX, kmY);
 
     ctx.fillStyle = "#6b6560";
     ctx.font = `500 20px ${serifSc}`;
     const detail = `${r.line1} · ${r.line2}`;
-    ctx.fillText(wrapText(ctx, detail, 760, 1)[0] ?? detail, 104, y + 34);
+    ctx.fillText(wrapText(ctx, detail, 760, 1)[0] ?? detail, 104, detailY);
 
-    const barY = y + Math.min(52, Math.round(rowH * 0.55));
     roundRect(ctx, 104, barY, 860, 7, 4);
     ctx.fillStyle = "rgba(42, 74, 51, 0.08)";
     ctx.fill();
@@ -372,7 +381,7 @@ function renderRichBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) 
     ctx.fillStyle = r.tone;
     ctx.fill();
 
-    y += rowH;
+    rowTop += rowH;
   });
 }
 
