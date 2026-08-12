@@ -56,6 +56,7 @@ function drawElevation(
   const maxEle = Math.max(...samples.map((s) => s.ele));
   const maxKm = samples[samples.length - 1]!.km || 1;
   const span = Math.max(1, maxEle - minEle);
+  const { serifSc } = SHARE_FONTS;
 
   ctx.save();
   roundRect(ctx, x, y, w, h, 16);
@@ -63,16 +64,18 @@ function drawElevation(
   ctx.fillStyle = "rgba(42, 74, 51, 0.07)";
   ctx.fillRect(x, y, w, h);
 
+  let hardestBand: { bx: number; bw: number } | null = null;
   if (hardest && maxKm > 0) {
     const bx = x + (hardest.startKm / maxKm) * w;
     const bw = Math.max(8, ((hardest.endKm - hardest.startKm) / maxKm) * w);
+    hardestBand = { bx, bw };
     ctx.fillStyle = "rgba(139, 105, 20, 0.12)";
     ctx.fillRect(bx, y, bw, h);
   }
 
   const points = samples.map((s) => ({
     px: x + (s.km / maxKm) * w,
-    py: y + h - ((s.ele - minEle) / span) * (h - 24) - 12,
+    py: y + h - ((s.ele - minEle) / span) * (h - 28) - 14,
   }));
 
   const grad = ctx.createLinearGradient(0, y, 0, y + h);
@@ -97,14 +100,28 @@ function drawElevation(
   ctx.strokeStyle = "#2a4a33";
   ctx.lineWidth = 4;
   ctx.stroke();
-  ctx.restore();
 
-  if (hardest && maxKm > 0) {
-    const labelX = x + (hardest.startKm / maxKm) * w;
+  // Label lives inside the chart so it never collides with section titles.
+  if (hardestBand) {
+    const label = "最虐段";
+    ctx.font = `600 18px ${serifSc}`;
+    const lw = ctx.measureText(label).width;
+    const padX = 10;
+    const chipW = lw + padX * 2;
+    const chipH = 28;
+    const chipX = Math.min(
+      Math.max(hardestBand.bx + 8, x + 12),
+      x + w - chipW - 12,
+    );
+    const chipY = y + 14;
+    roundRect(ctx, chipX, chipY, chipW, chipH, 8);
+    ctx.fillStyle = "rgba(247, 243, 234, 0.92)";
+    ctx.fill();
     ctx.fillStyle = "#8b6914";
-    ctx.font = `600 20px ${SHARE_FONTS.serifSc}`;
-    ctx.fillText("最虐段", Math.min(labelX, x + w - 80), y - 12);
+    ctx.fillText(label, chipX + padX, chipY + 20);
   }
+
+  ctx.restore();
 }
 
 function drawScoreBlock(
@@ -194,39 +211,38 @@ function renderAiry(
   band: string,
   risk: string,
 ) {
-  const { serifSc, sans } = SHARE_FONTS;
+  const { serifSc } = SHARE_FONTS;
   const panelY = 320;
   roundRect(ctx, 48, panelY, 984, 1020, 28);
   ctx.fillStyle = "#f7f3ea";
   ctx.fill();
 
+  // Slightly airier score + stats rhythm (less packed than before).
   const scoreBaseline = drawScoreBlock(ctx, panelY, personal, band, {
-    scoreSize: 168,
-    scoreBaseline: 248,
+    scoreSize: 160,
+    scoreBaseline: 236,
   });
-  drawStats(ctx, scoreBaseline + 78, analysis);
+  drawStats(ctx, scoreBaseline + 88, analysis);
 
-  const elevY = scoreBaseline + 200;
+  const elevHeaderY = scoreBaseline + 230;
   ctx.fillStyle = "#3f6b4a";
   ctx.font = `600 28px ${serifSc}`;
-  ctx.fillText("海拔剖面", 96, elevY);
-  ctx.fillStyle = "#6b6560";
-  ctx.font = `500 20px ${sans}`;
-  ctx.fillText("一眼看高低走势", 230, elevY);
+  ctx.fillText("海拔剖面", 96, elevHeaderY);
 
   const segments = ensureSegmentEffort(analysis.segments);
   const hardest = findHardestStretch(segments);
+  const elevChartY = elevHeaderY + 48;
   drawElevation(
     ctx,
     analysis.elevationProfile,
     96,
-    elevY + 28,
+    elevChartY,
     888,
-    220,
+    248,
     hardest,
   );
 
-  drawFooter(ctx, elevY + 300, risk);
+  drawFooter(ctx, elevChartY + 292, risk);
 }
 
 function renderBalanced(
