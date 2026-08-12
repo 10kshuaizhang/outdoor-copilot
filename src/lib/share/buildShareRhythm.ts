@@ -19,7 +19,7 @@ export const SHARE_CARD_STYLE_OPTIONS: Array<{
   hint: string;
 }> = [
   { id: "airy", label: "美感", hint: "大分数 + 海拔剖面" },
-  { id: "balanced", label: "折中", hint: "分数 + 三段节奏卡" },
+  { id: "balanced", label: "节奏", hint: "分数 + 三段节奏卡" },
   { id: "rich", label: "干货", hint: "分数 + 全程分段明细" },
 ];
 
