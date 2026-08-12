@@ -253,6 +253,66 @@ function renderAiryBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) 
   );
 }
 
+function drawPhaseSparkline(
+  ctx: CanvasRenderingContext2D,
+  samples: RouteAnalysis["elevationProfile"],
+  startKm: number,
+  endKm: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tone: string,
+  peak?: boolean,
+) {
+  if (samples.length < 2 || endKm <= startKm) return;
+  const slice = samples.filter(
+    (s) => s.km >= startKm - 0.02 && s.km <= endKm + 0.02,
+  );
+  const pts = slice.length >= 2 ? slice : samples;
+  const minEle = Math.min(...pts.map((s) => s.ele));
+  const maxEle = Math.max(...pts.map((s) => s.ele));
+  const span = Math.max(1, maxEle - minEle);
+  const km0 = pts[0]!.km;
+  const km1 = pts[pts.length - 1]!.km;
+  const kmSpan = Math.max(0.01, km1 - km0);
+
+  ctx.save();
+  roundRect(ctx, x, y, w, h, 10);
+  ctx.clip();
+  ctx.fillStyle = peak ? "rgba(139, 105, 20, 0.1)" : "rgba(42, 74, 51, 0.06)";
+  ctx.fillRect(x, y, w, h);
+
+  const mapped = pts.map((s) => ({
+    px: x + ((s.km - km0) / kmSpan) * w,
+    py: y + h - ((s.ele - minEle) / span) * (h - 10) - 5,
+  }));
+
+  const grad = ctx.createLinearGradient(0, y, 0, y + h);
+  grad.addColorStop(0, peak ? "rgba(139, 105, 20, 0.22)" : "rgba(63, 107, 74, 0.2)");
+  grad.addColorStop(1, "rgba(63, 107, 74, 0.02)");
+  ctx.beginPath();
+  mapped.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(p.px, p.py);
+    else ctx.lineTo(p.px, p.py);
+  });
+  ctx.lineTo(mapped[mapped.length - 1]!.px, y + h);
+  ctx.lineTo(mapped[0]!.px, y + h);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  mapped.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(p.px, p.py);
+    else ctx.lineTo(p.px, p.py);
+  });
+  ctx.strokeStyle = tone;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
 function renderBalancedBody(
   ctx: CanvasRenderingContext2D,
   analysis: RouteAnalysis,
@@ -265,10 +325,15 @@ function renderBalancedBody(
   );
 
   const phases = buildShareRhythm(analysis, "balanced");
-  const cardTop = bodyTop + 8;
   const cardW = 292;
-  const cardH = Math.max(220, FOOTER_Y - cardTop - 28);
+  const cardH = 268;
   const gap = 18;
+  const slotBottom = FOOTER_Y - 24;
+  const slotH = slotBottom - bodyTop;
+  // Comfortable card height, vertically centered in mid slot (option 4).
+  const cardTop = bodyTop + Math.max(8, Math.round((slotH - cardH) / 2));
+
+  const profile = analysis.elevationProfile ?? [];
 
   phases.forEach((p, i) => {
     const x = INSET_X + i * (cardW + gap);
@@ -288,12 +353,12 @@ function renderBalancedBody(
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Fixed internal stack with clear gaps (not percentage-cramped).
-    const feelY = cardTop + 44;
-    const kmY = cardTop + 92;
-    const line1Y = cardTop + 148;
-    const line2Y = cardTop + 180;
-    const badgeY = cardTop + Math.min(cardH - 48, 232);
+    const feelY = cardTop + 42;
+    const kmY = cardTop + 86;
+    const line1Y = cardTop + 128;
+    const line2Y = cardTop + 156;
+    const sparkH = 52;
+    const sparkY = cardTop + cardH - 16 - sparkH;
 
     ctx.fillStyle = p.tone;
     ctx.font = `600 22px ${serifSc}`;
@@ -303,10 +368,10 @@ function renderBalancedBody(
     ctx.font = `600 24px ${sans}`;
     const kmLines = wrapText(ctx, kmRange(p), cardW - 36, 2);
     kmLines.forEach((line, li) => {
-      ctx.fillText(line, x + 18, kmY + li * 30);
+      ctx.fillText(line, x + 18, kmY + li * 28);
     });
 
-    const shift = kmLines.length > 1 ? 28 : 0;
+    const shift = kmLines.length > 1 ? 24 : 0;
     ctx.fillStyle = "#6b6560";
     ctx.font = `500 18px ${serifSc}`;
     ctx.fillText(p.line1, x + 18, line1Y + shift);
@@ -314,13 +379,27 @@ function renderBalancedBody(
     ctx.fillText(line2, x + 18, line2Y + shift);
 
     if (p.peak) {
-      roundRect(ctx, x + 18, badgeY, 100, 28, 8);
+      const badgeY = sparkY - 34;
+      roundRect(ctx, x + 18, badgeY, 100, 26, 8);
       ctx.fillStyle = "rgba(139, 105, 20, 0.15)";
       ctx.fill();
       ctx.fillStyle = "#8b6914";
-      ctx.font = `600 16px ${serifSc}`;
-      ctx.fillText("今天最虐", x + 28, badgeY + 20);
+      ctx.font = `600 15px ${serifSc}`;
+      ctx.fillText("今天最虐", x + 28, badgeY + 18);
     }
+
+    drawPhaseSparkline(
+      ctx,
+      profile,
+      p.startKm,
+      p.endKm,
+      x + 14,
+      sparkY,
+      cardW - 28,
+      sparkH,
+      p.tone,
+      p.peak,
+    );
   });
 }
 
@@ -333,35 +412,38 @@ function renderRichBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) 
   );
 
   const phases = buildShareRhythm(analysis, "rich");
-  const rowStart = bodyTop + 20;
-  const avail = FOOTER_Y - rowStart - 20;
-  // Enough room for km + detail + bar without collision.
-  const rowH = Math.max(
-    108,
-    Math.floor(avail / Math.max(1, phases.length)),
-  );
+  const rowStart = bodyTop + 16;
+  // Hard stop above the fixed footer hairline — never spill into 主风险.
+  const slotBottom = FOOTER_Y - 20;
+  const avail = Math.max(0, slotBottom - rowStart);
+  const n = Math.max(1, phases.length);
+  // Fit all rows inside avail (do not Math.max past the budget).
+  const rowH = Math.floor(avail / n);
+  const compact = rowH < 104;
   let rowTop = rowStart;
 
   phases.forEach((r) => {
-    // Anchor text from the top of each row cell with fixed clearances.
-    const kmY = rowTop + 28;
-    const detailY = kmY + 42;
-    const barY = detailY + 28;
+    const kmY = rowTop + (compact ? 22 : 26);
+    const detailY = kmY + (compact ? 34 : 40);
+    const barY = detailY + (compact ? 20 : 26);
+
+    // Skip drawing past the footer boundary.
+    if (barY + 10 > slotBottom) return;
 
     if (r.peak) {
-      roundRect(ctx, 88, rowTop, 904, rowH - 12, 14);
+      roundRect(ctx, 88, rowTop, 904, Math.max(64, rowH - 10), 14);
       ctx.fillStyle = "rgba(139, 105, 20, 0.09)";
       ctx.fill();
     }
 
     ctx.fillStyle = "#1c1a17";
-    ctx.font = `600 26px ${sans}`;
+    ctx.font = `600 ${compact ? 24 : 26}px ${sans}`;
     ctx.fillText(kmRange(r), 104, kmY);
 
-    ctx.font = `600 22px ${serifSc}`;
+    ctx.font = `600 ${compact ? 20 : 22}px ${serifSc}`;
     const fw = ctx.measureText(r.feel).width;
     const chipX = 960 - fw - 36;
-    roundRect(ctx, chipX - 12, kmY - 26, fw + 24, 34, 10);
+    roundRect(ctx, chipX - 12, kmY - 24, fw + 24, 32, 10);
     ctx.fillStyle = r.peak
       ? "rgba(139, 105, 20, 0.15)"
       : "rgba(42, 74, 51, 0.09)";
@@ -370,14 +452,14 @@ function renderRichBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) 
     ctx.fillText(r.feel, chipX, kmY);
 
     ctx.fillStyle = "#6b6560";
-    ctx.font = `500 20px ${serifSc}`;
+    ctx.font = `500 ${compact ? 18 : 20}px ${serifSc}`;
     const detail = `${r.line1} · ${r.line2}`;
     ctx.fillText(wrapText(ctx, detail, 760, 1)[0] ?? detail, 104, detailY);
 
-    roundRect(ctx, 104, barY, 860, 7, 4);
+    roundRect(ctx, 104, barY, 860, 6, 4);
     ctx.fillStyle = "rgba(42, 74, 51, 0.08)";
     ctx.fill();
-    roundRect(ctx, 104, barY, Math.max(24, 860 * r.bar), 7, 4);
+    roundRect(ctx, 104, barY, Math.max(24, 860 * r.bar), 6, 4);
     ctx.fillStyle = r.tone;
     ctx.fill();
 
