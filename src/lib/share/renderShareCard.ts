@@ -232,18 +232,18 @@ function drawSectionTitle(
 }
 
 function renderAiryBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) {
-  const { serifSc } = SHARE_FONTS;
   const bodyTop = drawSectionTitle(ctx, "海拔剖面");
 
   const segments = ensureSegmentEffort(analysis.segments);
   const hardest = findHardestStretch(segments);
-  // Fill the mid slot without crowding the fixed footer.
-  const chartH = Math.min(268, FOOTER_Y - bodyTop - 40);
+  // Stretch elevation into the full mid slot down to the fixed footer.
+  const chartTop = bodyTop + 12;
+  const chartH = Math.max(220, FOOTER_Y - chartTop - 28);
   drawElevation(
     ctx,
     analysis.elevationProfile,
     INSET_X,
-    bodyTop + 8,
+    chartTop,
     888,
     chartH,
     hardest,
@@ -264,7 +264,8 @@ function renderBalancedBody(
   const phases = buildShareRhythm(analysis, "balanced");
   const cardTop = bodyTop + 12;
   const cardW = 292;
-  const cardH = Math.min(236, FOOTER_Y - cardTop - 36);
+  // Fill mid slot: cards grow to meet the fixed footer hairline.
+  const cardH = Math.max(220, FOOTER_Y - cardTop - 28);
   const gap = 18;
 
   phases.forEach((p, i) => {
@@ -285,31 +286,37 @@ function renderBalancedBody(
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
+    // Vertical rhythm scales with card height so tall cards don't look empty.
+    const feelY = cardTop + Math.round(cardH * 0.16);
+    const kmY = cardTop + Math.round(cardH * 0.34);
+    const line1Y = cardTop + Math.round(cardH * 0.52);
+    const line2Y = cardTop + Math.round(cardH * 0.62);
+    const badgeY = cardTop + Math.round(cardH * 0.78);
+
     ctx.fillStyle = p.tone;
     ctx.font = `600 22px ${serifSc}`;
-    ctx.fillText(p.feel, x + 18, cardTop + 46);
+    ctx.fillText(p.feel, x + 18, feelY);
 
     ctx.fillStyle = "#1c1a17";
     ctx.font = `600 24px ${sans}`;
     const kmLines = wrapText(ctx, kmRange(p), cardW - 36, 2);
     kmLines.forEach((line, li) => {
-      ctx.fillText(line, x + 18, cardTop + 88 + li * 28);
+      ctx.fillText(line, x + 18, kmY + li * 28);
     });
 
-    const textShift = kmLines.length > 1 ? 20 : 0;
     ctx.fillStyle = "#6b6560";
     ctx.font = `500 18px ${serifSc}`;
-    ctx.fillText(p.line1, x + 18, cardTop + 130 + textShift);
+    ctx.fillText(p.line1, x + 18, line1Y + (kmLines.length > 1 ? 16 : 0));
     const line2 = wrapText(ctx, p.line2, cardW - 36, 1)[0] ?? p.line2;
-    ctx.fillText(line2, x + 18, cardTop + 158 + textShift);
+    ctx.fillText(line2, x + 18, line2Y + (kmLines.length > 1 ? 16 : 0));
 
-    if (p.peak && cardH >= 210) {
-      roundRect(ctx, x + 18, cardTop + 182, 100, 28, 8);
+    if (p.peak) {
+      roundRect(ctx, x + 18, badgeY, 100, 28, 8);
       ctx.fillStyle = "rgba(139, 105, 20, 0.15)";
       ctx.fill();
       ctx.fillStyle = "#8b6914";
       ctx.font = `600 16px ${serifSc}`;
-      ctx.fillText("今天最虐", x + 28, cardTop + 202);
+      ctx.fillText("今天最虐", x + 28, badgeY + 20);
     }
   });
 }
@@ -323,13 +330,17 @@ function renderRichBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) 
   );
 
   const phases = buildShareRhythm(analysis, "rich");
-  const avail = FOOTER_Y - bodyTop - 24;
-  const rowH = Math.min(112, Math.floor(avail / Math.max(1, phases.length)));
-  let y = bodyTop + 28;
+  const rowStart = bodyTop + 28;
+  const avail = FOOTER_Y - rowStart - 20;
+  const rowH = Math.max(
+    88,
+    Math.floor(avail / Math.max(1, phases.length)),
+  );
+  let y = rowStart;
 
   phases.forEach((r) => {
     if (r.peak) {
-      roundRect(ctx, 88, y - 34, 904, Math.min(96, rowH - 12), 14);
+      roundRect(ctx, 88, y - 30, 904, Math.min(rowH - 16, 100), 14);
       ctx.fillStyle = "rgba(139, 105, 20, 0.09)";
       ctx.fill();
     }
@@ -353,14 +364,13 @@ function renderRichBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) 
     const detail = `${r.line1} · ${r.line2}`;
     ctx.fillText(wrapText(ctx, detail, 760, 1)[0] ?? detail, 104, y + 34);
 
-    if (rowH >= 90) {
-      roundRect(ctx, 104, y + 48, 860, 7, 4);
-      ctx.fillStyle = "rgba(42, 74, 51, 0.08)";
-      ctx.fill();
-      roundRect(ctx, 104, y + 48, Math.max(24, 860 * r.bar), 7, 4);
-      ctx.fillStyle = r.tone;
-      ctx.fill();
-    }
+    const barY = y + Math.min(52, Math.round(rowH * 0.55));
+    roundRect(ctx, 104, barY, 860, 7, 4);
+    ctx.fillStyle = "rgba(42, 74, 51, 0.08)";
+    ctx.fill();
+    roundRect(ctx, 104, barY, Math.max(24, 860 * r.bar), 7, 4);
+    ctx.fillStyle = r.tone;
+    ctx.fill();
 
     y += rowH;
   });
