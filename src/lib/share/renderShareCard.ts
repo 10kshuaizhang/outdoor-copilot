@@ -33,11 +33,25 @@ export type ShareCardInput = {
   style?: ShareCardStyle;
 };
 
+/** Shared Moss & Dawn chrome — same across all three styles. */
+const PANEL_X = 48;
+const PANEL_Y = 300;
+const PANEL_W = 984;
+const PANEL_H = 1080;
+const INSET_X = 96;
+const SCORE_SIZE = 152;
+const SCORE_BASELINE = 210;
+const STATS_GAP = 78;
+/** Mid content lives between these Ys; only this slot changes by style. */
+const CONTENT_TOP = PANEL_Y + SCORE_BASELINE + STATS_GAP + 92;
+const FOOTER_Y = 1188;
+const SLOGAN = "Know the trail. Know yourself. Go smarter.";
+
 function drawHairline(ctx: CanvasRenderingContext2D, y: number) {
   ctx.strokeStyle = "rgba(42, 74, 51, 0.12)";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(96, y);
+  ctx.moveTo(INSET_X, y);
   ctx.lineTo(984, y);
   ctx.stroke();
 }
@@ -101,7 +115,6 @@ function drawElevation(
   ctx.lineWidth = 4;
   ctx.stroke();
 
-  // Label lives inside the chart so it never collides with section titles.
   if (hardestBand) {
     const label = "最虐段";
     ctx.font = `600 18px ${serifSc}`;
@@ -124,26 +137,30 @@ function drawElevation(
   ctx.restore();
 }
 
-function drawScoreBlock(
+function drawSharedChrome(
   ctx: CanvasRenderingContext2D,
-  panelY: number,
+  analysis: RouteAnalysis,
   personal: number,
   band: string,
-  opts: { scoreSize: number; scoreBaseline: number },
-): number {
+) {
   const { display, serifSc, sans } = SHARE_FONTS;
+
+  roundRect(ctx, PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 28);
+  ctx.fillStyle = "#f7f3ea";
+  ctx.fill();
+
   ctx.fillStyle = "#3f6b4a";
   ctx.font = `600 28px ${serifSc}`;
-  ctx.fillText("对你的吃力程度", 96, panelY + 58);
+  ctx.fillText("对你的吃力程度", INSET_X, PANEL_Y + 58);
 
-  const scoreBaseline = panelY + opts.scoreBaseline;
+  const scoreBaseline = PANEL_Y + SCORE_BASELINE;
   ctx.fillStyle = "#1c1a17";
-  ctx.font = `700 ${opts.scoreSize}px ${display}`;
+  ctx.font = `700 ${SCORE_SIZE}px ${display}`;
   const scoreText = String(personal);
-  ctx.fillText(scoreText, 96, scoreBaseline);
+  ctx.fillText(scoreText, INSET_X, scoreBaseline);
   const scoreWidth = ctx.measureText(scoreText).width;
 
-  const metaX = 96 + Math.max(scoreWidth + 24, opts.scoreSize * 1.2);
+  const metaX = INSET_X + Math.max(scoreWidth + 24, SCORE_SIZE * 1.2);
   ctx.font = `600 32px ${sans}`;
   ctx.fillStyle = "#6b6560";
   ctx.fillText("/ 100", metaX, scoreBaseline - 84);
@@ -152,15 +169,7 @@ function drawScoreBlock(
   ctx.font = `700 48px ${serifSc}`;
   ctx.fillText(band, metaX, scoreBaseline - 8);
 
-  return scoreBaseline;
-}
-
-function drawStats(
-  ctx: CanvasRenderingContext2D,
-  statsY: number,
-  analysis: RouteAnalysis,
-) {
-  const { display, sans } = SHARE_FONTS;
+  const statsY = scoreBaseline + STATS_GAP;
   const stats = [
     ["距离", `${analysis.route.distanceKm.toFixed(1)} km`],
     ["爬升", `+${analysis.route.elevationGainM} m`],
@@ -170,7 +179,7 @@ function drawStats(
     ],
   ] as const;
   stats.forEach(([label, value], i) => {
-    const sx = 96 + i * 300;
+    const sx = INSET_X + i * 300;
     ctx.fillStyle = "#7a746c";
     ctx.font = `500 22px ${sans}`;
     ctx.fillText(label, sx, statsY);
@@ -180,108 +189,86 @@ function drawStats(
   });
 }
 
-function drawFooter(
-  ctx: CanvasRenderingContext2D,
-  y: number,
-  riskText: string,
-) {
+/** Fixed footer: hairline + risk (copy may vary) + slogan at same Y. */
+function drawSharedFooter(ctx: CanvasRenderingContext2D, riskText: string) {
   const { serifSc, sans } = SHARE_FONTS;
-  drawHairline(ctx, y);
+  drawHairline(ctx, FOOTER_Y);
+
   ctx.fillStyle = "#1c1a17";
   ctx.font = `500 24px ${serifSc}`;
   const lines = wrapText(ctx, riskText, 880, 2);
-  lines.forEach((line, i) => ctx.fillText(line, 96, y + 48 + i * 38));
+  lines.forEach((line, i) => {
+    ctx.fillText(line, INSET_X, FOOTER_Y + 48 + i * 38);
+  });
+
+  // Slogan always at the same baseline regardless of risk line count.
   ctx.fillStyle = "#8a847c";
   ctx.font = `500 20px ${sans}`;
-  ctx.fillText(
-    "Know the trail. Know yourself. Go smarter.",
-    96,
-    y + 48 + lines.length * 38 + 36,
-  );
+  ctx.fillText(SLOGAN, INSET_X, FOOTER_Y + 160);
 }
 
 function kmRange(p: RhythmPhase): string {
   return `${p.startKm.toFixed(1)} – ${p.endKm.toFixed(1)} km`;
 }
 
-function renderAiry(
+function drawSectionTitle(
   ctx: CanvasRenderingContext2D,
-  analysis: RouteAnalysis,
-  personal: number,
-  band: string,
-  risk: string,
+  title: string,
+  hint?: string,
 ) {
-  const { serifSc } = SHARE_FONTS;
-  const panelY = 320;
-  roundRect(ctx, 48, panelY, 984, 1020, 28);
-  ctx.fillStyle = "#f7f3ea";
-  ctx.fill();
-
-  // Slightly airier score + stats rhythm (less packed than before).
-  const scoreBaseline = drawScoreBlock(ctx, panelY, personal, band, {
-    scoreSize: 160,
-    scoreBaseline: 236,
-  });
-  drawStats(ctx, scoreBaseline + 88, analysis);
-
-  const elevHeaderY = scoreBaseline + 230;
+  const { serifSc, sans } = SHARE_FONTS;
+  drawHairline(ctx, CONTENT_TOP);
+  const titleY = CONTENT_TOP + 42;
   ctx.fillStyle = "#3f6b4a";
-  ctx.font = `600 28px ${serifSc}`;
-  ctx.fillText("海拔剖面", 96, elevHeaderY);
+  ctx.font = `600 26px ${serifSc}`;
+  ctx.fillText(title, INSET_X, titleY);
+  if (hint) {
+    ctx.fillStyle = "#6b6560";
+    ctx.font = `500 20px ${sans}`;
+    const tw = ctx.measureText(title).width;
+    ctx.fillText(hint, INSET_X + tw + 20, titleY);
+  }
+  return titleY + 36;
+}
+
+function renderAiryBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) {
+  const { serifSc } = SHARE_FONTS;
+  const bodyTop = drawSectionTitle(ctx, "海拔剖面");
 
   const segments = ensureSegmentEffort(analysis.segments);
   const hardest = findHardestStretch(segments);
-  const elevChartY = elevHeaderY + 48;
+  // Fill the mid slot without crowding the fixed footer.
+  const chartH = Math.min(268, FOOTER_Y - bodyTop - 40);
   drawElevation(
     ctx,
     analysis.elevationProfile,
-    96,
-    elevChartY,
+    INSET_X,
+    bodyTop + 8,
     888,
-    248,
+    chartH,
     hardest,
   );
-
-  drawFooter(ctx, elevChartY + 292, risk);
 }
 
-function renderBalanced(
+function renderBalancedBody(
   ctx: CanvasRenderingContext2D,
   analysis: RouteAnalysis,
-  personal: number,
-  band: string,
-  risk: string,
 ) {
   const { serifSc, sans } = SHARE_FONTS;
-  const panelY = 300;
-  roundRect(ctx, 48, panelY, 984, 1080, 28);
-  ctx.fillStyle = "#f7f3ea";
-  ctx.fill();
-
-  const scoreBaseline = drawScoreBlock(ctx, panelY, personal, band, {
-    scoreSize: 148,
-    scoreBaseline: 205,
-  });
-  drawStats(ctx, scoreBaseline + 72, analysis);
-
-  let y = scoreBaseline + 158;
-  drawHairline(ctx, y);
-  y += 42;
-  ctx.fillStyle = "#3f6b4a";
-  ctx.font = `600 26px ${serifSc}`;
-  ctx.fillText("全程难度节奏", 96, y);
-  ctx.fillStyle = "#6b6560";
-  ctx.font = `500 20px ${sans}`;
-  ctx.fillText("哪里开始虐 · 哪里可以松", 280, y);
+  const bodyTop = drawSectionTitle(
+    ctx,
+    "全程难度节奏",
+    "哪里开始虐 · 哪里可以松",
+  );
 
   const phases = buildShareRhythm(analysis, "balanced");
-  const cardTop = y + 40;
+  const cardTop = bodyTop + 12;
   const cardW = 292;
-  const cardH = 236;
+  const cardH = Math.min(236, FOOTER_Y - cardTop - 36);
   const gap = 18;
 
   phases.forEach((p, i) => {
-    const x = 96 + i * (cardW + gap);
+    const x = INSET_X + i * (cardW + gap);
     ctx.save();
     roundRect(ctx, x, cardTop, cardW, cardH, 16);
     ctx.clip();
@@ -309,13 +296,14 @@ function renderBalanced(
       ctx.fillText(line, x + 18, cardTop + 88 + li * 28);
     });
 
+    const textShift = kmLines.length > 1 ? 20 : 0;
     ctx.fillStyle = "#6b6560";
     ctx.font = `500 18px ${serifSc}`;
-    ctx.fillText(p.line1, x + 18, cardTop + 130 + (kmLines.length > 1 ? 20 : 0));
+    ctx.fillText(p.line1, x + 18, cardTop + 130 + textShift);
     const line2 = wrapText(ctx, p.line2, cardW - 36, 1)[0] ?? p.line2;
-    ctx.fillText(line2, x + 18, cardTop + 158 + (kmLines.length > 1 ? 20 : 0));
+    ctx.fillText(line2, x + 18, cardTop + 158 + textShift);
 
-    if (p.peak) {
+    if (p.peak && cardH >= 210) {
       roundRect(ctx, x + 18, cardTop + 182, 100, 28, 8);
       ctx.fillStyle = "rgba(139, 105, 20, 0.15)";
       ctx.fill();
@@ -324,82 +312,63 @@ function renderBalanced(
       ctx.fillText("今天最虐", x + 28, cardTop + 202);
     }
   });
-
-  drawFooter(ctx, cardTop + cardH + 64, risk);
 }
 
-function renderRich(
-  ctx: CanvasRenderingContext2D,
-  analysis: RouteAnalysis,
-  personal: number,
-  band: string,
-  risk: string,
-) {
+function renderRichBody(ctx: CanvasRenderingContext2D, analysis: RouteAnalysis) {
   const { serifSc, sans } = SHARE_FONTS;
-  const panelY = 300;
-  roundRect(ctx, 48, panelY, 984, 1080, 28);
-  ctx.fillStyle = "#f7f3ea";
-  ctx.fill();
-
-  const scoreBaseline = drawScoreBlock(ctx, panelY, personal, band, {
-    scoreSize: 140,
-    scoreBaseline: 195,
-  });
-  drawStats(ctx, scoreBaseline + 68, analysis);
-
-  let y = scoreBaseline + 150;
-  drawHairline(ctx, y);
-  y += 42;
-  ctx.fillStyle = "#3f6b4a";
-  ctx.font = `600 26px ${serifSc}`;
-  ctx.fillText("全程难度节奏", 96, y);
-  ctx.fillStyle = "#6b6560";
-  ctx.font = `500 20px ${sans}`;
-  ctx.fillText("公里段 · 海拔变化 · 体感", 280, y);
+  const bodyTop = drawSectionTitle(
+    ctx,
+    "全程难度节奏",
+    "公里段 · 海拔变化 · 体感",
+  );
 
   const phases = buildShareRhythm(analysis, "rich");
-  y += 40;
-  phases.forEach((r, i) => {
-    const rowY = y + i * 112;
+  const avail = FOOTER_Y - bodyTop - 24;
+  const rowH = Math.min(112, Math.floor(avail / Math.max(1, phases.length)));
+  let y = bodyTop + 28;
+
+  phases.forEach((r) => {
     if (r.peak) {
-      roundRect(ctx, 88, rowY - 34, 904, 96, 14);
+      roundRect(ctx, 88, y - 34, 904, Math.min(96, rowH - 12), 14);
       ctx.fillStyle = "rgba(139, 105, 20, 0.09)";
       ctx.fill();
     }
     ctx.fillStyle = "#1c1a17";
     ctx.font = `600 26px ${sans}`;
-    ctx.fillText(kmRange(r), 104, rowY);
+    ctx.fillText(kmRange(r), 104, y);
 
     ctx.font = `600 22px ${serifSc}`;
     const fw = ctx.measureText(r.feel).width;
     const chipX = 960 - fw - 36;
-    roundRect(ctx, chipX - 12, rowY - 26, fw + 24, 34, 10);
+    roundRect(ctx, chipX - 12, y - 26, fw + 24, 34, 10);
     ctx.fillStyle = r.peak
       ? "rgba(139, 105, 20, 0.15)"
       : "rgba(42, 74, 51, 0.09)";
     ctx.fill();
     ctx.fillStyle = r.tone;
-    ctx.fillText(r.feel, chipX, rowY);
+    ctx.fillText(r.feel, chipX, y);
 
     ctx.fillStyle = "#6b6560";
     ctx.font = `500 20px ${serifSc}`;
     const detail = `${r.line1} · ${r.line2}`;
-    ctx.fillText(wrapText(ctx, detail, 760, 1)[0] ?? detail, 104, rowY + 34);
+    ctx.fillText(wrapText(ctx, detail, 760, 1)[0] ?? detail, 104, y + 34);
 
-    roundRect(ctx, 104, rowY + 48, 860, 7, 4);
-    ctx.fillStyle = "rgba(42, 74, 51, 0.08)";
-    ctx.fill();
-    roundRect(ctx, 104, rowY + 48, Math.max(24, 860 * r.bar), 7, 4);
-    ctx.fillStyle = r.tone;
-    ctx.fill();
+    if (rowH >= 90) {
+      roundRect(ctx, 104, y + 48, 860, 7, 4);
+      ctx.fillStyle = "rgba(42, 74, 51, 0.08)";
+      ctx.fill();
+      roundRect(ctx, 104, y + 48, Math.max(24, 860 * r.bar), 7, 4);
+      ctx.fillStyle = r.tone;
+      ctx.fill();
+    }
+
+    y += rowH;
   });
-
-  drawFooter(ctx, y + phases.length * 112 + 36, risk);
 }
 
 /**
  * Render a 3:4 PNG card sized for Xiaohongshu posts.
- * Styles: airy (default) | balanced | rich.
+ * Shared chrome (brand, score, stats, risk, slogan); style only swaps mid body.
  */
 export async function renderShareCardPng(
   input: ShareCardInput,
@@ -434,13 +403,17 @@ export async function renderShareCardPng(
     ctx.fillText(line, 72, 230 + i * 64);
   });
 
+  drawSharedChrome(ctx, analysis, personal, band);
+
   if (style === "balanced") {
-    renderBalanced(ctx, analysis, personal, band, risk);
+    renderBalancedBody(ctx, analysis);
   } else if (style === "rich") {
-    renderRich(ctx, analysis, personal, band, risk);
+    renderRichBody(ctx, analysis);
   } else {
-    renderAiry(ctx, analysis, personal, band, risk);
+    renderAiryBody(ctx, analysis);
   }
+
+  drawSharedFooter(ctx, risk);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
