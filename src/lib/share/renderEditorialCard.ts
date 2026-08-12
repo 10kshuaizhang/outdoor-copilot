@@ -45,10 +45,14 @@ const PANEL_H = 1072;
 const INSET_X = 96;
 const FOOTER_Y = 1188;
 const SLOGAN = DEFAULT_EDITORIAL_TAGLINE;
-/** Moss header — title must finish above the cream panel. */
-const MOSS_TITLE_Y = 196;
-const MOSS_TITLE_GAP = 58;
+/** Moss header — title sits below brand chrome, above cream panel. */
+const MOSS_TITLE_Y = 228;
+const MOSS_TITLE_GAP = 54;
 const MOSS_TITLE_MAX_LINES = 2;
+/** Hero number lives in a right-side chip — list keeps full left column. */
+const HERO_BOX_X = 708;
+const HERO_BOX_W = 276;
+const HERO_BOX_H = 112;
 
 export const EDITORIAL_PRESETS: Array<{
   id: string;
@@ -173,48 +177,79 @@ export async function renderEditorialCardPng(
     y += 48;
   }
 
-  if (input.lead?.trim()) {
-    ctx.fillStyle = "#1c1a17";
-    ctx.font = `500 28px ${serifSc}`;
-    const leadLines = wrapText(ctx, input.lead.trim(), 880, 3);
-    leadLines.forEach((line) => {
-      ctx.fillText(line, INSET_X, y);
-      y += 40;
-    });
-    y += 16;
-  }
-
   const items = (input.items ?? [])
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, 6);
 
-  const heroNum = input.heroNumber?.trim();
-  if (heroNum) {
-    const heroSize =
-      items.length >= 5 ? 108 : items.length >= 4 ? 120 : 132;
-    const heroBlockH = heroSize + 28;
-    const scoreBaseline = y + heroSize - 8;
+  const heroNum = input.heroNumber?.trim() ?? "";
+  const hasHero = heroNum.length > 0;
+  const contentStartY = y;
+
+  if (hasHero) {
+    roundRect(ctx, HERO_BOX_X, contentStartY, HERO_BOX_W, HERO_BOX_H, 16);
+    ctx.fillStyle = "rgba(42, 74, 51, 0.06)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(42, 74, 51, 0.12)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const heroSize = items.length >= 5 ? 76 : items.length >= 4 ? 84 : 92;
+    const boxCx = HERO_BOX_X + HERO_BOX_W / 2;
+    const numBaseline = contentStartY + heroSize + 14;
 
     ctx.fillStyle = "#1c1a17";
     ctx.font = `700 ${heroSize}px ${display}`;
-    ctx.fillText(heroNum, INSET_X, scoreBaseline);
-    const metaX =
-      INSET_X + Math.max(heroSize * 0.85, ctx.measureText(heroNum).width + 24);
+    const numW = ctx.measureText(heroNum).width;
+    ctx.fillText(heroNum, boxCx - numW / 2, numBaseline);
 
     if (input.heroUnit?.trim()) {
       ctx.fillStyle = "#6b6560";
-      ctx.font = `600 28px ${sans}`;
-      ctx.fillText(input.heroUnit.trim(), metaX, scoreBaseline - heroSize * 0.55);
-    }
-    if (input.heroLabel?.trim()) {
-      ctx.fillStyle = "#2a4a33";
-      ctx.font = `700 42px ${serifSc}`;
-      ctx.fillText(input.heroLabel.trim(), metaX, scoreBaseline - 6);
+      ctx.font = `600 22px ${sans}`;
+      const unit = input.heroUnit.trim();
+      const uw = ctx.measureText(unit).width;
+      ctx.fillText(unit, boxCx - uw / 2, contentStartY + 28);
     }
 
-    // Full hero block before checklist — avoids digit overlapping list rows.
-    y += heroBlockH + 20;
+    if (input.heroLabel?.trim()) {
+      ctx.fillStyle = "#2a4a33";
+      ctx.font = `700 26px ${serifSc}`;
+      const labelLines = wrapText(
+        ctx,
+        input.heroLabel.trim(),
+        HERO_BOX_W - 32,
+        2,
+      );
+      labelLines.forEach((line, i) => {
+        const lw = ctx.measureText(line).width;
+        ctx.fillText(line, boxCx - lw / 2, numBaseline + 28 + i * 32);
+      });
+    }
+  } else if (input.heroLabel?.trim()) {
+    ctx.fillStyle = "#3f6b4a";
+    ctx.font = `700 26px ${serifSc}`;
+    ctx.fillText(input.heroLabel.trim(), INSET_X, y);
+    y += 40;
+  }
+
+  const leadMaxW = hasHero ? HERO_BOX_X - INSET_X - 28 : 880;
+  let leadEndY = contentStartY;
+  if (input.lead?.trim()) {
+    ctx.fillStyle = "#1c1a17";
+    ctx.font = `500 28px ${serifSc}`;
+    const leadLines = wrapText(ctx, input.lead.trim(), leadMaxW, 3);
+    let leadY = contentStartY;
+    leadLines.forEach((line) => {
+      ctx.fillText(line, INSET_X, leadY);
+      leadY += 40;
+    });
+    leadEndY = leadY + 8;
+  }
+
+  if (hasHero) {
+    y = Math.max(leadEndY, contentStartY + HERO_BOX_H) + 20;
+  } else {
+    y = leadEndY > contentStartY ? leadEndY + 8 : y;
   }
 
   const listTop = y;
