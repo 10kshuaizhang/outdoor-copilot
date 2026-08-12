@@ -22,6 +22,27 @@ function textToItems(text: string): string[] {
     .slice(0, 6);
 }
 
+function FieldLabel({
+  children,
+  hint,
+}: {
+  children: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <span className="mb-1.5 block">
+      <span className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.08em] text-[var(--pine)]">
+        {children}
+      </span>
+      {hint ? (
+        <span className="mt-0.5 block text-xs leading-relaxed text-[var(--rock)]">
+          {hint}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export default function AdminXhsStudioPage() {
   const [bootstrapping, setBootstrapping] = useState(true);
   const [configured, setConfigured] = useState(false);
@@ -31,6 +52,7 @@ export default function AdminXhsStudioPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [activePreset, setActivePreset] = useState("rain-gear-4");
 
   const rain = EDITORIAL_PRESETS[0]!.input;
   const [title, setTitle] = useState(rain.title);
@@ -101,6 +123,7 @@ export default function AdminXhsStudioPage() {
     const preset = EDITORIAL_PRESETS.find((p) => p.id === id);
     if (!preset) return;
     const i = preset.input;
+    setActivePreset(id);
     setTitle(i.title);
     setEyebrow(i.eyebrow ?? "");
     setLead(i.lead ?? "");
@@ -182,7 +205,7 @@ export default function AdminXhsStudioPage() {
 
   return (
     <main className="app-atmosphere min-h-dvh text-[var(--ink)]">
-      <div className="mx-auto w-full max-w-lg px-5 py-8">
+      <div className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8">
         <div className="mb-8 flex items-center justify-between gap-4">
           <Link
             href="/admin"
@@ -201,43 +224,48 @@ export default function AdminXhsStudioPage() {
           ) : null}
         </div>
 
-        <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.16em] text-[var(--pine)]">
-          内部工具
-        </p>
-        <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]">
-          小红书封面制图
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">
-          非路线分析帖用。版式与路线分享图一致（1080×1440），不挂公开导航。
-        </p>
+        <header className="mb-8 max-w-2xl">
+          <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.16em] text-[var(--pine)]">
+            内部工具
+          </p>
+          <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] lg:text-4xl">
+            小红书封面制图
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">
+            非路线分析帖用。版式与路线分享图一致（1080×1440 Moss & Dawn），不挂公开导航。
+          </p>
+        </header>
 
         {!configured ? (
-          <p className="mt-8 border border-amber-800/30 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <p className="mb-6 max-w-xl border border-amber-800/30 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
             未配置 <code className="font-mono">ADMIN_PASSWORD</code>
             。与示例管理共用同一套登录。
           </p>
         ) : null}
 
         {error ? (
-          <p className="mt-4 text-sm text-red-800" role="alert">
+          <p className="mb-4 text-sm text-red-800" role="alert">
             {error}
           </p>
         ) : null}
         {status ? (
-          <p className="mt-4 text-sm text-[var(--pine)]" role="status">
+          <p className="mb-4 text-sm text-[var(--pine)]" role="status">
             {status}
           </p>
         ) : null}
 
         {configured && !authed ? (
-          <form onSubmit={(e) => void onLogin(e)} className="mt-8 space-y-4">
+          <form
+            onSubmit={(e) => void onLogin(e)}
+            className="panel mx-auto max-w-md space-y-4 px-5 py-6"
+          >
             <label className="block text-sm">
-              管理密码
+              <FieldLabel>管理密码</FieldLabel>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
+                className="field-input"
                 autoComplete="current-password"
                 required
               />
@@ -249,160 +277,260 @@ export default function AdminXhsStudioPage() {
         ) : null}
 
         {authed ? (
-          <div className="mt-8 space-y-5">
-            <label className="block text-sm">
-              预设
-              <select
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-                defaultValue="rain-gear-4"
-                onChange={(e) => applyPreset(e.target.value)}
-              >
-                {EDITORIAL_PRESETS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              标题（换行分段）
-              <textarea
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                rows={3}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-              />
-            </label>
-
-            <label className="block text-sm">
-              栏目标题
-              <input
-                value={eyebrow}
-                onChange={(e) => setEyebrow(e.target.value)}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-              />
-            </label>
-
-            <label className="block text-sm">
-              导语
-              <textarea
-                value={lead}
-                onChange={(e) => setLead(e.target.value)}
-                rows={3}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-              />
-            </label>
-
-            <div className="grid grid-cols-3 gap-3">
-              <label className="block text-sm">
-                大数字
-                <input
-                  value={heroNumber}
-                  onChange={(e) => setHeroNumber(e.target.value)}
-                  className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-                  placeholder="可空"
-                />
-              </label>
-              <label className="block text-sm">
-                单位
-                <input
-                  value={heroUnit}
-                  onChange={(e) => setHeroUnit(e.target.value)}
-                  className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-                  placeholder="/ 样"
-                />
-              </label>
-              <label className="block text-sm">
-                数字旁标签
-                <input
-                  value={heroLabel}
-                  onChange={(e) => setHeroLabel(e.target.value)}
-                  className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-                />
-              </label>
-            </div>
-
-            <label className="block text-sm">
-              清单（每行一条，最多 6）
-              <textarea
-                value={itemsText}
-                onChange={(e) => setItemsText(e.target.value)}
-                rows={5}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-              />
-            </label>
-
-            <label className="block text-sm">
-              小节标题
-              <input
-                value={sectionTitle}
-                onChange={(e) => setSectionTitle(e.target.value)}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-              />
-            </label>
-
-            <label className="block text-sm">
-              小节正文
-              <textarea
-                value={sectionBody}
-                onChange={(e) => setSectionBody(e.target.value)}
-                rows={2}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-              />
-            </label>
-
-            <label className="block text-sm">
-              底部中文金句
-              <textarea
-                value={footerNote}
-                onChange={(e) => setFooterNote(e.target.value)}
-                rows={2}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-              />
-            </label>
-
-            <label className="block text-sm">
-              英文 slogan
-              <input
-                value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-                className="mt-1 w-full border border-black/15 bg-white px-3 py-2"
-              />
-            </label>
-
-            <div className="flex flex-col gap-3 pt-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void generate()}
-                className="btn-primary w-full py-3 disabled:opacity-60"
-              >
-                {busy ? "生成中…" : "生成预览"}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void onDownload()}
-                className="btn-ghost w-full py-3 disabled:opacity-60"
-              >
-                下载 PNG
-              </button>
-            </div>
-
-            {previewUrl ? (
-              <div className="pt-4">
-                <p className="mb-2 text-xs tracking-[0.12em] text-[var(--rock)]">
-                  预览
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+            <div className="space-y-5">
+              <section className="panel px-4 py-5">
+                <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+                  预设模板
                 </p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={previewUrl}
-                  alt="小红书封面预览"
-                  className="w-full rounded-lg border border-black/10"
-                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {EDITORIAL_PRESETS.map((p) => {
+                    const selected = activePreset === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => applyPreset(p.id)}
+                        className={`rounded-md border px-3 py-2 text-left text-sm transition ${
+                          selected
+                            ? "border-[var(--pine)] bg-[var(--pine)]/10 text-[var(--pine-deep)]"
+                            : "border-[var(--border-soft)] bg-white/60 text-[var(--ink)] hover:border-[var(--pine)]/40"
+                        }`}
+                      >
+                        {p.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="panel space-y-4 px-4 py-5">
+                <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+                  标题区
+                </p>
+                <label className="block text-sm">
+                  <FieldLabel hint="Enter 换行，对应海报顶栏多行标题">
+                    标题
+                  </FieldLabel>
+                  <textarea
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    rows={3}
+                    className="field-input min-h-24"
+                  />
+                </label>
+                <label className="block text-sm">
+                  <FieldLabel hint="奶油面板内绿色栏目标题">
+                    栏目标题
+                  </FieldLabel>
+                  <input
+                    value={eyebrow}
+                    onChange={(e) => setEyebrow(e.target.value)}
+                    className="field-input"
+                  />
+                </label>
+                <label className="block text-sm">
+                  <FieldLabel>导语</FieldLabel>
+                  <textarea
+                    value={lead}
+                    onChange={(e) => setLead(e.target.value)}
+                    rows={3}
+                    className="field-input min-h-24"
+                  />
+                </label>
+              </section>
+
+              <section className="panel space-y-4 px-4 py-5">
+                <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+                  数字英雄
+                </p>
+                <p className="text-xs text-[var(--rock)]">
+                  留空则隐藏大数字区块（适合纯清单帖）。
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  <label className="block text-sm">
+                    <FieldLabel>大数字</FieldLabel>
+                    <input
+                      value={heroNumber}
+                      onChange={(e) => setHeroNumber(e.target.value)}
+                      className="field-input"
+                      placeholder="4"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <FieldLabel>单位</FieldLabel>
+                    <input
+                      value={heroUnit}
+                      onChange={(e) => setHeroUnit(e.target.value)}
+                      className="field-input"
+                      placeholder="/ 样"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <FieldLabel>旁标签</FieldLabel>
+                    <input
+                      value={heroLabel}
+                      onChange={(e) => setHeroLabel(e.target.value)}
+                      className="field-input"
+                      placeholder="雨天加装"
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <section className="panel space-y-4 px-4 py-5">
+                <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+                  清单
+                </p>
+                <label className="block text-sm">
+                  <FieldLabel hint="每行一条，最多 6 条">
+                    编号列表
+                  </FieldLabel>
+                  <textarea
+                    value={itemsText}
+                    onChange={(e) => setItemsText(e.target.value)}
+                    rows={5}
+                    className="field-input min-h-32 font-mono text-sm"
+                  />
+                </label>
+              </section>
+
+              <section className="panel space-y-4 px-4 py-5">
+                <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+                  补充小节
+                </p>
+                <label className="block text-sm">
+                  <FieldLabel>小节标题</FieldLabel>
+                  <input
+                    value={sectionTitle}
+                    onChange={(e) => setSectionTitle(e.target.value)}
+                    className="field-input"
+                  />
+                </label>
+                <label className="block text-sm">
+                  <FieldLabel>小节正文</FieldLabel>
+                  <textarea
+                    value={sectionBody}
+                    onChange={(e) => setSectionBody(e.target.value)}
+                    rows={2}
+                    className="field-input min-h-20"
+                  />
+                </label>
+              </section>
+
+              <section className="panel space-y-4 px-4 py-5">
+                <p className="font-[family-name:var(--font-serif-sc)] text-sm tracking-[0.12em] text-[var(--pine)]">
+                  页脚
+                </p>
+                <label className="block text-sm">
+                  <FieldLabel hint="对应路线分享图「主风险」位置">
+                    底部中文金句
+                  </FieldLabel>
+                  <textarea
+                    value={footerNote}
+                    onChange={(e) => setFooterNote(e.target.value)}
+                    rows={2}
+                    className="field-input min-h-20"
+                  />
+                </label>
+                <label className="block text-sm">
+                  <FieldLabel hint="固定 baseline，与路线分享图 slogan 对齐">
+                    英文 slogan
+                  </FieldLabel>
+                  <input
+                    value={tagline}
+                    onChange={(e) => setTagline(e.target.value)}
+                    className="field-input"
+                  />
+                </label>
+              </section>
+
+              <div className="grid grid-cols-2 gap-3 lg:hidden">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void generate()}
+                  className="btn-accent col-span-2 min-h-12 py-3 disabled:opacity-60"
+                >
+                  {busy ? "生成中…" : "生成预览"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void onDownload()}
+                  className="btn-ghost min-h-11 py-2.5 disabled:opacity-60"
+                >
+                  下载 PNG
+                </button>
               </div>
-            ) : null}
+
+              {previewUrl ? (
+                <div className="panel p-4 lg:hidden">
+                  <p className="mb-3 text-xs tracking-[0.12em] text-[var(--rock)]">
+                    预览
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt="小红书封面预览"
+                    className="mx-auto w-full max-w-xs shadow-[var(--shadow-soft)]"
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            <aside className="lg:sticky lg:top-8">
+              <div className="panel overflow-hidden">
+                <div className="border-b border-[var(--border-soft)] bg-[var(--bg-moss)] px-4 py-3">
+                  <p className="font-[family-name:var(--font-serif-sc)] text-xs tracking-[0.14em] text-[var(--dawn)]">
+                    1080 × 1440 · 3:4
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--mist)]/90">
+                    Moss & Dawn · 与路线分享图同 chrome
+                  </p>
+                </div>
+
+                <div className="flex min-h-[420px] items-center justify-center bg-[var(--cream)] p-5">
+                  {previewUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={previewUrl}
+                      alt="小红书封面预览"
+                      className="w-full max-w-[280px] shadow-[var(--shadow-lift)]"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <div className="mx-auto mb-4 h-[320px] w-[240px] rounded-sm border border-dashed border-[var(--border-soft)] bg-white/50" />
+                      <p className="text-sm text-[var(--rock)]">
+                        填写内容后点「生成预览」
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--rock)]">
+                        页脚位置与路线分享图对齐
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 border-t border-[var(--border-soft)] p-4">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void generate()}
+                    className="btn-accent col-span-2 min-h-11 py-2.5 disabled:opacity-60"
+                  >
+                    {busy ? "生成中…" : "生成预览"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void onDownload()}
+                    className="btn-ghost col-span-2 min-h-11 py-2.5 disabled:opacity-60"
+                  >
+                    下载 PNG
+                  </button>
+                </div>
+              </div>
+            </aside>
           </div>
         ) : null}
       </div>

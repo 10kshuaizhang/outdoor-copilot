@@ -37,6 +37,15 @@ export type EditorialCardInput = {
 export const DEFAULT_EDITORIAL_TAGLINE =
   "Know the trail. Know yourself. Go smarter.";
 
+/** Match route share-card chrome. */
+const PANEL_X = 48;
+const PANEL_Y = 300;
+const PANEL_W = 984;
+const PANEL_H = 1080;
+const INSET_X = 96;
+const FOOTER_Y = 1188;
+const SLOGAN = DEFAULT_EDITORIAL_TAGLINE;
+
 export const EDITORIAL_PRESETS: Array<{
   id: string;
   name: string;
@@ -83,6 +92,37 @@ export const EDITORIAL_PRESETS: Array<{
   },
 ];
 
+function drawHairline(ctx: CanvasRenderingContext2D, y: number) {
+  ctx.strokeStyle = "rgba(42, 74, 51, 0.12)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(INSET_X, y);
+  ctx.lineTo(984, y);
+  ctx.stroke();
+}
+
+function drawEditorialFooter(
+  ctx: CanvasRenderingContext2D,
+  footerNote: string,
+  tagline: string,
+) {
+  const { serifSc, sans } = SHARE_FONTS;
+  drawHairline(ctx, FOOTER_Y);
+
+  if (footerNote) {
+    ctx.fillStyle = "#1c1a17";
+    ctx.font = `500 24px ${serifSc}`;
+    const lines = wrapText(ctx, footerNote, 880, 2);
+    lines.forEach((line, i) => {
+      ctx.fillText(line, INSET_X, FOOTER_Y + 48 + i * 38);
+    });
+  }
+
+  ctx.fillStyle = "#8a847c";
+  ctx.font = `500 20px ${sans}`;
+  ctx.fillText(tagline, INSET_X, FOOTER_Y + 160);
+}
+
 /**
  * Render a non-route Xiaohongshu cover in the same Moss & Dawn 3:4 format
  * as route share cards.
@@ -106,117 +146,104 @@ export async function renderEditorialCardPng(
   ctx.font = `700 56px ${serifSc}`;
   const titles = titleLinesFrom(ctx, input.title || "Outdoor Copilot", 936, 3);
   titles.forEach((line, i) => {
-    ctx.fillText(line, 72, 240 + i * 70);
+    ctx.fillText(line, 72, 230 + i * 64);
   });
 
-  const panelY = 420;
-  roundRect(ctx, 48, panelY, 984, 940, 28);
+  roundRect(ctx, PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 28);
   ctx.fillStyle = "#f7f3ea";
   ctx.fill();
 
-  let y = panelY + 64;
+  let y = PANEL_Y + 58;
   if (input.eyebrow?.trim()) {
     ctx.fillStyle = "#3f6b4a";
-    ctx.font = `600 30px ${serifSc}`;
-    ctx.fillText(input.eyebrow.trim(), 96, y);
-    y += 56;
+    ctx.font = `600 28px ${serifSc}`;
+    ctx.fillText(input.eyebrow.trim(), INSET_X, y);
+    y += 48;
   }
 
   if (input.lead?.trim()) {
     ctx.fillStyle = "#1c1a17";
-    ctx.font = `500 30px ${serifSc}`;
+    ctx.font = `500 28px ${serifSc}`;
     const leadLines = wrapText(ctx, input.lead.trim(), 880, 3);
     leadLines.forEach((line) => {
-      ctx.fillText(line, 96, y);
-      y += 44;
+      ctx.fillText(line, INSET_X, y);
+      y += 40;
     });
-    y += 20;
+    y += 16;
   }
 
   const heroNum = input.heroNumber?.trim();
   if (heroNum) {
-    const scoreBaseline = y + 120;
+    const scoreBaseline = y + 108;
     ctx.fillStyle = "#1c1a17";
-    ctx.font = `700 140px ${display}`;
-    ctx.fillText(heroNum, 96, scoreBaseline);
-    const metaX = 96 + Math.max(160, ctx.measureText(heroNum).width + 28);
+    ctx.font = `700 152px ${display}`;
+    ctx.fillText(heroNum, INSET_X, scoreBaseline);
+    const metaX = INSET_X + Math.max(160, ctx.measureText(heroNum).width + 28);
 
     if (input.heroUnit?.trim()) {
       ctx.fillStyle = "#6b6560";
-      ctx.font = `600 34px ${sans}`;
-      ctx.fillText(input.heroUnit.trim(), metaX, scoreBaseline - 78);
+      ctx.font = `600 32px ${sans}`;
+      ctx.fillText(input.heroUnit.trim(), metaX, scoreBaseline - 84);
     }
     if (input.heroLabel?.trim()) {
       ctx.fillStyle = "#2a4a33";
       ctx.font = `700 48px ${serifSc}`;
       ctx.fillText(input.heroLabel.trim(), metaX, scoreBaseline - 8);
     }
-    y = scoreBaseline + 50;
+    y = scoreBaseline + 44;
   }
 
   const items = (input.items ?? [])
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, 6);
+  const rowH = 64;
   items.forEach((label, i) => {
-    const rowY = y + i * 68;
-    roundRect(ctx, 96, rowY - 34, 48, 48, 12);
+    const rowY = y + i * rowH;
+    roundRect(ctx, INSET_X, rowY - 32, 44, 44, 12);
     ctx.fillStyle = "rgba(42, 74, 51, 0.1)";
     ctx.fill();
     ctx.fillStyle = "#2a4a33";
-    ctx.font = `700 28px ${display}`;
+    ctx.font = `700 26px ${display}`;
     const num = String(i + 1);
     const nw = ctx.measureText(num).width;
-    ctx.fillText(num, 96 + (48 - nw) / 2, rowY);
+    ctx.fillText(num, INSET_X + (44 - nw) / 2, rowY);
     ctx.fillStyle = "#1c1a17";
-    ctx.font = `600 30px ${serifSc}`;
-    const itemLines = wrapText(ctx, label, 780, 1);
-    ctx.fillText(itemLines[0] ?? label, 164, rowY);
+    ctx.font = `600 28px ${serifSc}`;
+    const itemLines = wrapText(ctx, label, 792, 1);
+    ctx.fillText(itemLines[0] ?? label, INSET_X + 60, rowY);
   });
-  if (items.length) y += items.length * 68 + 12;
+  if (items.length) y += items.length * rowH + 8;
 
   const hasSection =
     Boolean(input.sectionTitle?.trim()) || Boolean(input.sectionBody?.trim());
-  if (hasSection) {
-    ctx.strokeStyle = "rgba(42, 74, 51, 0.15)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(96, y);
-    ctx.lineTo(984, y);
-    ctx.stroke();
-    y += 48;
+  const sectionTop = Math.min(y + 12, FOOTER_Y - 140);
+  if (hasSection && sectionTop < FOOTER_Y - 80) {
+    drawHairline(ctx, sectionTop);
+    y = sectionTop + 40;
 
     if (input.sectionTitle?.trim()) {
       ctx.fillStyle = "#3f6b4a";
-      ctx.font = `700 28px ${serifSc}`;
-      ctx.fillText(input.sectionTitle.trim(), 96, y);
-      y += 44;
+      ctx.font = `700 26px ${serifSc}`;
+      ctx.fillText(input.sectionTitle.trim(), INSET_X, y);
+      y += 40;
     }
     if (input.sectionBody?.trim()) {
       ctx.fillStyle = "#1c1a17";
-      ctx.font = `500 28px ${serifSc}`;
-      const bodyLines = wrapText(ctx, input.sectionBody.trim(), 880, 3);
+      ctx.font = `500 26px ${serifSc}`;
+      const bodyLines = wrapText(ctx, input.sectionBody.trim(), 880, 2);
       bodyLines.forEach((line) => {
-        ctx.fillText(line, 96, y);
-        y += 40;
+        if (y < FOOTER_Y - 48) {
+          ctx.fillText(line, INSET_X, y);
+          y += 36;
+        }
       });
     }
   }
 
-  const tagline = (input.tagline ?? DEFAULT_EDITORIAL_TAGLINE).trim();
+  const tagline = (input.tagline ?? SLOGAN).trim() || SLOGAN;
   const footerNote = input.footerNote?.trim() ?? "";
-  const footerY = panelY + 880;
-  ctx.fillStyle = "#6b6560";
-  ctx.font = `500 24px ${sans}`;
-  ctx.fillText(tagline, 96, footerY);
-  if (footerNote) {
-    ctx.fillStyle = "#2a4a33";
-    ctx.font = `600 26px ${serifSc}`;
-    const noteLines = wrapText(ctx, footerNote, 880, 2);
-    noteLines.forEach((line, i) => {
-      ctx.fillText(line, 96, footerY + 40 + i * 36);
-    });
-  }
+  drawEditorialFooter(ctx, footerNote, tagline);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
