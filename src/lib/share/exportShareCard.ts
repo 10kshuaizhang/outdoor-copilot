@@ -1,10 +1,20 @@
 import type { RouteAnalysis } from "@/lib/engine";
+import {
+  DEFAULT_SHARE_CARD_STYLE,
+  type ShareCardStyle,
+} from "./buildShareRhythm";
 import { buildShareCaption } from "./buildShareCaption";
 import { renderShareCardPng } from "./renderShareCard";
 
 export type ShareCardResult =
   | { ok: true; method: "share" | "download"; caption: string; blob: Blob }
   | { ok: false; message: string; caption?: string; blob?: Blob };
+
+export type ShareCardExportInput = {
+  analysis: RouteAnalysis;
+  title?: string;
+  style?: ShareCardStyle;
+};
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -18,11 +28,15 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export async function generateShareCard(input: {
-  analysis: RouteAnalysis;
-  title?: string;
-}): Promise<{ blob: Blob; caption: string; file: File }> {
-  const blob = await renderShareCardPng(input);
+export async function generateShareCard(
+  input: ShareCardExportInput,
+): Promise<{ blob: Blob; caption: string; file: File }> {
+  const style = input.style ?? DEFAULT_SHARE_CARD_STYLE;
+  const blob = await renderShareCardPng({
+    analysis: input.analysis,
+    title: input.title,
+    style,
+  });
   const caption = buildShareCaption(input.analysis, input.title);
   const safe =
     (input.title ?? "route")
@@ -36,10 +50,9 @@ export async function generateShareCard(input: {
 }
 
 /** Prefer native share with image file; otherwise download PNG. */
-export async function shareOrDownloadCard(input: {
-  analysis: RouteAnalysis;
-  title?: string;
-}): Promise<ShareCardResult> {
+export async function shareOrDownloadCard(
+  input: ShareCardExportInput,
+): Promise<ShareCardResult> {
   try {
     const { blob, caption, file } = await generateShareCard(input);
 
@@ -75,10 +88,9 @@ export async function shareOrDownloadCard(input: {
   }
 }
 
-export async function downloadShareCard(input: {
-  analysis: RouteAnalysis;
-  title?: string;
-}): Promise<ShareCardResult> {
+export async function downloadShareCard(
+  input: ShareCardExportInput,
+): Promise<ShareCardResult> {
   try {
     const { blob, caption, file } = await generateShareCard(input);
     downloadBlob(blob, file.name);
@@ -89,3 +101,8 @@ export async function downloadShareCard(input: {
 }
 
 export { buildShareCaption };
+export {
+  DEFAULT_SHARE_CARD_STYLE,
+  SHARE_CARD_STYLE_OPTIONS,
+  type ShareCardStyle,
+} from "./buildShareRhythm";

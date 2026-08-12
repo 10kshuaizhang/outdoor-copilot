@@ -12,9 +12,12 @@ import { trackEvent } from "@/lib/analytics/events";
 import { scoreBand, type RouteAnalysis } from "@/lib/engine";
 import { formatShanghaiClock, shanghaiWallIso } from "@/lib/time/china";
 import {
+  DEFAULT_SHARE_CARD_STYLE,
+  SHARE_CARD_STYLE_OPTIONS,
   downloadShareCard,
   generateShareCard,
   shareOrDownloadCard,
+  type ShareCardStyle,
 } from "@/lib/share/exportShareCard";
 import { copyToClipboard } from "@/lib/share/exportSummary";
 
@@ -63,6 +66,9 @@ export function BaseReport({
   const [cardBusy, setCardBusy] = useState(false);
   const [cardPreviewUrl, setCardPreviewUrl] = useState<string | null>(null);
   const [cardCaption, setCardCaption] = useState<string | null>(null);
+  const [shareStyle, setShareStyle] = useState<ShareCardStyle>(
+    DEFAULT_SHARE_CARD_STYLE,
+  );
 
   const summaryText = [
     `Outdoor Copilot · ${title ?? "路线分析"}`,
@@ -80,10 +86,11 @@ export function BaseReport({
     .filter(Boolean)
     .join("\n");
 
-  const ensureCard = async () => {
+  const ensureCard = async (style: ShareCardStyle = shareStyle) => {
     const { blob, caption } = await generateShareCard({
       analysis,
       title,
+      style,
     });
     setCardCaption(caption);
     setCardPreviewUrl((prev) => {
@@ -93,15 +100,34 @@ export function BaseReport({
     return { caption };
   };
 
+  const selectShareStyle = (style: ShareCardStyle) => {
+    setShareStyle(style);
+    if (!cardPreviewUrl) return;
+    setCardBusy(true);
+    setShareStatus(null);
+    void ensureCard(style)
+      .catch(() => {
+        setShareStatus("切换样式后预览生成失败，请再点生成。");
+      })
+      .finally(() => setCardBusy(false));
+  };
+
   const makeShareCard = async () => {
     setShareStatus(null);
     setShowManualCopy(false);
     setCardBusy(true);
     try {
-      await ensureCard();
-      const result = await shareOrDownloadCard({ analysis, title });
+      await ensureCard(shareStyle);
+      const result = await shareOrDownloadCard({
+        analysis,
+        title,
+        style: shareStyle,
+      });
       if (result.ok) {
-        trackEvent("share_image", { method: result.method });
+        trackEvent("share_image", {
+          method: result.method,
+          style: shareStyle,
+        });
         setCardCaption(result.caption);
         setShareStatus(
           result.method === "share"
@@ -121,10 +147,14 @@ export function BaseReport({
     setCardBusy(true);
     setShareStatus(null);
     try {
-      await ensureCard();
-      const result = await downloadShareCard({ analysis, title });
+      await ensureCard(shareStyle);
+      const result = await downloadShareCard({
+        analysis,
+        title,
+        style: shareStyle,
+      });
       if (result.ok) {
-        trackEvent("share_image", { method: "download" });
+        trackEvent("share_image", { method: "download", style: shareStyle });
         setShareStatus("图片已保存。发小红书时配上下方文案。");
       } else {
         setShareStatus(result.message);
@@ -160,8 +190,37 @@ export function BaseReport({
         分享到小红书
       </p>
       <p className="text-sm text-[var(--rock)]">
-        生成 3:4 海报，再复制配文发笔记。
+        生成 3:4 海报，再复制配文发笔记。默认美感版。
       </p>
+      <div
+        className="grid grid-cols-3 gap-2"
+        role="radiogroup"
+        aria-label="分享图样式"
+      >
+        {SHARE_CARD_STYLE_OPTIONS.map((opt) => {
+          const selected = shareStyle === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              disabled={cardBusy}
+              onClick={() => selectShareStyle(opt.id)}
+              className={`min-h-14 rounded-md border px-2 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                selected
+                  ? "border-[var(--pine)] bg-[var(--pine)]/10 text-[var(--pine-deep)]"
+                  : "border-[var(--border-soft)] bg-transparent text-[var(--ink)]"
+              }`}
+            >
+              <span className="block text-sm font-semibold">{opt.label}</span>
+              <span className="mt-0.5 block text-[11px] leading-snug text-[var(--rock)]">
+                {opt.hint}
+              </span>
+            </button>
+          );
+        })}
+      </div>
       <button
         type="button"
         disabled={cardBusy}
