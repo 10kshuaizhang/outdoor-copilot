@@ -39,12 +39,16 @@ export const DEFAULT_EDITORIAL_TAGLINE =
 
 /** Match route share-card chrome. */
 const PANEL_X = 48;
-const PANEL_Y = 300;
+const PANEL_Y = 308;
 const PANEL_W = 984;
-const PANEL_H = 1080;
+const PANEL_H = 1072;
 const INSET_X = 96;
 const FOOTER_Y = 1188;
 const SLOGAN = DEFAULT_EDITORIAL_TAGLINE;
+/** Moss header — title must finish above the cream panel. */
+const MOSS_TITLE_Y = 196;
+const MOSS_TITLE_GAP = 58;
+const MOSS_TITLE_MAX_LINES = 2;
 
 export const EDITORIAL_PRESETS: Array<{
   id: string;
@@ -143,10 +147,18 @@ export async function renderEditorialCardPng(
   drawBrandHeader(ctx);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = `700 56px ${serifSc}`;
-  const titles = titleLinesFrom(ctx, input.title || "Outdoor Copilot", 936, 3);
+  ctx.font = `700 52px ${serifSc}`;
+  const titles = titleLinesFrom(
+    ctx,
+    input.title || "Outdoor Copilot",
+    936,
+    MOSS_TITLE_MAX_LINES,
+  );
   titles.forEach((line, i) => {
-    ctx.fillText(line, 72, 230 + i * 64);
+    const lineY = MOSS_TITLE_Y + i * MOSS_TITLE_GAP;
+    if (lineY + 8 < PANEL_Y) {
+      ctx.fillText(line, 72, lineY);
+    }
   });
 
   roundRect(ctx, PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 28);
@@ -172,35 +184,49 @@ export async function renderEditorialCardPng(
     y += 16;
   }
 
-  const heroNum = input.heroNumber?.trim();
-  if (heroNum) {
-    const scoreBaseline = y + 108;
-    ctx.fillStyle = "#1c1a17";
-    ctx.font = `700 152px ${display}`;
-    ctx.fillText(heroNum, INSET_X, scoreBaseline);
-    const metaX = INSET_X + Math.max(160, ctx.measureText(heroNum).width + 28);
-
-    if (input.heroUnit?.trim()) {
-      ctx.fillStyle = "#6b6560";
-      ctx.font = `600 32px ${sans}`;
-      ctx.fillText(input.heroUnit.trim(), metaX, scoreBaseline - 84);
-    }
-    if (input.heroLabel?.trim()) {
-      ctx.fillStyle = "#2a4a33";
-      ctx.font = `700 48px ${serifSc}`;
-      ctx.fillText(input.heroLabel.trim(), metaX, scoreBaseline - 8);
-    }
-    y = scoreBaseline + 44;
-  }
-
   const items = (input.items ?? [])
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, 6);
-  const rowH = 64;
+
+  const heroNum = input.heroNumber?.trim();
+  if (heroNum) {
+    const heroSize =
+      items.length >= 5 ? 108 : items.length >= 4 ? 120 : 132;
+    const heroBlockH = heroSize + 28;
+    const scoreBaseline = y + heroSize - 8;
+
+    ctx.fillStyle = "#1c1a17";
+    ctx.font = `700 ${heroSize}px ${display}`;
+    ctx.fillText(heroNum, INSET_X, scoreBaseline);
+    const metaX =
+      INSET_X + Math.max(heroSize * 0.85, ctx.measureText(heroNum).width + 24);
+
+    if (input.heroUnit?.trim()) {
+      ctx.fillStyle = "#6b6560";
+      ctx.font = `600 28px ${sans}`;
+      ctx.fillText(input.heroUnit.trim(), metaX, scoreBaseline - heroSize * 0.55);
+    }
+    if (input.heroLabel?.trim()) {
+      ctx.fillStyle = "#2a4a33";
+      ctx.font = `700 42px ${serifSc}`;
+      ctx.fillText(input.heroLabel.trim(), metaX, scoreBaseline - 6);
+    }
+
+    // Full hero block before checklist — avoids digit overlapping list rows.
+    y += heroBlockH + 20;
+  }
+
+  const listTop = y;
+  const listBudget = FOOTER_Y - listTop - 120;
+  const rowH = Math.min(
+    64,
+    Math.max(52, Math.floor(listBudget / Math.max(1, items.length))),
+  );
+
   items.forEach((label, i) => {
-    const rowY = y + i * rowH;
-    roundRect(ctx, INSET_X, rowY - 32, 44, 44, 12);
+    const rowY = listTop + i * rowH;
+    roundRect(ctx, INSET_X, rowY - 30, 44, 44, 12);
     ctx.fillStyle = "rgba(42, 74, 51, 0.1)";
     ctx.fill();
     ctx.fillStyle = "#2a4a33";
@@ -209,11 +235,11 @@ export async function renderEditorialCardPng(
     const nw = ctx.measureText(num).width;
     ctx.fillText(num, INSET_X + (44 - nw) / 2, rowY);
     ctx.fillStyle = "#1c1a17";
-    ctx.font = `600 28px ${serifSc}`;
+    ctx.font = `600 ${rowH < 58 ? 24 : 28}px ${serifSc}`;
     const itemLines = wrapText(ctx, label, 792, 1);
     ctx.fillText(itemLines[0] ?? label, INSET_X + 60, rowY);
   });
-  if (items.length) y += items.length * rowH + 8;
+  if (items.length) y = listTop + items.length * rowH + 8;
 
   const hasSection =
     Boolean(input.sectionTitle?.trim()) || Boolean(input.sectionBody?.trim());
