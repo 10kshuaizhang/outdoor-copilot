@@ -54,7 +54,25 @@ describe("normalizeEditorialDraft", () => {
     expect(draft!.sectionTitle).toBe("夜爬铁律");
   });
 
-  it("rejects missing title or too few items", () => {
+  it("keeps short non-heading labels like 雨天加装 on the hero chip", () => {
+    const draft = normalizeEditorialDraft({
+      title: "降雨日\n多带4样",
+      eyebrow: "周末",
+      lead: "只多带四样。",
+      heroNumber: "4",
+      heroUnit: "/ 样",
+      heroLabel: "雨天加装",
+      items: ["包罩", "薄壳", "头灯", "备用袜"],
+      sectionTitle: "",
+      sectionBody: "",
+      footerNote: "少买。",
+      tagline: DEFAULT_EDITORIAL_TAGLINE,
+    });
+    expect(draft!.heroLabel).toBe("雨天加装");
+    expect(draft!.sectionTitle).toBeUndefined();
+  });
+
+  it("rejects empty title or short items", () => {
     expect(normalizeEditorialDraft({ title: "", items: ["a", "b"] })).toBeNull();
     expect(
       normalizeEditorialDraft({ title: "有标题", items: ["仅一条"] }),

@@ -66,12 +66,17 @@ export function normalizeEditorialDraft(raw: unknown): EditorialCardInput | null
   let sectionTitle = str(o.sectionTitle, 24);
   const sectionBody = str(o.sectionBody, 120);
 
-  // Long hero labels are list headings — move them out of the number chip.
-  if (heroLabel.length > 4 && !sectionTitle) {
+  // Long / heading-like labels belong above the list, not under the digit.
+  const headingLike =
+    /铁律|清单|提醒|法则|守则|步骤|指南|注意|要点$/.test(heroLabel);
+  if ((heroLabel.length > 5 || headingLike) && !sectionTitle) {
     sectionTitle = heroLabel.slice(0, 24);
     heroLabel = "";
-  } else if (heroLabel.length > 4) {
-    heroLabel = heroLabel.slice(0, 4);
+  } else if (heroLabel.length > 5) {
+    heroLabel = heroLabel.slice(0, 5);
+  }
+  if (heroLabel && sectionTitle && heroLabel === sectionTitle) {
+    heroLabel = "";
   }
 
   // Bare measure words like「句」become「/ 句」; drop junk units.
