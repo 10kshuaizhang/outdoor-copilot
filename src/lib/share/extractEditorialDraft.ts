@@ -22,11 +22,12 @@ const EXTRACT_SYSTEM = `你是 Outdoor Copilot 的小红书封面字段提取器
 5. title 用 \\n 分成最多 2 行，每行 ≤ 16 字，有海报标题感。
 6. eyebrow 格式类似「栏目 · 主题」，≤ 18 字。
 7. lead 1–2 句，≤ 72 字。
-8. heroNumber 取文中最醒目的单个数字（如「4」「3」）；没有则空字符串。
-9. heroUnit 如「/ 样」「/ 条」；heroLabel 如「雨天加装」「必带项」。
-10. sectionTitle / sectionBody 用于「补充/避坑」；没有相关内容则空字符串。
-11. footerNote 一句中文金句，≤ 48 字，像分享图底部「主风险」位置的收束句。
-12. tagline 固定为：${DEFAULT_EDITORIAL_TAGLINE}
+8. heroNumber 取文中最醒目的单个数字（如「4」「3」）；没有则空字符串。不要把清单序号当 heroNumber。
+9. heroUnit 必须带斜杠，如「/ 样」「/ 条」「/ 句」「/ 项」；禁止单独输出「句」「样」等单字。
+10. heroLabel 极短旁注（≤6 字），如「铁律」「雨天加装」。若文中有清单小标题（如「夜爬铁律」），放到 sectionTitle，不要放进 heroLabel。
+11. sectionTitle / sectionBody：清单小标题用 sectionTitle；避坑补充用 sectionBody。没有则空字符串。
+12. footerNote 一句中文金句，≤ 48 字，像分享图底部「主风险」位置的收束句。
+13. tagline 固定为：${DEFAULT_EDITORIAL_TAGLINE}
 
 JSON 键（全部必填字符串或数组）：
 title, eyebrow, lead, heroNumber, heroUnit, heroLabel, items, sectionTitle, sectionBody, footerNote, tagline`;
@@ -59,19 +60,49 @@ export function normalizeEditorialDraft(raw: unknown): EditorialCardInput | null
 
   if (items.length < 2) return null;
 
+  let heroNumber = str(o.heroNumber, 8).replace(/[^\d]/g, "").slice(0, 3);
+  let heroUnit = normalizeHeroUnit(str(o.heroUnit, 12));
+  let heroLabel = str(o.heroLabel, 12);
+  let sectionTitle = str(o.sectionTitle, 24);
+  const sectionBody = str(o.sectionBody, 120);
+
+  // Long hero labels are list headings — move them out of the number chip.
+  if (heroLabel.length > 4 && !sectionTitle) {
+    sectionTitle = heroLabel.slice(0, 24);
+    heroLabel = "";
+  } else if (heroLabel.length > 4) {
+    heroLabel = heroLabel.slice(0, 4);
+  }
+
+  // Bare measure words like「句」become「/ 句」; drop junk units.
+  if (!heroUnit && heroNumber) {
+    heroUnit = "/ 项";
+  }
+
   return {
     title,
     eyebrow: str(o.eyebrow, 24) || undefined,
     lead: str(o.lead, 80) || undefined,
-    heroNumber: str(o.heroNumber, 8),
-    heroUnit: str(o.heroUnit, 12),
-    heroLabel: str(o.heroLabel, 16),
+    heroNumber,
+    heroUnit,
+    heroLabel,
     items,
-    sectionTitle: str(o.sectionTitle, 24) || undefined,
-    sectionBody: str(o.sectionBody, 120) || undefined,
+    sectionTitle: sectionTitle || undefined,
+    sectionBody: sectionBody || undefined,
     footerNote: str(o.footerNote, 56) || undefined,
     tagline: str(o.tagline, 80) || DEFAULT_EDITORIAL_TAGLINE,
   };
+}
+
+/** Ensure units render as "/ 句" not a floating bare「句」。 */
+export function normalizeHeroUnit(raw: string): string {
+  const t = raw.trim();
+  if (!t) return "";
+  if (/^\/\s*\S+$/.test(t)) return t.replace(/^\/\s*/, "/ ").slice(0, 8);
+  // Single Chinese measure / short word
+  if (/^[\u4e00-\u9fff]{1,3}$/.test(t)) return `/ ${t}`;
+  if (/^[a-zA-Z]{1,6}$/.test(t)) return `/ ${t}`;
+  return t.slice(0, 8);
 }
 
 /** Rule-based fallback when LLM is unavailable. */
@@ -98,15 +129,16 @@ export function fallbackEditorialDraft(article: string): EditorialCardInput {
           .filter((l) => l.length >= 4 && l.length <= 28 && l !== title)
           .slice(0, 4);
 
-  const numMatch = article.match(/(\d+)\s*[样条个项]/);
+  const numMatch = article.match(/(\d+)\s*[样条个项句点]/);
   const heroNumber = numMatch?.[1] ?? "";
+  const unitChar = numMatch?.[0]?.replace(/^\d+\s*/, "") ?? "项";
 
   return {
     title,
     eyebrow: "户外决策 · 封面",
     lead: lines.find((l) => l.length > 12 && l.length <= 72) ?? lines[2] ?? "",
     heroNumber,
-    heroUnit: heroNumber ? "/ 项" : "",
+    heroUnit: heroNumber ? `/ ${unitChar || "项"}` : "",
     heroLabel: heroNumber ? "要点" : "",
     items: fallbackItems.length >= 2 ? fallbackItems : ["要点一", "要点二", "要点三"],
     sectionTitle: "",

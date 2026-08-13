@@ -50,9 +50,9 @@ const MOSS_TITLE_Y = 228;
 const MOSS_TITLE_GAP = 54;
 const MOSS_TITLE_MAX_LINES = 2;
 /** Hero number lives in a right-side chip — list keeps full left column. */
-const HERO_BOX_X = 708;
-const HERO_BOX_W = 276;
-const HERO_BOX_H = 112;
+const HERO_BOX_X = 720;
+const HERO_BOX_W = 252;
+const HERO_BOX_PAD = 16;
 
 export const EDITORIAL_PRESETS: Array<{
   id: string;
@@ -186,49 +186,64 @@ export async function renderEditorialCardPng(
   const hasHero = heroNum.length > 0;
   const contentStartY = y;
 
+  const heroUnit = (input.heroUnit ?? "").trim();
+  const heroLabel = (input.heroLabel ?? "").trim();
+
+  let heroBoxH = 0;
   if (hasHero) {
-    roundRect(ctx, HERO_BOX_X, contentStartY, HERO_BOX_W, HERO_BOX_H, 16);
+    // Compact chip: big number + unit on one row; optional short label under.
+    const heroSize = items.length >= 5 ? 72 : items.length >= 4 ? 80 : 88;
+    const hasLabel = Boolean(heroLabel);
+    heroBoxH = HERO_BOX_PAD + heroSize + (hasLabel ? 44 : 20) + HERO_BOX_PAD;
+
+    roundRect(ctx, HERO_BOX_X, contentStartY, HERO_BOX_W, heroBoxH, 16);
     ctx.fillStyle = "rgba(42, 74, 51, 0.06)";
     ctx.fill();
     ctx.strokeStyle = "rgba(42, 74, 51, 0.12)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    const heroSize = items.length >= 5 ? 76 : items.length >= 4 ? 84 : 92;
-    const boxCx = HERO_BOX_X + HERO_BOX_W / 2;
-    const numBaseline = contentStartY + heroSize + 14;
+    ctx.save();
+    roundRect(ctx, HERO_BOX_X, contentStartY, HERO_BOX_W, heroBoxH, 16);
+    ctx.clip();
 
+    const numBaseline = contentStartY + HERO_BOX_PAD + heroSize - 6;
     ctx.fillStyle = "#1c1a17";
     ctx.font = `700 ${heroSize}px ${display}`;
     const numW = ctx.measureText(heroNum).width;
-    ctx.fillText(heroNum, boxCx - numW / 2, numBaseline);
 
-    if (input.heroUnit?.trim()) {
+    if (heroUnit) {
+      ctx.font = `600 24px ${sans}`;
+      const unitW = ctx.measureText(heroUnit).width;
+      const rowW = numW + 10 + unitW;
+      const rowLeft = HERO_BOX_X + (HERO_BOX_W - rowW) / 2;
+      ctx.font = `700 ${heroSize}px ${display}`;
+      ctx.fillStyle = "#1c1a17";
+      ctx.fillText(heroNum, rowLeft, numBaseline);
       ctx.fillStyle = "#6b6560";
-      ctx.font = `600 22px ${sans}`;
-      const unit = input.heroUnit.trim();
-      const uw = ctx.measureText(unit).width;
-      ctx.fillText(unit, boxCx - uw / 2, contentStartY + 28);
+      ctx.font = `600 24px ${sans}`;
+      ctx.fillText(heroUnit, rowLeft + numW + 10, numBaseline - heroSize * 0.38);
+    } else {
+      ctx.fillText(heroNum, HERO_BOX_X + (HERO_BOX_W - numW) / 2, numBaseline);
     }
 
-    if (input.heroLabel?.trim()) {
+    if (heroLabel) {
       ctx.fillStyle = "#2a4a33";
-      ctx.font = `700 26px ${serifSc}`;
-      const labelLines = wrapText(
-        ctx,
-        input.heroLabel.trim(),
-        HERO_BOX_W - 32,
-        2,
+      ctx.font = `700 24px ${serifSc}`;
+      const labelLines = wrapText(ctx, heroLabel, HERO_BOX_W - 28, 1);
+      const line = labelLines[0] ?? heroLabel;
+      const lw = ctx.measureText(line).width;
+      ctx.fillText(
+        line,
+        HERO_BOX_X + (HERO_BOX_W - lw) / 2,
+        numBaseline + 36,
       );
-      labelLines.forEach((line, i) => {
-        const lw = ctx.measureText(line).width;
-        ctx.fillText(line, boxCx - lw / 2, numBaseline + 28 + i * 32);
-      });
     }
-  } else if (input.heroLabel?.trim()) {
+    ctx.restore();
+  } else if (heroLabel) {
     ctx.fillStyle = "#3f6b4a";
     ctx.font = `700 26px ${serifSc}`;
-    ctx.fillText(input.heroLabel.trim(), INSET_X, y);
+    ctx.fillText(heroLabel, INSET_X, y);
     y += 40;
   }
 
@@ -247,9 +262,19 @@ export async function renderEditorialCardPng(
   }
 
   if (hasHero) {
-    y = Math.max(leadEndY, contentStartY + HERO_BOX_H) + 20;
+    y = Math.max(leadEndY, contentStartY + heroBoxH) + 28;
   } else {
     y = leadEndY > contentStartY ? leadEndY + 8 : y;
+  }
+
+  // Optional list heading (sectionTitle when no separate section body block yet).
+  const listHeading = input.sectionTitle?.trim();
+  const sectionBody = input.sectionBody?.trim();
+  if (listHeading && items.length > 0 && !sectionBody) {
+    ctx.fillStyle = "#3f6b4a";
+    ctx.font = `700 26px ${serifSc}`;
+    ctx.fillText(listHeading, INSET_X, y);
+    y += 40;
   }
 
   const listTop = y;
@@ -276,30 +301,36 @@ export async function renderEditorialCardPng(
   });
   if (items.length) y = listTop + items.length * rowH + 8;
 
-  const hasSection =
-    Boolean(input.sectionTitle?.trim()) || Boolean(input.sectionBody?.trim());
+  const hasSectionBody = Boolean(sectionBody);
+  const hasSectionTitleOnly =
+    Boolean(listHeading) && !hasSectionBody && items.length > 0;
+  // Title already drawn as list heading — only draw bottom section when body exists.
   const sectionTop = Math.min(y + 12, FOOTER_Y - 140);
-  if (hasSection && sectionTop < FOOTER_Y - 80) {
+  if (hasSectionBody && sectionTop < FOOTER_Y - 80) {
     drawHairline(ctx, sectionTop);
     y = sectionTop + 40;
 
-    if (input.sectionTitle?.trim()) {
+    if (listHeading && !hasSectionTitleOnly) {
       ctx.fillStyle = "#3f6b4a";
       ctx.font = `700 26px ${serifSc}`;
-      ctx.fillText(input.sectionTitle.trim(), INSET_X, y);
+      ctx.fillText(listHeading, INSET_X, y);
       y += 40;
     }
-    if (input.sectionBody?.trim()) {
-      ctx.fillStyle = "#1c1a17";
-      ctx.font = `500 26px ${serifSc}`;
-      const bodyLines = wrapText(ctx, input.sectionBody.trim(), 880, 2);
-      bodyLines.forEach((line) => {
-        if (y < FOOTER_Y - 48) {
-          ctx.fillText(line, INSET_X, y);
-          y += 36;
-        }
-      });
-    }
+    ctx.fillStyle = "#1c1a17";
+    ctx.font = `500 26px ${serifSc}`;
+    const bodyLines = wrapText(ctx, sectionBody!, 880, 2);
+    bodyLines.forEach((line) => {
+      if (y < FOOTER_Y - 48) {
+        ctx.fillText(line, INSET_X, y);
+        y += 36;
+      }
+    });
+  } else if (listHeading && items.length === 0 && sectionTop < FOOTER_Y - 80) {
+    drawHairline(ctx, sectionTop);
+    y = sectionTop + 40;
+    ctx.fillStyle = "#3f6b4a";
+    ctx.font = `700 26px ${serifSc}`;
+    ctx.fillText(listHeading, INSET_X, y);
   }
 
   const tagline = (input.tagline ?? SLOGAN).trim() || SLOGAN;

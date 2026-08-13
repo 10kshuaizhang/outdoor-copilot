@@ -2,8 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   fallbackEditorialDraft,
   normalizeEditorialDraft,
+  normalizeHeroUnit,
 } from "./extractEditorialDraft";
 import { DEFAULT_EDITORIAL_TAGLINE } from "./renderEditorialCard";
+
+describe("normalizeHeroUnit", () => {
+  it("prefixes bare Chinese measure words", () => {
+    expect(normalizeHeroUnit("句")).toBe("/ 句");
+    expect(normalizeHeroUnit("/ 样")).toBe("/ 样");
+    expect(normalizeHeroUnit("")).toBe("");
+  });
+});
 
 describe("normalizeEditorialDraft", () => {
   it("accepts valid LLM-shaped JSON", () => {
@@ -25,9 +34,31 @@ describe("normalizeEditorialDraft", () => {
     expect(draft!.items).toHaveLength(4);
   });
 
+  it("fixes bare unit and moves long heroLabel into sectionTitle", () => {
+    const draft = normalizeEditorialDraft({
+      title: "东灵山夜爬\n本周别冲动",
+      eyebrow: "夜爬 · 选日指南",
+      lead: "周末雨意未散。",
+      heroNumber: "4",
+      heroUnit: "句",
+      heroLabel: "夜爬铁律",
+      items: ["天气不对可以怂", "时间按慢估", "灯热吃定位", "不对劲就撤"],
+      sectionTitle: "",
+      sectionBody: "",
+      footerNote: "赢在选日子。",
+      tagline: DEFAULT_EDITORIAL_TAGLINE,
+    });
+    expect(draft).toBeTruthy();
+    expect(draft!.heroUnit).toBe("/ 句");
+    expect(draft!.heroLabel).toBe("");
+    expect(draft!.sectionTitle).toBe("夜爬铁律");
+  });
+
   it("rejects missing title or too few items", () => {
     expect(normalizeEditorialDraft({ title: "", items: ["a", "b"] })).toBeNull();
-    expect(normalizeEditorialDraft({ title: "有标题", items: ["仅一条"] })).toBeNull();
+    expect(
+      normalizeEditorialDraft({ title: "有标题", items: ["仅一条"] }),
+    ).toBeNull();
   });
 });
 
