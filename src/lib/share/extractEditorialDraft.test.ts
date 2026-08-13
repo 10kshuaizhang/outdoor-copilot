@@ -3,14 +3,27 @@ import {
   fallbackEditorialDraft,
   normalizeEditorialDraft,
   normalizeHeroUnit,
+  parseHeroNumberField,
+  sanitizeEditorialForRender,
 } from "./extractEditorialDraft";
 import { DEFAULT_EDITORIAL_TAGLINE } from "./renderEditorialCard";
 
 describe("normalizeHeroUnit", () => {
-  it("prefixes bare Chinese measure words", () => {
+  it("prefixes bare Chinese measure words and strips leading digits", () => {
     expect(normalizeHeroUnit("句")).toBe("/ 句");
     expect(normalizeHeroUnit("/ 样")).toBe("/ 样");
+    expect(normalizeHeroUnit("4句")).toBe("/ 句");
     expect(normalizeHeroUnit("")).toBe("");
+  });
+});
+
+describe("parseHeroNumberField", () => {
+  it("splits glued number+measure like 4句", () => {
+    expect(parseHeroNumberField("4句")).toEqual({
+      number: "4",
+      unitHint: "句",
+    });
+    expect(parseHeroNumberField("4")).toEqual({ number: "4", unitHint: "" });
   });
 });
 
@@ -54,6 +67,26 @@ describe("normalizeEditorialDraft", () => {
     expect(draft!.sectionTitle).toBe("夜爬铁律");
   });
 
+  it("splits heroNumber 4句 even when unit also set", () => {
+    const draft = normalizeEditorialDraft({
+      title: "东灵山夜爬\n本周就冲动",
+      eyebrow: "总结：说走就走",
+      lead: "看日出。",
+      heroNumber: "4句",
+      heroUnit: "/ 句",
+      heroLabel: "铁律",
+      items: ["天气不好别去", "带头灯", "水粮电保暖", "不适就撤"],
+      sectionTitle: "",
+      sectionBody: "",
+      footerNote: "遇见更好的我。",
+      tagline: DEFAULT_EDITORIAL_TAGLINE,
+    });
+    expect(draft!.heroNumber).toBe("4");
+    expect(draft!.heroUnit).toBe("/ 句");
+    expect(draft!.heroLabel).toBe("");
+    expect(draft!.sectionTitle).toBe("铁律");
+  });
+
   it("keeps short non-heading labels like 雨天加装 on the hero chip", () => {
     const draft = normalizeEditorialDraft({
       title: "降雨日\n多带4样",
@@ -77,6 +110,21 @@ describe("normalizeEditorialDraft", () => {
     expect(
       normalizeEditorialDraft({ title: "有标题", items: ["仅一条"] }),
     ).toBeNull();
+  });
+});
+
+describe("sanitizeEditorialForRender", () => {
+  it("cleans manual override fields that glue number and unit", () => {
+    const clean = sanitizeEditorialForRender({
+      title: "东灵山",
+      heroNumber: "4句",
+      heroUnit: "/ 句",
+      heroLabel: "句",
+      items: ["a", "b"],
+    });
+    expect(clean.heroNumber).toBe("4");
+    expect(clean.heroUnit).toBe("/ 句");
+    expect(clean.heroLabel).toBe("");
   });
 });
 
